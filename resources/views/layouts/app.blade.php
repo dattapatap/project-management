@@ -258,7 +258,7 @@
                         </li>
                         @if ($user->hasRole(['Project-Manager']) && $user->departments->department == 2)
                             <li>
-                                <a class="waves-effect" href="{{ url('/projects/all') }}">
+                                <a class="waves-effect" href="{{ url('/projects') }}">
                                     <i class="mdi mdi mdi-folder-multiple"></i><span>Projects</span>
                                 </a>
                             </li>
