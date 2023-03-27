@@ -285,7 +285,6 @@
                                 </a>
                                 <ul class="sub-menu" aria-expanded="false">
                                     <li><a href="{{ url('client/Fresh') }}">Companies</a></li>
-                                    <li><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
                                 </ul>
                             </li>
                             <li>
@@ -297,6 +296,17 @@
                                 <a class="waves-effect" href="{{ url('/payments') }}">
                                     <i class="mdi mdi-wallet-outline"></i><span>Payments</span>
                                 </a>
+                            </li>
+                            <li>
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="mdi mdi-note-text"></i>
+                                    <span>Reports</span>
+                                </a>
+                                <ul class="sub-menu" aria-expanded="false">
+                                    <li><a href="{{ url('mysts/searchsts') }}">STS</a></li>
+                                    <li><a href="{{ url('reports/dsr/searchdsr') }}">DSR</a></li>
+                                    <li><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
+                                </ul>
                             </li>
                         @endif
 
@@ -339,11 +349,6 @@
                             </li>
 
                         @endif
-
-
-
-
-
 
 
 

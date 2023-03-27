@@ -40,10 +40,13 @@ class ClientHistory extends Model
         $query->orderBy('tbro', 'desc');
     }
 
-    public function scopeFilterStatus(Builder $query, $category): void
+    public function scopeFilterStatus(Builder $query, $category, $historyType): void
     {
         if($category == 'All'){
-            $query->whereIn('status', ['Fresh', 'Followup', 'Meeting Fixed', 'Not Interested']);
+            if($historyType == 'STS')
+                $query->whereIn('status', ['Fresh', 'Followup', 'Meeting Fixed', 'Not Interested']);
+            else
+                $query->whereIn('status', ['Hot Prespective', 'Warm Prespective', 'Matured', 'Not Interested']);
         }else{
             $query->where('status',  $category);
         }

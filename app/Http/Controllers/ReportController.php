@@ -94,7 +94,6 @@ class ReportController extends Controller
         $todt = Carbon::parse($toos)->addDays(1);
 
         $user  = Auth::user();
-
         if($request->employee == 'All'){
 
             if($user->hasRole('Team-Leader')){
@@ -122,7 +121,9 @@ class ReportController extends Controller
                                         ->whereIn('tele_ref_user', $allmem);
 
                 $clients = $eloquent->filterStatus($category, 'STS')->paginate(50)->appends(request()->query());
-            }else{
+            }
+
+            if($user->hasRole('Admin')){
                 $eloquent = Clients::whereHas('history', function($query) use( $frms, $todt, $category){
                                 $query->where('category',  'STS');
                                 $query->filterStatus($category, 'STS');
@@ -133,9 +134,9 @@ class ReportController extends Controller
                                     $query->filterStatus($category, 'STS');
                                     $query->whereBetween("created_at",[ $frms, $todt]);
                             }]);
-
                 $clients = $eloquent->filterStatus($category, 'STS')->paginate(50)->appends(request()->query());
             }
+
         }else{
             $employeeId = $request->employee;
             if($user->hasRole('Team-Leader') || $user->hasRole('Admin')){
@@ -185,8 +186,6 @@ class ReportController extends Controller
         $frms = Carbon::createFromFormat('d/m/Y',$from)->format('Y-m-d');
         $toos   = Carbon::createFromFormat('d/m/Y', $to)->format('Y-m-d');
         $todt = Carbon::parse($toos)->addDays(1);
-
-
         $user  = Auth::user();
 
         if($request->employee == 'All'){
@@ -202,24 +201,26 @@ class ReportController extends Controller
                 array_push($allmem, $user->id);
 
                 $eloquent = Clients::whereHas('history', function($query) use($allmem,  $frms, $todt, $category){
-                                    $query->whereIn('created',  $allmem);
-                                    $query->where('category',  'DSR');
-                                    $query->filterStatus($category, 'DSR');
-                                    $query->whereBetween("created_at",[ $frms, $todt]);
-                                })
-                                ->with(['history' => function($query) use($allmem,  $frms, $todt, $category){
-                                        $query->whereIn('created',   $allmem);
+                                        $query->whereIn('created',  $allmem);
                                         $query->where('category',  'DSR');
                                         $query->filterStatus($category, 'DSR');
                                         $query->whereBetween("created_at",[ $frms, $todt]);
-                                }])
-                                ->where(function ($query) use($allmem, $user) {
-                                        $query->whereIn('ref_user', $allmem);
-                                        $query->orWhere('tele_ref_user', $user->id);
-                                });
+                                    })
+                                    ->with(['history' => function($query) use($allmem,  $frms, $todt, $category){
+                                            $query->whereIn('created',   $allmem);
+                                            $query->where('category',  'DSR');
+                                            $query->filterStatus($category, 'DSR');
+                                            $query->whereBetween("created_at",[ $frms, $todt]);
+                                    }])
+                                    ->where(function ($query) use($allmem, $user) {
+                                            $query->whereIn('ref_user', $allmem);
+                                            $query->orWhere('tele_ref_user', $user->id);
+                                    });
 
                 $clients = $eloquent->filterStatus($category, 'DSR')->paginate(50)->appends(request()->query());
-            }else{
+            }
+
+            if($user->hasRole('Admin')){
                 $eloquent = Clients::whereHas('history', function($query) use( $frms, $todt, $category){
                                 $query->where('category',  'DSR');
                                 $query->filterStatus($category, 'DSR');

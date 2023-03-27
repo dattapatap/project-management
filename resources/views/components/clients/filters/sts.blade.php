@@ -61,7 +61,7 @@
 
                             @if($user->hasRole('Sales-Executive'))
                                 <input type="hidden" name="employee" id="employee" value="{{ $user->id}}">
-                            @else
+                            @elseif($user->hasRole('Team-Leader'))
                                 @php
                                     $teams  =  DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
                                     $fltUsers =  App\Models\TeamMembers::with('users.roles')
@@ -69,9 +69,7 @@
                                                                 $query->where('name', 'Sales-Executive');
                                                             })
                                                             ->whereIn('team', $teams)->where('status', true)->get();
-
                                 @endphp
-
                                 <div class="col-3">
                                     <div class="form-group">
                                         <label> User </label>
@@ -88,6 +86,31 @@
                                         </select>
                                     </div>
                                 </div>
+                            @else
+                                @php
+                                    $fltUsers =  App\Models\User::whereHas('roles', function($query){
+                                                                    $query->whereIn('name', ['Sales-Executive', 'Team-Leader' ]);
+                                                                })
+                                                                ->with('departments', function($query){
+                                                                    $query->where('department', 1);
+                                                                })
+                                                                ->get();
+                                @endphp
+                                <div class="col-3">
+                                    <div class="form-group">
+                                        <label> User </label>
+                                        <select class="form-control select2" name="employee" id="employee" style="width:100%" required>
+                                            <option value="All"> All </option>
+                                            @foreach ($fltUsers as $item)
+                                                <option value="{{ $item->id }}" @if( $search && $search['employee'] == $item->id ) selected  @endif>
+                                                    {{ $item->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+
                             @endif
 
 
@@ -125,8 +148,10 @@
                                         Export STS
                                     </button>
                                     @endif
+                                    @if(!$user->hasRole('Admin'))
                                     &nbsp;&nbsp;
                                     <button type="button" class="btn btn-primary btn-my-sts-count">My STS</button>
+                                    @endif
                                 </div>
                             </div>
                         </div>

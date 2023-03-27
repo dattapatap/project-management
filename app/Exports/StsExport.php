@@ -73,7 +73,9 @@ class StsExport extends  DefaultValueBinder implements FromArray , WithHeadings 
                                     }])
                                     ->with('telereferral:id,name', 'referral:id,name')
                                     ->whereIn('tele_ref_user', $allmem)->get();
-            }else{
+            }
+
+            if($user->hasRole('Admin')){
                 $eloquent = Clients::whereHas('history', function($query) use( $frms, $todt, $category,$searchCat){
                                 $query->where('category',  $searchCat);
                                 $query->filterStatus($category, $searchCat);
@@ -87,6 +89,7 @@ class StsExport extends  DefaultValueBinder implements FromArray , WithHeadings 
 
                 $clients = $eloquent->filterStatus($category, $searchCat)->get();
             }
+
         }else{
 
             if($user->hasRole('Team-Leader') || $user->hasRole('Admin')){

@@ -106,6 +106,9 @@ Route::group(['middleware' => ['auth'] ], function () {
     Route::get('/reports/searchsts/ajax', [ReportController::class, 'getCountMyStsByCategory'])->name('report.get-count-by-category');
     Route::get('/exportsts', [ReportController::class, 'exportStsReports']);
 
+
+
+
     // Departments
     Route::get('/department/category', [ProjectCategoryController::class, 'getcategorybyid']);
     Route::get('/department/filter', [DepartmentController::class, 'filterDepartment'])->name('departments.filterDepartment');
