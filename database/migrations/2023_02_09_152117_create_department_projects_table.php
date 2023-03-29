@@ -38,6 +38,7 @@ return new class extends Migration
             $table->dateTime('act_start_date')->nullable();
             $table->dateTime('act_end_date')->nullable();
 
+
             $table->string('status')->default('Assigned');
             $table->string('project_link')->nullable();
 
