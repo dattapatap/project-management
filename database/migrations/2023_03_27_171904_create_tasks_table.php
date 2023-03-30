@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreign('projectid')->references('id')->on('department_projects')->onDelete('cascade');
 
             $table->bigInteger('created_by');
+            $table->bigInteger('assigned_to')->nullable();
 
             $table->string('title');
             $table->longText('description')->nullable();

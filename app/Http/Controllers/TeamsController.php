@@ -15,11 +15,7 @@ use Validator;
 
 class TeamsController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function index(Request $request)
     {
         $department = Department::where('name', $request->name)->firstOrFail();
@@ -28,24 +24,12 @@ class TeamsController extends Controller
         return view('components.department.teams', compact('teams', 'department'));
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+     public function store(Request $request)
     {
         $rules = array(
             'name' => 'required|string',
@@ -93,51 +77,28 @@ class TeamsController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Teams  $teams
-     * @return \Illuminate\Http\Response
-     */
+
     public function show(Teams $teams)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Teams  $teams
-     * @return \Illuminate\Http\Response
-     */
     public function edit(Teams $team)
     {
        return response()->json([ 'status'=>true, 'data'=>$team ], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Teams  $teams
-     * @return \Illuminate\Http\Response
-     */
+
     public function update(Request $request, Teams $teams)
     {
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Teams  $teams
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy(Teams $teams)
     {
         //
     }
-
 
 
     public function teammembers(Request $request){

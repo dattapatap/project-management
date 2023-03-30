@@ -389,6 +389,7 @@
     </div>
     <!-- END layout-wrapper -->
 
+
     <div class="rightbar-overlay"></div>
 
 
@@ -477,6 +478,9 @@
             }, 1000);
         });
     </script>
+
+
+    @yield('component')
     @yield('scripts')
 
 </body>

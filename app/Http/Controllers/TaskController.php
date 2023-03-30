@@ -2,84 +2,94 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\TaskRequest;
+use App\Models\DepartmentProjects;
 use App\Models\Task;
+use App\Models\TaskUser;
+use App\Models\User;
+use App\Notifications\TaskAssigned;
+use Auth;
+use Carbon\Carbon;
+use DB;
+use Exception;
 use Illuminate\Http\Request;
+use Log;
 
 class TaskController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function index()
     {
-        //
+        $tasks = Task::with('project')->all();
+        return view('components.projects.tasks', compact('tasks'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function create(Task $task)
     {
-        //
+
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function store(TaskRequest $request)
     {
-        //
+        $user = Auth::user();
+        $project = DepartmentProjects::find($request->project);
+
+        try{
+            //Add Task, add users assigned, send notifications to assigned user
+            DB::beginTransaction();
+
+            $task  = new Task();
+            $task->projectid            =   $request->project;
+            $task->created_by           =   $user->id;
+            $task->title                =   $request->title;
+            $task->description          =   $request->description;
+            $task->status               =   $request->status;
+            $task->priority             =   $request->priority;
+            $task->startdate            =   $request->startdate;
+            $task->enddate              =   $request->enddate;
+            $task->save();
+
+            foreach($request->taskUsers as $usr){
+                $taskUser           = new TaskUser();
+                $taskUser->taskid   = $task->id;
+                $taskUser->userid   = $usr;
+                $taskUser->assigned_dt   = Carbon::now();
+                $taskUser->save();
+
+                $currUser = User::find($usr);
+                $currUser->notify((new TaskAssigned($task, $category="New Task"))->delay(now()->addSeconds(5)));
+
+            }
+            DB::commit();
+
+        }catch(Exception $ex){
+            DB::rollBack();
+            Log::error("Task Creation Error : ".$ex->getMessage());
+            return redirect()->back()->with('error', $ex->getMessage())->withInput();
+        }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Task  $task
-     * @return \Illuminate\Http\Response
-     */
+
     public function show(Task $task)
     {
-        //
+
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Task  $task
-     * @return \Illuminate\Http\Response
-     */
+
     public function edit(Task $task)
     {
-        //
+        return response()->json(['success'=>true, 'task' => $task ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Task  $task
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, Task $task)
     {
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Task  $task
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy(Task $task)
     {
-        //
+        $task->delete();
+        return response()->json(['success'=>true, 'message' => "Task Deleted" ]);
     }
 }

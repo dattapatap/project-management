@@ -27,31 +27,126 @@
                 </a>
             </div>
         </div>
-        <div class="col-md-12 mt-2">
-
+    </div>
+    <div class="row">
             @if(!$projects->isEmpty())
+                @foreach ($projects as $item)
+                    <div class="col-3">
+                        <div class="card project-card">
+                            <div class="card-body">
+                                <div class="department">
+                                    <div class="project-card-header">
+                                        <a class="project-title-header" href="{{ route('departments.show', $item->project_name) }}">
+                                            <h5 class="project-title mt-1">
+                                                {{ $item->project_name  }}
+                                            </h5>
+                                            <span class="badge badge-pill
+                                                @if($item->status == 'NOT ASSIGNED' ) badge-danger
+                                                @elseif($item->status == 'TODO' ) badge-warning
+                                                @elseif($item->status == 'INPROGRESS' ) badge-inf
+                                                @else badge-success
+                                                @endif">
+                                                {{ $item->status }}
+                                            </span>
+                                        </a>
+                                        <div class="btn-group float-right">
+                                            <a href="#" class="dropdown-toggle arrow-none"
+                                                data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 21px;">
+                                                <i class="mdi mdi-dots-vertical"></i>
+                                            </a>
+                                            <div class="dropdown-menu dropdown-menu-start">
 
+                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                        <i class="mdi mdi-rocket"></i>Taskbar
+                                                </a>
+                                                <a class="dropdown-item btn_assign_project" projectid="{{ $item->id }}">
+                                                        <i class="mdi mdi-account"></i> Assign To
+                                                </a>
 
-                @foreach ($projects as $items)
-                <div class="col-md-3">
-                    <div class="card card-project">
-                        <div class="card-body">
-                            <div class="project-card-header">
-                                <h6 class="project-name">Website Development</h6>
-                                <a class="btn-action-project" href="javascript:void(0);">
-                                    <i class="mdi mdi-account-circle-outline"></i>
-                                </a>
-                            </div>
-                            <div class="project-card-body">
+                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                        <i class="mdi mdi-update"></i> Add Update
+                                                </a>
+                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                        <i class="mdi mdi-checkbox-marked-circle-outline"></i> Add Task
+                                                </a>
+                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                        <i class="mdi mdi-pencil"></i> Edit
+                                                </a>
 
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="project-card-content">
+                                        <h6 class="mb-3">Total Tasks <span class="badge badge-pill badge-info">{{ $item->tasks->count() }}</span></h6>
+                                        <div class="project-matrix-group">
+
+                                            <div class="project-matrix-group-divs" >
+                                                <span class="project-metrics__metric-group-item__title project-matrix-group-items">
+                                                   Completed
+                                                </span>
+                                                <div class="project-matrix-group-items project-metrics__metric-group-item__chart progress progress-sm">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <span class="project-matrix-group-items project-metrics__metric-group-item__value">
+                                                    85%
+                                                </span>
+
+                                            </div>
+                                            <div class="project-matrix-group-divs" >
+                                                <span class="project-metrics__metric-group-item__title project-matrix-group-items">
+                                                   Time( est.)
+                                                </span>
+                                                <div class="project-matrix-group-items project-metrics__metric-group-item__chart progress progress-sm">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 20%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <span class="project-matrix-group-items project-metrics__metric-group-item__value">
+                                                    85%
+                                                </span>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="project-card-footer">
+                                        <div class="project-members">
+                                            {{-- @if(!$item->users->isEmpty())
+                                                <ul class="project-users">
+                                                    <?php  $totCount = 0; ?>
+                                                    @foreach ($item->users as $members)
+                                                        @if($totCount < 10)
+                                                            <li>
+                                                                @if ($members->userdetail->profile)
+                                                                    <img title="{{ $members->userdetail->name }}" src="{{ asset('storage/'. $members->userdetail->profile )}}">
+                                                                @else
+                                                                    <img title="" src="{{ Avatar::create($members->userdetail->name)->toBase64()  }}">
+                                                                @endif
+
+                                                            </li>
+                                                        @endif
+                                                    @endforeach
+                                                    @php
+                                                        $count = $item->users()->count();
+                                                    @endphp
+                                                    @if( $count > 10 )
+                                                        <li class="count">{{ $count - 10 }}+</li>
+                                                    @endif
+                                                </ul>
+                                            @else --}}
+                                                <ul class="project-users">
+                                                    <li class="cursor">
+                                                        <img data-toggle="tooltip" data-placement="top" aria-label="Not Assigned" data-bs-original-title="Not Assigned"
+                                                             src="{{ asset('img/users.png')}}">
+                                                    </li>
+                                                </ul>
+                                            {{-- @endif --}}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                </div>
-
                 @endforeach
-
                 {{-- <div class="row mt-3 float-right">
                     {{ $projects->links("pagination::bootstrap-4") }}
                 </div> --}}
@@ -72,9 +167,14 @@
                     </div>
                 </div>
             @endif
-
-        </div>
     </div>
     <!-- end row -->
 </div>
+ @endsection
+
+ @section('component')
+
+{{-- @include('components.projects.components.editproject') --}}
+@include('components.projects.components.assigntoteam')
+
 @endsection

@@ -163,8 +163,4 @@ Route::group(['middleware' => ['role:Admin'] ], function () {
 });
 
 
-Route::prefix('projects')->middleware(['auth'])->group(function(){
-    Route::get('/', [ProjectController::class, 'index']);
-});
-
 

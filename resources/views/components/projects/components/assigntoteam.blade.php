@@ -1,21 +1,30 @@
-<div id="mdlAddVisitingCard" class="modal fade bs-example-modal-center" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+<div id="mdlAssignToTeam" class="modal fade bs-example-modal-center" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title mt-0">Add Visiting Card</h5>
+                <h5 class="modal-title mt-0">Assign Project</h5>
                 <button type="button" class="close btnmdlclose" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_visiting_card" class="custom-validation"  method="POST" novalidate>
+                <form id="frm_assign" class="custom-validation"  method="POST" novalidate>
                     @csrf
-                    <input type="hidden" value="{{ $client->id}}" name="client" id="client">
+                    <input type="hidden" value="" name="project_id" id="project_id">
+                    @php
+                        $teams = DB::table('teams')->where('department', 2)->orderBy('name', 'asc')->get();
+                    @endphp
                     <div class="row">
                         <div class="col-12">
                             <div class="form-group">
-                                <input type="file" name="visiting_card" id="visiting_card" accept="image/*">
-                                <span class="invalid-feedback" id="visiting_card-input-error" role="alert">
+                                <label>Select Team</label>
+                               <select class="form-control select2" width="100%" name="team" id="team">
+                                    <option value="">Choose Team</option>
+                                    @foreach ($teams as $item)
+                                        <option value="{{ $item->id }}"> {{ $item->name }} </option>
+                                    @endforeach
+                               </select>
+                                <span class="invalid-feedback" id="team-input-error" role="alert">
                                     <strong></strong>
                                 </span>
                             </div>
@@ -24,7 +33,7 @@
                     <div class="row float-roght">
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary waves-effect waves-light mr-1 float-right creatBtn">
-                                Add
+                                Assign
                             </button>
                         </div>
                     </div>
@@ -35,36 +44,37 @@
     </div>
 </div>
 
+
+@section('scripts')
 <script>
     $(document).ready(function(){
-        $('.add-visiting-card').click(function(){
-                $('#mdlAddVisitingCard').modal('show');
+
+        $('.btn_assign_project').click(function(eve){
+            eve.preventDefault();
+            let projectid = $(this).attr('projectid');
+            $('#project_id').val(projectid);
+            $('#mdlAssignToTeam').modal('show');
         })
 
-        $('#frm_visiting_card').submit(function(e){
+        $('#frm_assign').submit(function(e){
             e.preventDefault();
-            var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
             $.ajax({
                 type: 'POST',
-                url: '{{ route('client.addVisitingCard') }}',
-                data: formData,
-                cache: false,
-                contentType: false,
-                processData: false,
+                url: base_url +'/projects/assignToTeam',
+                data: {'project': $('#project_id').val(), 'team': $('#team').val()},
+                dataType:'json',
                 beforeSend: function() {
-                    $(".creatBtn").html('Uploading...');
                     $(".creatBtn").prop('disabled', true);
                 },
                 success: function(response) {
-                    $('#frm_visiting_card')[0].reset();
+                    $('#frm_assign')[0].reset();
                     alertify.success(response.message);
                     setTimeout(() => { window.location.reload(); }, 1000);
                 },
                 error: function(response) {
                     console.log(response);
                     $(".creatBtn").prop('disabled', false);
-                    $(".creatBtn").html('Add');
                     if (response.responseJSON.status === 400) {
                         let errors = response.responseJSON.errors;
                         Object.keys(errors).forEach(function(key) {
@@ -75,8 +85,11 @@
                 }
             });
         });
-        $(".gallery-popup").magnificPopup({
-            type:"image",closeOnContentClick:!0,mainClass:"mfp-fade",gallery:{enabled:!0,navigateByImgClick:!0,preload:[0,1]}
-        });
+
+
+
     })
+
 </script>
+
+@endsection
