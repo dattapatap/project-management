@@ -28,6 +28,7 @@
             </div>
         </div>
     </div>
+
     <div class="row">
             @if(!$projects->isEmpty())
                 @foreach ($projects as $item)
@@ -63,13 +64,13 @@
                                                         <i class="mdi mdi-account"></i> Assign To
                                                 </a>
 
-                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                <a class="dropdown-item btn_project_update" projectid="{{ $item->id }}">
                                                         <i class="mdi mdi-update"></i> Add Update
                                                 </a>
                                                 <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
                                                         <i class="mdi mdi-checkbox-marked-circle-outline"></i> Add Task
                                                 </a>
-                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                <a class="dropdown-item btn_edit_project" projectid="{{ $item->id }}">
                                                         <i class="mdi mdi-pencil"></i> Edit
                                                 </a>
 
@@ -172,9 +173,12 @@
 </div>
  @endsection
 
- @section('component')
+@section('component')
 
-{{-- @include('components.projects.components.editproject') --}}
 @include('components.projects.components.assigntoteam')
+
+@include('components.projects.components.editproject')
+
+@include('components.projects.components.projectupdate')
 
 @endsection

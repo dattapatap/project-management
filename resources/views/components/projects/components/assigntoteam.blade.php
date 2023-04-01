@@ -43,12 +43,8 @@
         </div>
     </div>
 </div>
-
-
-@section('scripts')
 <script>
     $(document).ready(function(){
-
         $('.btn_assign_project').click(function(eve){
             eve.preventDefault();
             let projectid = $(this).attr('projectid');
@@ -66,15 +62,22 @@
                 dataType:'json',
                 beforeSend: function() {
                     $(".creatBtn").prop('disabled', true);
+                    $('#cover-spin').css('display', 'block');
                 },
                 success: function(response) {
-                    $('#frm_assign')[0].reset();
-                    alertify.success(response.message);
-                    setTimeout(() => { window.location.reload(); }, 1000);
+                    $(".creatBtn").prop('disabled', false);
+                    $('#cover-spin').css('display', 'none');
+                    if(response.success == true){
+                        $('#frm_assign')[0].reset();
+                        alertify.success(response.message);
+                        setTimeout(() => { window.location.reload(); }, 1000);
+                    }else{
+                        alertify.error(response.message);
+                    }
                 },
                 error: function(response) {
-                    console.log(response);
                     $(".creatBtn").prop('disabled', false);
+                    $('#cover-spin').css('display', 'none');
                     if (response.responseJSON.status === 400) {
                         let errors = response.responseJSON.errors;
                         Object.keys(errors).forEach(function(key) {
@@ -85,11 +88,6 @@
                 }
             });
         });
-
-
-
     })
 
 </script>
-
-@endsection

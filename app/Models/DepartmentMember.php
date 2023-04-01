@@ -14,4 +14,10 @@ class DepartmentMember extends Model
         return $this->belongsTo(User::class, 'user', 'id');
     }
 
+
+    public function histories()
+    {
+        return $this->morphMany(DepartmentProjectHistory::class, 'histories');
+    }
+
 }

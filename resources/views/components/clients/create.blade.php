@@ -36,7 +36,7 @@
                         <div class="row">
                             <div class="col-6">
                                 <div class="form-group">
-                                    <label>Company Name <span class="text_required">*</span> </label>
+                                    <label> Company Name <span class="text_required">*</span> </label>
                                     <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') parsley-error  @enderror"
                                     placeholder="Company Name" tabindex="1">
                                     @error('name')
@@ -155,9 +155,9 @@
                                 <div class="col-3">
                                     <div class="form-group">
                                         <label>TBRO :</label>
-                                        <input type="text" name="date" id="date" class="form-control @error('date') parsley-error  @enderror" value="{{ old('date')}}"
+                                        <input type="text" name="tbro_date" id="tbro_date" class="form-control @error('tbro_date') parsley-error  @enderror" value="{{ old('tbro_date')}}"
                                          autocomplete="off"  placeholder="MM/DD/YYYY"  tabindex="12">
-                                        @error('date')
+                                        @error('tbro_date')
                                             <span class="invalid-feedback" role="alert"> <strong>{{ $message }}</strong> </span>
                                         @enderror
                                     </div>
@@ -233,7 +233,7 @@ $(document).ready(function(e){
             }
         });
 
-        $('#date').datetimepicker({
+        $('#tbro_date').datetimepicker({
             format:'DD-MM-YYYY',
             maxDate: moment().add(60, 'days'),
             minDate: moment(),

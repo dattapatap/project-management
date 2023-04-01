@@ -27,7 +27,6 @@ class DepartmentProjectsController extends Controller
             'package'       => 'required|numeric|gt:0',
             'start_date'    => 'required|date',
             'end_date'      => 'required|date',
-            'referel_link'  => 'nullable|url',
             'description'   => 'required|string'
         );
         $validator = Validator::make($request->all(), $rules);
@@ -53,8 +52,7 @@ class DepartmentProjectsController extends Controller
                 $dept->project_name     =   $projectnm->dept_role_name;
                 $dept->start_date       =   Carbon::parse($request->start_date)->format('Y-m-d h:i');
                 $dept->end_date         =   Carbon::parse($request->end_date)->format('Y-m-d h:i');
-                $dept->status           =   "Assigned";
-                $dept->referel_link     =   $request->referel_link;
+                $dept->status           =   "NOT Assigned";
                 $dept->description      =   $request->description;
                 $dept->save();
 

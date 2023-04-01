@@ -56,6 +56,8 @@
 
 <body data-sidebar="dark">
     <!-- Begin page -->
+    <div id="cover-spin"></div>
+
     <div id="layout-wrapper">
         <header id="page-topbar">
             <div class="navbar-header">

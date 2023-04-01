@@ -16,7 +16,7 @@ class DepartmentProjects extends Model
     }
 
     public function client(){
-        return $this->belongsTo(Clients::class, 'id', 'client');
+        return $this->belongsTo(Clients::class, 'client', 'id');
     }
 
 
