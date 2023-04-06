@@ -559,7 +559,7 @@ h6.editinfolable{
     display: flex;
     max-width: 100%;
     align-items: center;
-    justify-content: right;
+    justify-content: space-between;
     gap: 10px;
     padding: 5px 0px;
 }
@@ -572,14 +572,8 @@ h6.editinfolable{
     padding: 5px 0px;
 }
 
-.project-metrics__metric-group-item__title{
-    width: 30%;
-}
 .project-metrics__metric-group-item__chart{
     width: 140px;
-}
-.project-metrics__metric-group-item__value{
-    width: 15%;
 }
 
 .project-card-header .dropdown-menu .dropdown-item{
@@ -590,4 +584,15 @@ h6.editinfolable{
 }
 .project-card-header .dropdown-menu .dropdown-item:hover{
     color: #fff !important;
+}
+
+.progress {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    height: .425rem;
+    overflow: hidden;
+    font-size: .6375rem;
+    background-color: #d6d6d6;
+    border-radius: .25rem;
 }

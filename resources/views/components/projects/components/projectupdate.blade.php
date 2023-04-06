@@ -10,7 +10,7 @@
             <div class="modal-body">
                 <form id="frm_project_update" class="custom-validation"  method="POST">
                     @csrf
-                    <input type="hidden" value="" name="projectid" id="projectid">
+                    <input type="hidden" value="" name="projid" id="projid">
                     <div class="row">
                         <div class="col-md-12 float-right">
                             <label> Update History <span class="text_required">*</span></label>
@@ -38,7 +38,7 @@
 
     $(document).ready(function(){
         $(document).on('click', '.btn_project_update', function(eve){
-            $('#projectid').val($(this).attr('projectid'))
+            $('#projid').val($(this).attr('projectid'))
             $('#mdlProjectUpdate').modal('show');
         });
 
@@ -48,7 +48,7 @@
             $(".invalid-feedback").children("strong").text("");
             $.ajax({
                 type: 'POST',
-                url: base_url +'/projects/'+ $('#projectid').val() +'/projectupdate',
+                url: base_url +'/projects/'+ $('#projid').val() +'/projectupdate',
                 data: formData,
                 cache: false,
                 contentType: false,

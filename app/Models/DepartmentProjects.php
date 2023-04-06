@@ -15,10 +15,19 @@ class DepartmentProjects extends Model
         return $this->hasMany(Task::class, 'projectid');
     }
 
+    public function completedTask(){
+        return $this->hasMany(Task::class, 'projectid')->where('status', 'Completed');
+    }
+
+
+
     public function client(){
         return $this->belongsTo(Clients::class, 'client', 'id');
     }
 
-
+    public function histories()
+    {
+        return $this->morphMany(DepartmentProjectHistory::class, 'histories');
+    }
 
 }

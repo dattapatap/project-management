@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Clients;
+use App\Models\DepartmentProjectHistory;
 use App\Models\DepartmentProjects;
 use App\Models\TeamMembers;
 use App\Models\TeamProject;
@@ -126,6 +127,9 @@ class ProjectController extends Controller
                 $project->description      =   $request->description;
                 $project->save();
 
+                DepartmentProjectHistoryController::store($project, "Project Updated", $userid);
+
+
                 // Get Department Members and filter by role
                 $productManager = User::whereHas('roles', function($q){  $q->where('name', 'Project-Manager' ); })->where('status', 'Active')->get();
                 for($ctr=0; $ctr < count($productManager); $ctr++ ){
@@ -144,6 +148,7 @@ class ProjectController extends Controller
 
     }
 
+    //Add History
     public function projectupdate(Request $request){
         $rules = array(
             'remarks'=> 'required|string',
@@ -152,17 +157,17 @@ class ProjectController extends Controller
         if ($validator->fails()) {
             return Response::json(array( 'status' => 400,'errors' => $validator->getMessageBag()->toArray()), 400);
         }else{
-
             try{
                 $userid = Auth::user()->id;
-                $project = DepartmentProjects::where('id',$request->post('project-id'))->first();
-                if(!$project){
-                    return response()->json(['code'=>200, "success"=>false, 'message'=> "Project Not Found" ], 200);
-                }
+                $project = DepartmentProjects::find($request->projectid);
 
-                DB::beginTransaction();
-
-
+                //Create Client Package
+                $history                   = new DepartmentProjectHistory();
+                $history->histories()->associate($project);
+                $history->comments        = $request->remarks;
+                $history->date            = Carbon::now();
+                $history->addedby         = $userid;
+                $history->save();
 
                 // Get Department Members and filter by role
                 $productManager = User::whereHas('roles', function($q){  $q->where('name', 'Project-Manager' ); })->where('status', 'Active')->get();
@@ -170,12 +175,9 @@ class ProjectController extends Controller
                     $currUser = $productManager[$ctr];
                     $currUser->notify((new ProjectUpdate($project,  $category="Project Update"))->delay(now()->addSeconds(5)));
                 }
-
-                DB::commit();
                 return response()->json(['code'=>200, "success"=>true, 'message'=> "Project Updated" ], 200);
 
             }catch(Exception $ex){
-                DB::rollBack();
                 return response()->json(['code'=>201, 'success'=>false, 'message'=>$ex->getMessage() ], 200);
             }
         }

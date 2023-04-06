@@ -20,18 +20,15 @@ return new class extends Migration
             $table->foreign('taskid')->references('id')->on('tasks')->onDelete('cascade');
 
             $table->bigInteger('userid');
-            $table->bigInteger('created');
+
+            $table->dateTime('start_date');
+            $table->dateTime('end_date')->nullable();
+
+            $table->double('time_spend', 6,2);
 
             $table->date('log_date');
 
-            $table->longText('description')->nullable();
-            $table->dateTime('start_date');
-            $table->dateTime('end_date');
-            $table->double('time_spend', 6,2);
-
-            $table->softDeletes();
             $table->timestamps();
-
         });
     }
 

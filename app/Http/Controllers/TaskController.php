@@ -18,10 +18,18 @@ use Log;
 class TaskController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $tasks = Task::with('project')->all();
-        return view('components.projects.tasks', compact('tasks'));
+
+        $project_id = base64_decode($request->project);
+        $project  = DepartmentProjects::findOrFail($project_id);
+
+        $completed  = Task::where('status', 'Completed')->get();
+        $todo       = Task::where('status', 'ToDo')->get();
+        $inprocess  = Task::where('status', 'InProgress')->get();
+
+        return view('components.projects.tasksbar', compact('completed', 'todo', 'inprocess', 'project'));
+
     }
 
     public function create(Task $task)
@@ -29,11 +37,10 @@ class TaskController extends Controller
 
     }
 
-    public function store(TaskRequest $request)
+    public function addtask(TaskRequest $request) //
     {
         $user = Auth::user();
-        $project = DepartmentProjects::find($request->project);
-
+        $project = DepartmentProjects::find($request->task_projectid);
         try{
             //Add Task, add users assigned, send notifications to assigned user
             DB::beginTransaction();
@@ -41,31 +48,29 @@ class TaskController extends Controller
             $task  = new Task();
             $task->projectid            =   $request->project;
             $task->created_by           =   $user->id;
-            $task->title                =   $request->title;
-            $task->description          =   $request->description;
-            $task->status               =   $request->status;
-            $task->priority             =   $request->priority;
-            $task->startdate            =   $request->startdate;
-            $task->enddate              =   $request->enddate;
+            $task->title                =   $request->task_title;
+            $task->description          =   $request->task_description;
+            $task->status               =   "ToDo";
+            $task->priority             =   $request->task_priority;
+            $task->startdate            =   $request->task_est_start_date;
+            $task->enddate              =   $request->task_est_end_date;
+            $task->assigned_to          =   $request->task_user;
             $task->save();
 
-            foreach($request->taskUsers as $usr){
-                $taskUser           = new TaskUser();
-                $taskUser->taskid   = $task->id;
-                $taskUser->userid   = $usr;
-                $taskUser->assigned_dt   = Carbon::now();
-                $taskUser->save();
+            $comment = "New Task Created by ".$user->name;
+            DepartmentProjectHistoryController::store($task, $comment , $request->task_user);
 
-                $currUser = User::find($usr);
-                $currUser->notify((new TaskAssigned($task, $category="New Task"))->delay(now()->addSeconds(5)));
+            $currUser = User::find($request->task_user);
+            $currUser->notify((new TaskAssigned($task, $category="New Task"))->delay(now()->addSeconds(5)));
 
-            }
             DB::commit();
+
+            return response()->json(['code'=>200, "success"=>true, 'message'=> "New Task Created" ], 200);
 
         }catch(Exception $ex){
             DB::rollBack();
             Log::error("Task Creation Error : ".$ex->getMessage());
-            return redirect()->back()->with('error', $ex->getMessage())->withInput();
+            return response()->json(['code'=>200, "success"=>false, 'message'=> "Task not created, please try again!" ], 200);
         }
     }
 

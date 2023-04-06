@@ -33,6 +33,10 @@ return new class extends Migration
             $table->dateTime('act_startdate')->nullable();
             $table->dateTime('act_enddate')->nullable();
 
+            $table->integer('task_hours')->default(0);
+
+            $table->string('log_status')->default('pause');
+
             $table->softDeletes();
             $table->timestamps();
 

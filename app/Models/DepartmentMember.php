@@ -15,9 +15,4 @@ class DepartmentMember extends Model
     }
 
 
-    public function histories()
-    {
-        return $this->morphMany(DepartmentProjectHistory::class, 'histories');
-    }
-
 }

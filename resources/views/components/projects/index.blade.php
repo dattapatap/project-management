@@ -57,7 +57,7 @@
                                             </a>
                                             <div class="dropdown-menu dropdown-menu-start">
 
-                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                <a href="{{ url('projects/taskbar/'. base64_encode($item->id)) }}" class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
                                                         <i class="mdi mdi-rocket"></i>Taskbar
                                                 </a>
                                                 <a class="dropdown-item btn_assign_project" projectid="{{ $item->id }}">
@@ -67,7 +67,7 @@
                                                 <a class="dropdown-item btn_project_update" projectid="{{ $item->id }}">
                                                         <i class="mdi mdi-update"></i> Add Update
                                                 </a>
-                                                <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                <a class="dropdown-item btn_add_task" projectid="{{ $item->id }}">
                                                         <i class="mdi mdi-checkbox-marked-circle-outline"></i> Add Task
                                                 </a>
                                                 <a class="dropdown-item btn_edit_project" projectid="{{ $item->id }}">
@@ -84,63 +84,75 @@
 
                                             <div class="project-matrix-group-divs" >
                                                 <span class="project-metrics__metric-group-item__title project-matrix-group-items">
-                                                   Completed
-                                                </span>
-                                                <div class="project-matrix-group-items project-metrics__metric-group-item__chart progress progress-sm">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
-                                                </div>
-                                                <span class="project-matrix-group-items project-metrics__metric-group-item__value">
-                                                    85%
+                                                   Progress
                                                 </span>
 
+                                                @php
+                                                        $totTasks =  6; //$item->tasks->count();
+                                                        $taskHrs = round($item->tasks->SUM('task_hours') /60);
+                                                        $completedTask = 2; // $item->completedTask->count();
+
+                                                        if($completedTask == 0 )
+                                                            $compPerc = 0;
+                                                        else
+                                                            $compPerc = round(($completedTask /$totTasks) * 100);
+
+                                                @endphp
+
+                                                <div class="project-matrix-group-items project-metrics__metric-group-item__chart progress progress-sm">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{$compPerc}}%"
+                                                        aria-valuenow="{{ $compPerc }}" aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <span class="project-matrix-group-items project-metrics__metric-group-item__value">
+                                                    {{ $compPerc }}%
+                                                </span>
                                             </div>
-                                            <div class="project-matrix-group-divs" >
+                                            <div class="project-matrix-group-divs mt-2" >
                                                 <span class="project-metrics__metric-group-item__title project-matrix-group-items">
                                                    Time( est.)
                                                 </span>
-                                                <div class="project-matrix-group-items project-metrics__metric-group-item__chart progress progress-sm">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 20%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
-                                                </div>
                                                 <span class="project-matrix-group-items project-metrics__metric-group-item__value">
-                                                    85%
+                                                    {{ $taskHrs  }} Hrs
                                                 </span>
-
                                             </div>
                                         </div>
                                     </div>
                                     <hr>
                                     <div class="project-card-footer">
                                         <div class="project-members">
-                                            {{-- @if(!$item->users->isEmpty())
+
+                                            @if(!$item->tasks->isEmpty())
                                                 <ul class="project-users">
                                                     <?php  $totCount = 0; ?>
-                                                    @foreach ($item->users as $members)
+                                                    @foreach ($item->tasks as $members)
                                                         @if($totCount < 10)
                                                             <li>
-                                                                @if ($members->userdetail->profile)
-                                                                    <img title="{{ $members->userdetail->name }}" src="{{ asset('storage/'. $members->userdetail->profile )}}">
+                                                                @if ($members->user->profile)
+                                                                    <img title="{{ $members->user->name }}" src="{{ asset('storage/'. $members->user->profile )}}">
                                                                 @else
-                                                                    <img title="" src="{{ Avatar::create($members->userdetail->name)->toBase64()  }}">
+                                                                    <img title="" src="{{ Avatar::create($members->user->name)->toBase64()  }}">
                                                                 @endif
 
                                                             </li>
                                                         @endif
                                                     @endforeach
                                                     @php
-                                                        $count = $item->users()->count();
+                                                        $count = $item->tasks->count();
                                                     @endphp
                                                     @if( $count > 10 )
                                                         <li class="count">{{ $count - 10 }}+</li>
                                                     @endif
                                                 </ul>
-                                            @else --}}
+                                            @else
                                                 <ul class="project-users">
                                                     <li class="cursor">
                                                         <img data-toggle="tooltip" data-placement="top" aria-label="Not Assigned" data-bs-original-title="Not Assigned"
                                                              src="{{ asset('img/users.png')}}">
                                                     </li>
                                                 </ul>
-                                            {{-- @endif --}}
+                                            @endif
+
                                         </div>
                                     </div>
                                 </div>
@@ -180,5 +192,8 @@
 @include('components.projects.components.editproject')
 
 @include('components.projects.components.projectupdate')
+
+@include('components.projects.components.projecttask')
+
 
 @endsection

@@ -8,4 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class Task extends Model
 {
     use HasFactory;
+
+    public function user(){
+        return $this->belongsTo(User::class, 'assigned_to', 'id');
+    }
+    public function project(){
+        return $this->belongsTo(DepartmentProjects::class, 'projectid', 'id');
+    }
+
 }

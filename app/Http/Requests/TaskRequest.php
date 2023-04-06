@@ -13,7 +13,7 @@ class TaskRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,12 +24,13 @@ class TaskRequest extends FormRequest
     public function rules()
     {
         return [
-            'project'        => 'required|numeric',
-            'title'          => 'required|string',
-            'description'    => 'nullable|between:10,60000',
-            'priority'       => 'required|string',
-            'startdate'      => 'nullable|date',
-            'enddate'        => 'nullable|date',
+            'task_projectid'            => 'required|numeric',
+            'task_title'                => 'required|string',
+            'task_priority'             => 'required|string',
+            'task_est_start_date'       => 'required|date',
+            'task_est_end_date'         => 'required|date',
+            'task_description'          => 'required|between:10,600000',
+            'task_user'                 => 'required'
         ];
     }
 
