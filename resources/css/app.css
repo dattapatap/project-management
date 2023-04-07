@@ -596,3 +596,19 @@ h6.editinfolable{
     background-color: #d6d6d6;
     border-radius: .25rem;
 }
+.light-danger-bg {
+    background-color: #F1C8DB  !important;
+}
+.project-members{
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.c-p{
+    cursor: pointer;
+}
+.c-m{
+    cursor: move;
+}

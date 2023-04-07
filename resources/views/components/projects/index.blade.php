@@ -37,7 +37,7 @@
                             <div class="card-body">
                                 <div class="department">
                                     <div class="project-card-header">
-                                        <a class="project-title-header" href="{{ route('departments.show', $item->project_name) }}">
+                                        <a class="project-title-header" href="{{ url('projects/taskboard/'.base64_encode($item->id) ) }}">
                                             <h5 class="project-title mt-1">
                                                 {{ $item->project_name  }}
                                             </h5>
@@ -57,7 +57,7 @@
                                             </a>
                                             <div class="dropdown-menu dropdown-menu-start">
 
-                                                <a href="{{ url('projects/taskbar/'. base64_encode($item->id)) }}" class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                                <a href="{{ url('projects/taskboard/'. base64_encode($item->id)) }}" class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
                                                         <i class="mdi mdi-rocket"></i>Taskbar
                                                 </a>
                                                 <a class="dropdown-item btn_assign_project" projectid="{{ $item->id }}">
@@ -88,9 +88,9 @@
                                                 </span>
 
                                                 @php
-                                                        $totTasks =  6; //$item->tasks->count();
+                                                        $totTasks = $item->tasks->count();
                                                         $taskHrs = round($item->tasks->SUM('task_hours') /60);
-                                                        $completedTask = 2; // $item->completedTask->count();
+                                                        $completedTask = $item->completedTask->count();
 
                                                         if($completedTask == 0 )
                                                             $compPerc = 0;
@@ -151,6 +151,20 @@
                                                              src="{{ asset('img/users.png')}}">
                                                     </li>
                                                 </ul>
+                                            @endif
+                                            @if($item->status != 'COMPLETED')
+                                                <span class="small light-danger-bg  p-1 rounded">
+                                                    <i class="mdi mdi-clock-outline"></i>
+                                                        @if(  \Carbon\Carbon::parse($item->end_date)->gt(\Carbon\Carbon::now()))
+                                                            {{ \Carbon\Carbon::parse($item->end_date)->diffForhumans(null, true) }} Left
+                                                        @else
+                                                            {{ \Carbon\Carbon::parse($item->end_date)->diffForhumans(null, true) }} Over
+                                                        @endif
+                                                </span>
+                                            @else
+                                                <span class="small bg-success p-1 rounded">
+                                                    {{ $item->status }}
+                                                </span>
                                             @endif
 
                                         </div>
