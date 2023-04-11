@@ -612,3 +612,7 @@ h6.editinfolable{
 .c-m{
     cursor: move;
 }
+
+.input-group-text {
+    padding: 0.44rem 0.75rem !important;
+}

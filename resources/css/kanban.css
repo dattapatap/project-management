@@ -6,6 +6,9 @@
     padding: 10px;
     gap: 25px;
 }
+.js-kanban{
+    width: 100%;
+}
 
 .kanban-board {
     position: relative;
@@ -145,6 +148,14 @@
 }
 .task-body ul.task-action li a {
     font-size: 16px;
+}
+.task-body ul.task-action li button {
+    border: none;
+    padding: 0px;
+    color: #2866E0;
+    margin: 0px;
+    font-size: 16px;
+    background: transparent;
 }
 
 .task-schedule-time{

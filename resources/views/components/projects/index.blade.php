@@ -89,7 +89,7 @@
 
                                                 @php
                                                         $totTasks = $item->tasks->count();
-                                                        $taskHrs = round($item->tasks->SUM('task_hours') /60);
+                                                        // $taskHrs = round($item->tasks->SUM('task_hours') /60);
                                                         $completedTask = $item->completedTask->count();
 
                                                         if($completedTask == 0 )
@@ -108,14 +108,14 @@
                                                     {{ $compPerc }}%
                                                 </span>
                                             </div>
-                                            <div class="project-matrix-group-divs mt-2" >
+                                            {{-- <div class="project-matrix-group-divs mt-2" >
                                                 <span class="project-metrics__metric-group-item__title project-matrix-group-items">
                                                    Time( est.)
                                                 </span>
                                                 <span class="project-matrix-group-items project-metrics__metric-group-item__value">
                                                     {{ $taskHrs  }} Hrs
                                                 </span>
-                                            </div>
+                                            </div> --}}
                                         </div>
                                     </div>
                                     <hr>
@@ -174,9 +174,7 @@
                         </div>
                     </div>
                 @endforeach
-                {{-- <div class="row mt-3 float-right">
-                    {{ $projects->links("pagination::bootstrap-4") }}
-                </div> --}}
+
 
             @else
                 <div class="col-md-12">

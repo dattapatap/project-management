@@ -21,12 +21,14 @@ return new class extends Migration
 
             $table->bigInteger('userid');
 
-            $table->dateTime('start_date');
-            $table->dateTime('end_date')->nullable();
+            $table->time('starttime');
+            $table->time('endtime');
 
             $table->double('time_spend', 6,2);
 
             $table->date('log_date');
+
+            $table->text('log_description')->nullable();
 
             $table->timestamps();
         });

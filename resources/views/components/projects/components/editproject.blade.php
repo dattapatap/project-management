@@ -70,8 +70,6 @@
         </div>
     </div>
 </div>
-
-<script type="text/javascript" src="{{ asset('assets/libs/tinymce/js/tinymce.min.js') }}"></script>
 <script>
 
     $(document).ready(function(){
