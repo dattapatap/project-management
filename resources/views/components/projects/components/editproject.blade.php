@@ -108,7 +108,8 @@
                         $('#start_date').val(moment(project.start_date).format('YYYY-MM-DD'))
                         $('#end_date').val(moment(project.end_date).format('YYYY-MM-DD'))
                         $('#act_start_date').val(moment(project.act_start_date).format('YYYY-MM-DD'))
-                        tinyMCE.activeEditor.setContent(project.description);
+                        tinymce.get("description").setContent(task.description);
+
                         $('#mdlEditProject').modal('show');
                     }else{
                         alertify.error(response.message);

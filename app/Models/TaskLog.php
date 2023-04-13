@@ -8,4 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class TaskLog extends Model
 {
     use HasFactory;
+
+    public function user(){
+        return $this->belongsTo(User::class, 'userid', 'id');
+    }
+
+
 }

@@ -95,6 +95,7 @@
                         alertify.success(response.message);
                         $('#mdlChangeStatus').modal('hide');
                         $('#frm_task_status')[0].reset();
+                        location.reload();
                     }else{
                         alertify.error(response.message);
                     }

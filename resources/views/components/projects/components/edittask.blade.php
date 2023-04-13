@@ -150,7 +150,8 @@
                         $('#txt_task_est_start_date').val(moment(task.startdate).format('DD/MM/YYYY hh:mm A'))
                         $('#txt_task_est_end_date').val(moment(task.enddate).format('DD/MM/YYYY hh:mm A'))
                         $('#txt_task_user').val(task.assigned_to).trigger('change')
-                        tinyMCE.activeEditor.setContent(task.description);
+
+                        tinymce.get("txt_task_description").setContent(task.description);
                         $('#mdleditTask').modal('show');
                     }else{
                         alertify.error(response.message);

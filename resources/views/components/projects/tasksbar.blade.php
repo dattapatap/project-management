@@ -1,14 +1,17 @@
 @extends('layouts.app')
 @section('content')
     <div class="container-fluid">
-        <!-- start page title -->
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-flex align-items-center justify-content-between">
-                    <h4 class="mb-0 font-size-18">Task Board / {{ $project->project_name }}</h4>
+                    <div class="pb-2 d-flex align-items-center justify-content-between">
+                        <a href="{{ url('/projects') }}" class="btn-back" >
+                            <i class="mdi mdi-keyboard-backspace fs-20"></i>
+                        </a>
+                    </div>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ url('/') }}">{{ env('APP_NAME') }}</a></li>
+                            <li class="breadcrumb-item">Projects</li>
                             <li class="breadcrumb-item active">Task Board</li>
                         </ol>
                     </div>
@@ -16,11 +19,11 @@
             </div>
         </div>
 
+
+
         <div class="row">
             <div id="kanbanCustomBoard" class="js-kanban">
                 <div class="kanban-container">
-
-                    {{-- ToDO --}}
                     <div class="kanban-board kanban-danger">
 
                         <header class="kanban-board-header kanban-danger">
@@ -34,24 +37,23 @@
                         </header>
 
                         <main class="kanban-drag">
+
                             @foreach ($todo as $items)
                                 <div class="kanban-item task-body">
                                     <div class="kanban-item-title">
-                                        <h6 class="title c-p">
-                                            @if( $items->priority == "Low")
-                                                <i class="mdi mdi-flag-variant text-success" title="{{ $items->priority }} Priority" ></i>
-                                            @elseif( $items->priority == "Medium")
-                                                <i class="mdi mdi-flag-variant text-warning" title="{{ $items->priority }} Priority" ></i>
-                                            @else
-                                                <i class="mdi mdi-flag-variant text-danger" title="{{ $items->priority }} Priority" ></i>
-                                            @endif
-                                            {{ Str::limit($items->title, 28) }}
-                                        </h6>
+                                        <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
+                                            <h6 class="title c-p">
+                                                @if( $items->priority == "Low")
+                                                    <i class="mdi mdi-flag-variant text-success" title="{{ $items->priority }} Priority" ></i>
+                                                @elseif( $items->priority == "Medium")
+                                                    <i class="mdi mdi-flag-variant text-warning" title="{{ $items->priority }} Priority" ></i>
+                                                @else
+                                                    <i class="mdi mdi-flag-variant text-danger" title="{{ $items->priority }} Priority" ></i>
+                                                @endif
+                                                {{ Str::limit($items->title, 28) }}
+                                            </h6>
+                                        </a>
                                         <ul class="task-action">
-                                            <li class="task-edit">
-                                                <a taskid="{{ $items->id }}" href="javascript:void(0);" title="Comments">
-                                                    <i class="mdi mdi-comment-multiple-outline"></i></a>
-                                            </li>
                                             <li class="task-edit">
                                                 <a taskid="{{ $items->id }}" class="tasklog" href="javascript:void(0);" title="Add Task Log">
                                                     <i class="mdi mdi-clock-outline"></i>
@@ -80,7 +82,7 @@
 
 
                                     <div class="kanban-item-text c-m">
-                                        {!! Str::limit($items->description, 300) !!}
+                                        {!! Str::limit($items->description, 120) !!}
 
                                         <div class="task-schedule-time" >
                                             <span class="">
@@ -98,7 +100,7 @@
                                                 </span>
                                             @else
                                                 <span class="small bg-success p-1 rounded">
-                                                    {{ $item->status }}
+                                                    {{ $items->status }}
                                                 </span>
                                             @endif
                                         </div>
@@ -136,17 +138,14 @@
                                 </div>
                             @endforeach
                         </main>
-
                     </div>
-
                     {{-- INPROGRESS --}}
-
                     <div class="kanban-board">
                         <header class="kanban-board-header kanban-primary">
                             <div class="kanban-title-board">
                                 <div class="kanban-title-content">
                                     <h6 class="title">In Progress</h6>
-                                    <span class="count">4</span>
+                                    <span class="count">{{ count($inprocess) }}</span>
                                 </div>
                             </div>
                         </header>
@@ -154,23 +153,21 @@
                             @foreach ($inprocess as $items)
                                 <div class="kanban-item task-body">
                                     <div class="kanban-item-title">
-                                        <h6 class="title c-p">
-                                            @if( $items->priority == "Low")
-                                                <i class="mdi mdi-flag-variant text-success" title="{{ $items->priority }} Priority" ></i>
-                                            @elseif( $items->priority == "Medium")
-                                                <i class="mdi mdi-flag-variant text-warning" title="{{ $items->priority }} Priority" ></i>
-                                            @else
-                                                <i class="mdi mdi-flag-variant text-danger" title="{{ $items->priority }} Priority" ></i>
-                                            @endif
-                                            {{ Str::limit($items->title, 28) }}
-                                        </h6>
+                                        <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
+                                            <h6 class="title c-p">
+                                                @if( $items->priority == "Low")
+                                                    <i class="mdi mdi-flag-variant text-success" title="{{ $items->priority }} Priority" ></i>
+                                                @elseif( $items->priority == "Medium")
+                                                    <i class="mdi mdi-flag-variant text-warning" title="{{ $items->priority }} Priority" ></i>
+                                                @else
+                                                    <i class="mdi mdi-flag-variant text-danger" title="{{ $items->priority }} Priority" ></i>
+                                                @endif
+                                                {{ Str::limit($items->title, 28) }}
+                                            </h6>
+                                        </a>
                                         <ul class="task-action">
                                             <li class="task-edit">
-                                                <a href="javascript:void(0);" title="Comments">
-                                                    <i class="mdi mdi-comment-multiple-outline"></i></a>
-                                            </li>
-                                            <li class="task-edit">
-                                                <a href="javascript:void(0);" title="Change Task Status">
+                                                <a taskid="{{ $items->id }}" class="tasklog" href="javascript:void(0);" title="Add Task Log">
                                                     <i class="mdi mdi-clock-outline"></i>
                                                 </a>
                                             </li>
@@ -197,27 +194,16 @@
 
 
                                     <div class="kanban-item-text c-m">
-                                        {!! Str::limit($items->description, 300) !!}
+                                        {!! Str::limit($items->description, 120) !!}
 
                                         <div class="task-schedule-time" >
                                             <span class="">
                                                 <i class="mdi mdi-calendar-month-outline" title="Task Scheduled Time" ></i>
                                                 {{ \Carbon\Carbon::parse($items->startdate)->format('d M y') }} To {{ \Carbon\Carbon::parse($items->enddate)->format('d M y') }}
                                             </span>
-                                            @if($items->status != 'COMPLETED')
-                                            <span class="small light-danger-bg  p-1 rounded">
-                                                    <i class="mdi mdi-clock-outline"></i>
-                                                        @if(  \Carbon\Carbon::parse($items->enddate)->gt(\Carbon\Carbon::now()))
-                                                            {{ \Carbon\Carbon::parse($items->enddate)->diffForhumans(null, true) }} Left
-                                                        @else
-                                                            {{ \Carbon\Carbon::parse($items->enddate)->diffForhumans(null, true) }} Over
-                                                        @endif
-                                                </span>
-                                            @else
-                                                <span class="small bg-success p-1 rounded">
-                                                    {{ $item->status }}
-                                                </span>
-                                            @endif
+                                            <span class="small bg-info p-1 rounded text-white">
+                                                {{ $items->status }}
+                                            </span>
                                         </div>
                                     </div>
                                     <div class="task-card-footer">
@@ -256,13 +242,14 @@
                         <footer></footer>
                     </div>
 
+
                     {{-- COMPLETED --}}
                     <div class="kanban-board">
                         <header class="kanban-board-header kanban-success">
                             <div class="kanban-title-board">
                                 <div class="kanban-title-content">
                                     <h6 class="title">Completed</h6>
-                                    <span class="count">0</span>
+                                    <span class="count">{{ count($completed) }} </span>
                                 </div>
                             </div>
                         </header>
@@ -270,23 +257,21 @@
                             @foreach ($completed as $items)
                                 <div class="kanban-item task-body">
                                     <div class="kanban-item-title">
-                                        <h6 class="title c-p">
-                                            @if( $items->priority == "Low")
-                                                <i class="mdi mdi-flag-variant text-success" title="{{ $items->priority }} Priority" ></i>
-                                            @elseif( $items->priority == "Medium")
-                                                <i class="mdi mdi-flag-variant text-warning" title="{{ $items->priority }} Priority" ></i>
-                                            @else
-                                                <i class="mdi mdi-flag-variant text-danger" title="{{ $items->priority }} Priority" ></i>
-                                            @endif
-                                            {{ Str::limit($items->title, 28) }}
-                                        </h6>
+                                        <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
+                                            <h6 class="title c-p">
+                                                @if( $items->priority == "Low")
+                                                    <i class="mdi mdi-flag-variant text-success" title="{{ $items->priority }} Priority" ></i>
+                                                @elseif( $items->priority == "Medium")
+                                                    <i class="mdi mdi-flag-variant text-warning" title="{{ $items->priority }} Priority" ></i>
+                                                @else
+                                                    <i class="mdi mdi-flag-variant text-danger" title="{{ $items->priority }} Priority" ></i>
+                                                @endif
+                                                {{ Str::limit($items->title, 28) }}
+                                            </h6>
+                                        </a>
                                         <ul class="task-action">
                                             <li class="task-edit">
-                                                <a href="javascript:void(0);" title="Comments">
-                                                    <i class="mdi mdi-comment-multiple-outline"></i></a>
-                                            </li>
-                                            <li class="task-edit">
-                                                <a href="javascript:void(0);" title="Change Task Status">
+                                                <a taskid="{{ $items->id }}" class="tasklog" href="javascript:void(0);" title="Add Task Log">
                                                     <i class="mdi mdi-clock-outline"></i>
                                                 </a>
                                             </li>
@@ -295,32 +280,17 @@
                                                     <i class="mdi mdi-arrow-left-right-bold"></i>
                                                 </a>
                                             </li>
-                                            <li class="task-edit">
-                                                <a taskid="{{ $items->id }}" class="edittask" href="javascript:void(0);" title="Change Task Status">
-                                                    <i class="mdi mdi-pencil-outline"></i>
-                                                </a>
-                                            </li>
-                                            <li class="task-edit">
-                                                <form method="post" action="{{ route('tasks.destroy',[$items->id]) }}" onsubmit="return confirmation();"  style="display: inline-block;">
-                                                    @csrf
-                                                    <button type="submit" href="javascript:void(0)" title="Delete Task">
-                                                        <i class="mdi mdi-trash-can-outline"></i>
-                                                    </button>
-                                                </form>
-                                            </li>
                                         </ul>
                                     </div>
 
-
                                     <div class="kanban-item-text c-m">
-                                        {!! Str::limit($items->description, 300) !!}
-
+                                        {!! Str::limit($items->description, 120) !!}
                                         <div class="task-schedule-time" >
                                             <span class="">
                                                 <i class="mdi mdi-calendar-month-outline" title="Task Scheduled Time" ></i>
                                                 {{ \Carbon\Carbon::parse($items->startdate)->format('d M y') }} To {{ \Carbon\Carbon::parse($items->enddate)->format('d M y') }}
                                             </span>
-                                            @if($items->status != 'COMPLETED')
+                                            @if($items->status != 'Completed')
                                             <span class="small light-danger-bg  p-1 rounded">
                                                     <i class="mdi mdi-clock-outline"></i>
                                                         @if(  \Carbon\Carbon::parse($items->enddate)->gt(\Carbon\Carbon::now()))
@@ -330,12 +300,13 @@
                                                         @endif
                                                 </span>
                                             @else
-                                                <span class="small bg-success p-1 rounded">
-                                                    {{ $item->status }}
+                                                <span class="small bg-success p-1 rounded text-white">
+                                                    {{ $items->status }}
                                                 </span>
                                             @endif
                                         </div>
                                     </div>
+
                                     <div class="task-card-footer">
                                         <div class="project-members">
                                             <div class="project-matrix-group-divs" >
@@ -378,8 +349,9 @@
         <!-- end row -->
     </div>
 @endsection
-
 @section('component')
+
+
 @include('components.projects.components.projecttask')
 @include('components.projects.components.changestatus')
 @include('components.projects.components.tasklog')

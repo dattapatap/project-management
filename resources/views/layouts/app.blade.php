@@ -213,7 +213,7 @@
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li class="menu-title">Menu</li>
 
-                        @if ($user->hasRole(['Project-Manager']) && $user->departments->department == 2)
+                        {{-- @if ($user->hasRole(['Project-Manager']) && $user->departments->department == 2)
                             <li>
                                 <a href="javascript: void(0);" class="has-arrow waves-effect">
                                     <i class="mdi mdi-plus-outline"></i>
@@ -245,14 +245,10 @@
                                             <i class="mdi mdi-message-text-outline"></i><span>Message</span>
                                         </a>
                                     </li>
-                                    <li>
-                                        <a class="waves-effect" href="javascript: void(0);">
-                                            <i class="mdi mdi-calendar-outline"></i><span>Events</span>
-                                        </a>
-                                    </li>
+
                                 </ul>
                             </li>
-                        @endif
+                        @endif --}}
                         <li>
                             <a class="waves-effect" href="{{url('/home')}}">
                                 <i class="mdi mdi-view-dashboard"></i><span>Home</span>
@@ -264,6 +260,13 @@
                                     <i class="mdi mdi mdi-folder-multiple"></i><span>Projects</span>
                                 </a>
                             </li>
+
+                            <li>
+                                <a class="waves-effect" href="javascript: void(0);">
+                                    <i class="mdi mdi-calendar-outline"></i><span>Events</span>
+                                </a>
+                            </li>
+
                         @endif
 
 

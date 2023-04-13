@@ -6,6 +6,7 @@ use App\Http\Requests\TaskRequest;
 use App\Http\Requests\TaskUpdate;
 use App\Models\DepartmentProjects;
 use App\Models\Task;
+use App\Models\TaskComment;
 use App\Models\TaskLog;
 use App\Models\TaskUser;
 use App\Models\User;
@@ -78,8 +79,11 @@ class TaskController extends Controller
     }
 
 
-    public function show(Task $task)
+    public function show(Request $request)
     {
+        $taskid = base64_decode($request->taskid);
+        $task = Task::find($taskid);
+        return view('components.projects.taskdetails', compact('task'));
 
     }
 
@@ -131,7 +135,7 @@ class TaskController extends Controller
             'log_start_time'       => 'required|date_format:h:i A',
             'log_end_time'         => 'required|date_format:h:i A',
             'log_time_spend'       => 'required',
-            'log_description'      => 'required|string|min:25',
+            'log_description'      => 'required|string|min:15',
         );
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
@@ -164,7 +168,7 @@ class TaskController extends Controller
 
     public function changestatus(Request $request){
         if($request->status == 'InProgress'){
-            $actStartDt = 'required|date|date_format:d/m/Y h:i A';
+            $actStartDt = 'required|date_format:d/m/Y h:i A';
         }else{
             $actStartDt = 'nullable';
         }
@@ -187,6 +191,7 @@ class TaskController extends Controller
 
                     if($request->status === 'Completed'){
                         $task->status = $request->status;
+                        $task->progress = 100;
                         $task->act_enddate  = Carbon::now()->format('Y-m-d H:i');
                     }else if($request->status === 'InProgress'){
                         $task->status = $request->status;
@@ -209,6 +214,53 @@ class TaskController extends Controller
 
     }
 
+
+    public function updateProgress(Request $request){
+
+        $user = Auth::user();
+        $task  = Task::find($request->task_id);
+        if(!$task)
+            return response()->json(['code'=>200, "success"=>false, 'message'=> "Task not found, please try again!" ], 200);
+
+        try{
+            $task->progress = $request->progerss;
+            $task->save();
+
+            $comment = 'Task progress updated as '. $request->progerss .'% completed by '.$user->name;
+
+            DepartmentProjectHistoryController::store($task, $comment , $user->id);
+            return response()->json(['code'=>200, "success"=>true, 'message'=> "Task Progress Updated" ], 200);
+
+        }catch(Exception $ex){
+            Log::error("Task Updation Error : ".$ex->getMessage()." @:@ Line - ". $ex->getLine());
+            return response()->json(['code'=>200, "success"=>false, 'message'=> "Task progress updated, please try again!" ], 200);
+        }
+
+    }
+
+    public function addComment(Request  $request){
+       $user = Auth::user();
+       $taskid = $request->task_id;
+       $comment = $request->task_comment;
+
+       try{
+            $taskComment = new TaskComment();
+            $taskComment->taskid  = $taskid;
+            $taskComment->userid  = $user->id;
+            $taskComment->parent  = '0';
+            $taskComment->comment = $comment;
+
+            $taskComment->save();
+
+            return redirect()->back()->with('success', "comment posted");
+
+       }catch(Exception $ex){
+            return redirect()->back()->with('error', "comment not posted, please try again")->withInput();
+       }
+
+
+
+    }
 
     public function destroy(Task $task)
     {

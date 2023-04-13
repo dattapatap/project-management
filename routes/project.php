@@ -16,6 +16,10 @@ Route::prefix('projects')->middleware(['auth'])->group(function(){
 
     Route::post('/taskboard/addLog', [TaskController::class, 'addTaskLog']);
 
+    Route::get('/task/{taskid}/history', [TaskController::class, 'show']);
+    Route::post('/task/progress', [TaskController::class, 'updateProgress']);
+    Route::post('/task/comment', [TaskController::class, 'addComment']);
+
 
     Route::get('/{project}/edit', [ProjectController::class, 'edit']);
     Route::post('/{project}/update', [ProjectController::class, 'update']);
