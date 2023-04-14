@@ -103,12 +103,14 @@
                     if(response.success == true){
                         const project = response.project
                         $('#project-id').val(project.id)
-                        $('#client_name').val(project.client.name)
+                        $('#client_name').val(project.clients.name)
                         $('#project_name').val(project.project_name)
                         $('#start_date').val(moment(project.start_date).format('YYYY-MM-DD'))
                         $('#end_date').val(moment(project.end_date).format('YYYY-MM-DD'))
                         $('#act_start_date').val(moment(project.act_start_date).format('YYYY-MM-DD'))
-                        tinymce.get("description").setContent(task.description);
+                        if(project.description != null ){
+                            tinymce.get("description").setContent(project.description);
+                        }
 
                         $('#mdlEditProject').modal('show');
                     }else{

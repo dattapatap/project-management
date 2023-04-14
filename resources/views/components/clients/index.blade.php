@@ -176,7 +176,7 @@
             <div class="modal-body">
                 <form id="frm_create_new_project" class="custom-validation"  method="POST">
                     @csrf
-                    <input type="hidden" value="" name="client-id" id="client-id">
+                    <input type="hidden" value="" name="clientsid" id="clientsid">
                     <div class="row">
                         <div class="col-4">
                             <div class="form-group">

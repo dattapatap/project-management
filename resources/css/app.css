@@ -617,4 +617,10 @@ h6.editinfolable{
     padding: 0.44rem 0.75rem !important;
 }
 
+.section-search-project{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+}
 

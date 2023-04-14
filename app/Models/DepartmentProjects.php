@@ -19,9 +19,21 @@ class DepartmentProjects extends Model
         return $this->hasMany(Task::class, 'projectid')->where('status', 'Completed');
     }
 
+    public function category(){
+        return $this->belongsTo(ProjectCategory::class, 'category', 'id');
+    }
+
+    public function project_team(){
+        return $this->hasOne(TeamProject::class, 'projectid', 'id');
+    }
+
+    public function sub_categories(){
+        return $this->belongsTo(ProjectSubCategory::class, 'sub_category', 'id');
+    }
 
 
-    public function client(){
+
+    public function clients(){
         return $this->belongsTo(Clients::class, 'client', 'id');
     }
 

@@ -21,7 +21,6 @@ class DepartmentProjectsController extends Controller
     public function createNewProject(Request $request){
 
         $rules = array(
-            'client_name'   => 'required|string',
             'department'    => 'required|numeric',
             'category'      => 'required|numeric',
             'package'       => 'required|numeric|gt:0',
@@ -36,30 +35,30 @@ class DepartmentProjectsController extends Controller
 
             try{
                 $userid = Auth::user()->id;
-                $client = Clients::findOrFail($request->post('client-id'));
+                $client = Clients::findOrFail($request->post('clientsid'));
 
                 DB::beginTransaction();
-
-                $projectnm   = DB::table('department_roles')->where('id', $request->category )->first();
+                $projectnm   = DB::table('project_sub_categories')->where('id', $request->category )->first();
 
                 // Assign Project to Department
                 $dept   = new DepartmentProjects();
-                $dept->client           =   $request->post('client-id');
-                $dept->department       =   $request->department;
-                $dept->category         =   $request->category;
+                $dept->client           =   $request->post('clientsid');
+                $dept->department       =   1;
+                $dept->category         =   $request->department;
+                $dept->sub_category     =   $request->category;
                 $dept->assigned_by      =   $userid;
                 $dept->created_date     =   Carbon::now();
-                $dept->project_name     =   $projectnm->dept_role_name;
+                $dept->project_name     =   $projectnm->name;
                 $dept->start_date       =   Carbon::parse($request->start_date)->format('Y-m-d h:i');
                 $dept->end_date         =   Carbon::parse($request->end_date)->format('Y-m-d h:i');
-                $dept->status           =   "NOT Assigned";
+                $dept->status           =   "ToDo";
                 $dept->description      =   $request->description;
                 $dept->save();
 
 
                 //Create Client Package
                 $clipack = new ClientPackages();
-                $clipack->client           = $request->post('client-id');
+                $clipack->client           = $request->post('clientsid');
                 $clipack->project_id       = $dept->id;
                 $clipack->package          = $request->package;
                 $clipack->balance          = $request->package;
@@ -87,3 +86,4 @@ class DepartmentProjectsController extends Controller
 
 
 }
+

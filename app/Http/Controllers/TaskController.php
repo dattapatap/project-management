@@ -29,9 +29,9 @@ class TaskController extends Controller
         $project_id = base64_decode($request->project);
         $project  = DepartmentProjects::findOrFail($project_id);
 
-        $completed  = Task::where('status', 'Completed')->get();
-        $todo       = Task::where('status', 'ToDo')->get();
-        $inprocess  = Task::where('status', 'InProgress')->get();
+        $completed  = Task::where('projectid', $project_id)->where('status', 'Completed')->get();
+        $todo       = Task::where('projectid', $project_id)->where('status', 'ToDo')->get();
+        $inprocess  = Task::where('projectid', $project_id)->where('status', 'InProgress')->get();
 
         return view('components.projects.tasksbar', compact('completed', 'todo', 'inprocess', 'project'));
 
@@ -181,7 +181,6 @@ class TaskController extends Controller
         if ($validator->fails()) {
             return Response::json(array( 'status' => 400,'errors' => $validator->getMessageBag()->toArray()), 400);
         }else{
-
                 $user = Auth::user();
                 $task  = Task::find($request->taskid);
                 if(!$task)

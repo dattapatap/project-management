@@ -57,7 +57,7 @@
                     <div class="sidebar__block-content">
                         @if ($task->priority == 'Low')
                             <i class="mdi mdi-flag-variant text-success" title="{{ $task->priority }} Priority"></i>
-                        @elseif($items->priority == 'Medium')
+                        @elseif($task->priority == 'Medium')
                             <i class="mdi mdi-flag-variant text-warning" title="{{ $task->priority }} Priority"></i>
                         @else
                             <i class="mdi mdi-flag-variant text-danger" title="{{ $task->priority }} Priority"></i>

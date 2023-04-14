@@ -7,6 +7,8 @@ use App\Http\Controllers\TeamsController;
 Route::prefix('projects')->middleware(['auth'])->group(function(){
 
     Route::get('/', [ProjectController::class, 'index']);
+    Route::get('/create', [ProjectController::class, 'create']);
+    Route::get('/search', [ProjectController::class, 'search']);
 
     Route::get('/taskboard/{project}', [TaskController::class, 'index']);
     Route::get('/taskboard/{task}/edit', [TaskController::class, 'edit']);
@@ -21,6 +23,7 @@ Route::prefix('projects')->middleware(['auth'])->group(function(){
     Route::post('/task/comment', [TaskController::class, 'addComment']);
 
 
+    Route::post('/changestatus', [ProjectController::class, 'status']);
     Route::get('/{project}/edit', [ProjectController::class, 'edit']);
     Route::post('/{project}/update', [ProjectController::class, 'update']);
     Route::post('/{project}/projectupdate', [ProjectController::class, 'projectupdate']);

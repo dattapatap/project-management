@@ -16,17 +16,47 @@ use Carbon\Carbon;
 use DB;
 use Exception;
 use Illuminate\Http\Request;
+use Log;
 use Response;
 use Validator;
 
 class ProjectController extends Controller
 {
     public function index(Request $request){
-        $projects = DepartmentProjects::with('tasks')->get();
+        $projects = DepartmentProjects::with('tasks')->with('project_team')->orderby('status', 'desc')->orderby('created_at', 'desc')->get();
+        return view('components.projects.index', compact('projects'))->with('search', '');
+    }
 
-        return view('components.projects.index', compact('projects'));
+
+    public function search(Request $request){
+        $filter = $request->query('search');
+        if (!empty($filter)) {
+            $projects = DepartmentProjects::with('tasks')->with('project_team')
+                        ->whereHas('clients', function($q) use($filter){
+                            $q->where('name', 'like', '%'.$filter.'%');
+                        })
+                        ->whereHas('category', function($q) use($filter){
+                            $q->orwhere('category', '=', $filter);
+                        })
+                        ->whereHas('sub_categories', function($q) use($filter){
+                            $q->orwhere('name', '=', $filter);
+                        })
+                        ->orwhere('status', '=', $filter)
+                        ->orwhere('project_name', '=',$filter)
+                        ->orderby('status', 'desc')->get();
+        }
+        else {
+            $projects = DepartmentProjects::with('tasks')->with('project_team')->orderby('status', 'desc')->orderby('created_at', 'desc')->get();
+        }
+        return view('components.projects.index')->with('projects', $projects)->with('search', $filter);
 
     }
+
+    public function create(){
+        $clients = Clients::where('status', 'Matured')->orderBy('name', 'asc')->get();
+        return view('components.projects.create', compact('clients'));
+    }
+
 
     public function assignToTeam(Request $request){
         $rules = array(
@@ -90,7 +120,7 @@ class ProjectController extends Controller
 
     public function edit(Request $request){
         $projectid = $request->project;
-        $project  = DepartmentProjects::with('client')->where('id', $projectid)->first();
+        $project  = DepartmentProjects::with('clients')->where('id', $projectid)->first();
         if($project)
              return response()->json(['success'=>true, 'project'=> $project ]);
         else
@@ -180,6 +210,49 @@ class ProjectController extends Controller
             }catch(Exception $ex){
                 return response()->json(['code'=>201, 'success'=>false, 'message'=>$ex->getMessage() ], 200);
             }
+        }
+    }
+
+    public function status(Request $request){
+        if($request->status == 'InProgress'){
+            $actStartDt = 'required|date_format:d/m/Y h:i A';
+        }else{
+            $actStartDt = 'nullable';
+        }
+
+        $rules = array(
+            'status'         => 'required|string',
+            'act_start_date' =>  $actStartDt,
+        );
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return Response::json(array( 'status' => 400,'errors' => $validator->getMessageBag()->toArray()), 400);
+        }else{
+                $user = Auth::user();
+                $project  = DepartmentProjects::find($request->projectid);
+                if(!$project)
+                    return response()->json(['code'=>200, "success"=>false, 'message'=> "Project not found, please try again!" ], 200);
+
+                try{
+
+                    if($request->status === 'Completed'){
+                        $project->status = $request->status;
+                        $project->act_start_date  = Carbon::now()->format('Y-m-d H:i');
+                    }else if($request->status === 'InProgress'){
+                        $project->status = $request->status;
+                        $project->act_start_date = Carbon::createFromFormat('d/m/Y h:i A', $request->act_start_date)->format('Y-m-d H:i:s');
+                    }
+                    $project->save();
+
+                    $comment = 'Project status updated as '. $project->status .' by '.$user->name;
+                    DepartmentProjectHistoryController::store($project, $comment , $user->id);
+
+                    return response()->json(['code'=>200, "success"=>true, 'message'=> "Project Status Updated" ], 200);
+
+                }catch(Exception $ex){
+                    Log::error("Task Updation Error : ".$ex->getMessage()." @:@ Line - ". $ex->getLine());
+                    return response()->json(['code'=>200, "success"=>false, 'message'=> "Project status updated, please try again!" ], 200);
+                }
         }
     }
 

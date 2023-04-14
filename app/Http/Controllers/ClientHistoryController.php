@@ -203,7 +203,7 @@ class ClientHistoryController extends Controller
                     $dept->created_date     =   Carbon::now();
                     $dept->project_name     =   $projectnm->name;
                     $dept->start_date       =   Carbon::now();
-                    $dept->status           =   "NOT ASSIGNED";
+                    $dept->status           =   "ToDo";
                     $dept->save();
 
 

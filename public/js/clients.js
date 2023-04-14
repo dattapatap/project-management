@@ -60,7 +60,7 @@ $(document).ready(function(){
     $(document).on('click', '.createNewProject', function(){
         $('#mdlNewProject').modal('show');
         $('#client_name').val($(this).attr('clientnm'));
-        $('#client-id').val($(this).attr('client'));
+        $('#clientsid').val($(this).attr('client'));
     });
 
     tinymce.init({
@@ -82,7 +82,7 @@ $(document).ready(function(){
         $('#category').empty().append('<option selected="selected" value="">Select Category</option>');
         $.ajax({
             type: 'GET',
-            url: base_url + "/department/category",
+            url: base_url + "/projectcategory/subcategories",
             data: {'deptid' : dept_value },
             success: function(response) {
                 if(response.status = true){
@@ -137,8 +137,6 @@ $(document).ready(function(){
             }
 
         });
-
-
     })
 
 })
