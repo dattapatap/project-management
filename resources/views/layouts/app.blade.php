@@ -260,13 +260,6 @@
                                     <i class="mdi mdi mdi-folder-multiple"></i><span>Projects</span>
                                 </a>
                             </li>
-
-                            <li>
-                                <a class="waves-effect" href="javascript: void(0);">
-                                    <i class="mdi mdi-calendar-outline"></i><span>Events</span>
-                                </a>
-                            </li>
-
                         @endif
 
 

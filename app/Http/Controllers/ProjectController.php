@@ -89,7 +89,7 @@ class ProjectController extends Controller
                 $teamproj->save();
 
                 // Update Project status
-                $project->status = 'TODO';
+                $project->status = 'ToDo';
                 $project->save();
 
                 // send notifications to team member

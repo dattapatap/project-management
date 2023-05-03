@@ -173,8 +173,8 @@
                                                     <ul class="project-users">
                                                         <li class="cursor">
                                                             <img data-toggle="tooltip" data-placement="top"
-                                                                aria-label="Not Assigned"
-                                                                data-bs-original-title="Not Assigned"
+                                                                aria-label="Assigned"
+                                                                data-bs-original-title="Assigned"
                                                                 src="{{ asset('img/users.png') }}">
                                                         </li>
                                                     </ul>
@@ -226,22 +226,15 @@
                 </div>
             @endif
         </div>
-        {{--  End New Projects --}}
-
 
     </div>
 @endsection
 
 @section('component')
     @include('components.projects.components.assigntoteam')
-
     @include('components.projects.components.editproject')
-
     @include('components.projects.components.projectupdate')
-
     @include('components.projects.components.projecttask')
-
     @include('components.projects.components.projectstatus')
-
 @endsection
 

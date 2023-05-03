@@ -5,6 +5,8 @@
 
 use App\Models\ClientDomains;
 use App\Models\Clients;
+use App\Models\DepartmentProjects;
+use App\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -43,6 +45,39 @@ function expiredDomains(){
 
     return $expired;
 }
+
+
+
+function projects($category, $user)
+{
+    if($user->hasRole('Project-Manager')){
+        if($category == 'ALL')
+            return DepartmentProjects::count();
+
+        return DepartmentProjects::where('status', $category)->count();
+    }
+
+    if($user->hasRole('Team-Leader')){
+        $projects = DepartmentProjects::where('status', $category)->count();
+    }
+
+}
+
+function tasks($category, $user)
+{
+    if($user->hasRole('Project-Manager')){
+        if($category == 'ALL')
+            return Task::count();
+
+        return Task::where('status', $category)->count();
+    }
+
+    if($user->hasRole('Team-Leader')){
+        $projects = Task::where('status', $category)->count();
+    }
+
+}
+
 
 
 ?>

@@ -37,7 +37,7 @@ class ClientMatured extends Notification implements  ShouldBroadcastNow
             'header' =>'New Project has been Assigned',
             'category' => $this->category,
             'data' => "Please check the new '{$this->project->project_name}' has been assigned",
-            'link'=> env('APP_URL')."/clients/".base64_encode($this->client->id)."/development",
+            'link'=> env('APP_URL')."/clients/".base64_encode($this->project->id)."/development",
         ];
     }
 
@@ -48,7 +48,7 @@ class ClientMatured extends Notification implements  ShouldBroadcastNow
                 'header' =>'New Project has been Assigned',
                 'category' => $this->category,
                 'data' => "Please check the new '{$this->project->project_name}' has been assigned",
-                'link'=> env('APP_URL')."/clients/".base64_encode($this->client->id)."/development",
+                'link'=> env('APP_URL')."/projects/".base64_encode($this->project->id),
         ];
         return new BroadcastMessage([ "notifications" => $notification ]);
     }

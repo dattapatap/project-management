@@ -170,6 +170,21 @@
     border-top: 2px solid #30d1b7;
 }
 
+.card-top-border-success{
+    border-top: 2px solid #11c46e!important;
+}
+.card-top-border-info{
+    border-top: 2px solid #0db4d6!important;
+}
+.card-top-border-warning{
+    border-top: 2px solid #f1b44c!important;
+}
+.card-top-border-danger{
+    border-top: 2px solid #fb4d53;
+}
+
+
+
 .nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
     color: #ffffff;
     background-color: #48a697;
