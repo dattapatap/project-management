@@ -11,12 +11,13 @@ class Department extends Model
     use HasFactory;
     use SoftDeletes;
 
-    public function branch(){
-        return $this->belongsTo(Branches::class, 'branchid','id')->select(['id','name','code'])->orderBy('id', 'asc');
+    public function branch()
+    {
+        return $this->belongsTo(Branches::class, 'branchid', 'id')->select(['id', 'name', 'code'])->orderBy('id', 'asc');
     }
 
-    public function users(){
-        return $this->hasMany(UserDepartment::class, 'department', 'id')->select('department', 'id', 'user');
+    public function users()
+    {
+        return $this->hasMany(UserDepartment::class, 'department', 'id');
     }
-
 }

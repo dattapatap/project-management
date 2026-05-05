@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('notification:empty')->dailyAt('14:29');
         $schedule->command('sales:dailysalesreminder')->dailyAt('14:29');
-
+        $schedule->command('domain:reminders')->dailyAt('09:00');
     }
 
     /**
@@ -28,7 +28,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

@@ -3,12 +3,12 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title mt-0">Project Status:</h5>
-                <button type="button" class="close btnmdlclose" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true" style="font-size: 2rem; line-height: 1;">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_project_status" class="custom-validation"  method="POST">
+                <form id="frm_project_status" class="custom-validation" method="POST">
                     @csrf
                     <input type="hidden" value="" name="projectstatusid" id="projectstatusid">
                     <div class="row">
@@ -21,18 +21,17 @@
                             </select>
                             <span class="invalid-feedback" id="status-input-error" role="alert"> <strong></strong></span>
                         </div>
-                        <div class="col-md-12 mt-2 taskdate" style="display: none;">
+                        {{-- <div class="col-md-12 mt-2 taskdate" style="display: none;">
                             <label>Actual Project Start Date <span class="text_required">*</span></label>
                             <input type="text" name="proj_start_date" id="proj_start_date" class="form-control">
                             <span class="invalid-feedback" id="proj_start_date-input-error" role="alert"> <strong></strong></span>
-                        </div>
+                        </div> --}}
                     </div>
 
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Update</button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Update</button>
                             </div>
                         </div>
                     </div>
@@ -44,23 +43,20 @@
 </div>
 
 <script>
-
-    $(document).ready(function(){
-        $(document).on('click', '.btn_project_status', function(eve){
+    $(document).ready(function() {
+        $(document).on('click', '.btn_project_status', function(eve) {
             $('#projectstatusid').val($(this).attr('projectid'))
+            $('#status').val($(this).attr('status')).change(); // Pre-select current status
             $('#mdlChangeStatus').modal('show');
         });
 
-        $('#status').change(function(){
-            if($(this).val() == 'InProgress'){
-                $('.taskdate').css('display', 'block');
-            }else{
-                $('.taskdate').css('display', 'none');
-            }
+        $('#status').change(function() {
+            // Field removed as per user request
+            $('.taskdate').css('display', 'none');
         })
 
         $('#proj_start_date').datetimepicker({
-            minDate: moment().subtract(10,'d'),
+            minDate: moment().subtract(10, 'd'),
             allowInputToggle: false,
             locale: moment().local('en'),
             format: 'DD/MM/YYYY hh:mm A',
@@ -77,25 +73,28 @@
             }
         })
 
-        $('#frm_project_status').on('submit', function(ev){
+        $('#frm_project_status').on('submit', function(ev) {
             ev.preventDefault();
             $(".invalid-feedback").children("strong").text("");
             $.ajax({
                 type: 'POST',
-                url: base_url +'/projects/changestatus',
-                data: { 'status': $('#status').val(), 'projectid':$('#projectstatusid').val(),
-                        'act_start_date':$('#proj_start_date').val() },
+                url: base_url + '/projects/changestatus',
+                data: {
+                    'status': $('#status').val(),
+                    'projectid': $('#projectstatusid').val(),
+                    'act_start_date': $('#proj_start_date').val()
+                },
                 beforeSend: function() {
                     $('#cover-spin').css('display', 'block');
                 },
                 success: function(response) {
                     $('#cover-spin').css('display', 'none');
-                    if(response.success == true){
+                    if (response.success == true) {
                         alertify.success(response.message);
                         $('#mdlChangeStatus').modal('hide');
                         $('#frm_project_status')[0].reset();
                         location.reload();
-                    }else{
+                    } else {
                         alertify.error(response.message);
                     }
                 },
@@ -114,5 +113,4 @@
         })
 
     })
-
 </script>

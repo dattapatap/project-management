@@ -63,6 +63,26 @@ class DashboardController extends Controller
             //     );
 
 
+        }else if($user->hasRole('Admin')){
+            $sales  = DB::select('SELECT DATE_FORMAT(date, "%b") AS month, IFNULL( COUNT(DISTINCT ch.client), 0) as total
+                            FROM (
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 1 MONTH AS date UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 2 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 3 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 4 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 5 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 6 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 7 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 8 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 9 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 10 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 11 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 12 MONTH
+                            ) AS dates
+                            LEFT JOIN client_histories as ch
+                            ON (ch.created_at >= date AND ch.created_at < date + INTERVAL 1 MONTH AND ch.status="Matured")
+                            GROUP BY date'
+                );
         }
         return response()->json(['code'=>200,'status'=>true, 'sales'=> $sales ], 200);
     }

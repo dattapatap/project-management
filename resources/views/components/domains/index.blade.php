@@ -38,13 +38,24 @@
                                     <strong>Warning!</strong> Better check yourself, you're not looking too good.
                                 </div> --}}
                                 @if($expired > 0)
-                                    <div class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                            <span aria-hidden="true">×</span>
-                                        </button>
-                                        <strong>{{ $expired }}</strong> Domains has been expired.
-                                    </div>
-                                @endif
+                                    <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
+                                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                             <span aria-hidden="true">×</span>
+                                         </button>
+                                         <i class="mdi mdi-alert-circle-outline mr-2"></i>
+                                         <strong>{{ $expired }}</strong> Domains have already expired!
+                                     </div>
+                                 @endif
+
+                                @if($expiring_soon > 0)
+                                    <div class="alert alert-warning alert-dismissible fade show mb-0" role="alert">
+                                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                             <span aria-hidden="true">×</span>
+                                         </button>
+                                         <i class="mdi mdi-calendar-alert mr-2"></i>
+                                         <strong>{{ $expiring_soon }}</strong> Domains are expiring within the next 15 days.
+                                     </div>
+                                 @endif
                             </div>
                         </div>
                     </div>
@@ -67,6 +78,7 @@
                                         <th>Contact Info</th>
                                         <th>Mobile</th>
                                         <th> Registered Date </th>
+                                        <th> Renewed Date </th>
                                         <th> Expiry Date </th>
                                         <th> Renew </th>
                                     </tr>

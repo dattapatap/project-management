@@ -46,7 +46,7 @@
                                         <i class="mdi mdi-dots-vertical"></i>
                                     </a>
                                     <div class="dropdown-menu dropdown-menu-start">
-                                        <a class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
+                                        <a class="dropdown-item btn_edit_department" dept_name="{{ $item->name }}">
                                                 <i class="mdi mdi-pencil"></i> Edit
                                         </a>
                                         {{-- <form method="post" action="{{ route('departments.destroy',[ $item->id ]) }}">
@@ -260,11 +260,11 @@
         });
 
         $('.btn_edit_department').click(function(e){
-            let dept_id = $(this).attr('dept_id')
-            console.log(dept_id);
+            let dept_name = $(this).attr('dept_name')
+            console.log(dept_name);
             $.ajax({
                 type: 'GET',
-                url: 'departments/' + dept_id + '/edit',
+                url: 'departments/' + dept_name + '/edit',
                 success: function(response) {
                     if(response.status == true){
                         let dept = response.data;

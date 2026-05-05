@@ -41,8 +41,11 @@
     <link href="{{ asset('assets/libs/alertifyjs/build/css/themes/default.min.css') }}" rel="stylesheet"
         type="text/css">
     <link href="{{ asset('assets/libs/select2/select2.css') }}" rel="stylesheet" type="text/css">
-    <link href="{{ asset('assets/libs/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css') }}"
-        rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="{{ asset('assets/libs/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('css/reports.css') }}">
+
+    <link href="{{ asset('assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css')}}" rel="stylesheet" type="text/css">
+    <link href="{{ asset('assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" type="text/css">
 
 
     <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
@@ -88,13 +91,13 @@
                             aria-expanded="false">
                             <i class="mdi mdi-bell-outline"></i>
                             @if ($unreadNotf > 0)
-                                <span class="badge badge-danger badge-pill">
-                                    @if ($unreadNotf >= 99)
-                                        {{ '+99' }}
-                                    @else
-                                        {{ $unreadNotf }}
-                                    @endif
-                                </span>
+                            <span class="badge badge-danger badge-pill">
+                                @if ($unreadNotf >= 99)
+                                {{ '+99' }}
+                                @else
+                                {{ $unreadNotf }}
+                                @endif
+                            </span>
                             @endif
                         </button>
                         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right p-0"
@@ -106,50 +109,49 @@
                                     </div>
                                     <div class="col-auto">
                                         @if ($unreadNotf > 0)
-                                            <span class="badge badge-pill badge-danger">New {{ $unreadNotf }}</span>
+                                        <span class="badge badge-pill badge-danger">New {{ $unreadNotf }}</span>
                                         @endif
                                     </div>
                                 </div>
                             </div>
                             <div data-simplebar="" style="max-height: 230px;" class="dy-notif">
-
                                 @forelse ($notifications as $items)
-                                    <div
-                                        class="notifications @if ($items->unread()) unread @else  read @endif">
-                                        <a href="{{ $items->data['link'] }}"
-                                            class="text-reset notification-item  @if ($items->unread()) mark-as-read @endif"
-                                            data-id="{{ $items->id }}">
-                                            <div class="media">
-                                                <img src="{{ Avatar::create($items->data['category'])->toBase64() }}"
-                                                    class="mr-3 rounded-circle avatar-xs" alt="user-pic">
-                                                <div class="media-body">
-                                                    <h6 class="mt-0 mb-1" style="color: #090909;">
-                                                        {!! htmlspecialchars_decode($items->data['header']) !!}</h6>
-                                                    <div class="font-size-12 text-muted">
-                                                        <p class="mb-1">{!! htmlspecialchars_decode($items->data['data']) !!}</p>
-                                                        <p class="mb-0"><i class="mdi mdi-clock-outline"></i>
-                                                            {{ Carbon\Carbon::parse($items->created_at)->diffForHumans() }}
-                                                        </p>
-                                                    </div>
+                                <div
+                                    class="notifications @if ($items->unread()) unread @else  read @endif">
+                                    <a href="{{ $items->data['link'] }}"
+                                        class="text-reset notification-item  @if ($items->unread()) mark-as-read @endif"
+                                        data-id="{{ $items->id }}">
+                                        <div class="media">
+                                            <img src="{{ Avatar::create($items->data['category'])->toBase64() }}"
+                                                class="mr-3 rounded-circle avatar-xs" alt="user-pic">
+                                            <div class="media-body">
+                                                <h6 class="mt-0 mb-1" style="color: #090909;">
+                                                    {!! htmlspecialchars_decode($items->data['header']) !!}</h6>
+                                                <div class="font-size-12 text-muted">
+                                                    <p class="mb-1">{!! htmlspecialchars_decode($items->data['data']) !!}</p>
+                                                    <p class="mb-0"><i class="mdi mdi-clock-outline"></i>
+                                                        {{ Carbon\Carbon::parse($items->created_at)->diffForHumans() }}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        </a>
-                                    </div>
-                                @empty
-                                    <a href="#" class="text-reset notification-item ">
-                                        <div class="d-flex" style="justify-content: center;">
-                                            <p class="mb-0 text-danger text-center"> No new notifications </p>
                                         </div>
                                     </a>
+                                </div>
+                                @empty
+                                <a href="#" class="text-reset notification-item ">
+                                    <div class="d-flex" style="justify-content: center;">
+                                        <p class="mb-0 text-danger text-center"> No new notifications </p>
+                                    </div>
+                                </a>
                                 @endforelse
                             </div>
                             @if ($notifications->count() > 0)
-                                <div class="p-2 border-top text-center">
-                                    <a class="btn btn-sm btn-link font-size-14 text-center"
-                                        href="{{ route('notifications') }}">
-                                        <i class="mdi mdi-arrow-right-circle me-1"></i> View More..
-                                    </a>
-                                </div>
+                            <div class="p-2 border-top text-center">
+                                <a class="btn btn-sm btn-link font-size-14 text-center"
+                                    href="{{ route('notifications') }}">
+                                    <i class="mdi mdi-arrow-right-circle me-1"></i> View More..
+                                </a>
+                            </div>
                             @endif
                         </div>
                     </div>
@@ -160,11 +162,11 @@
                         <button type="button" class="btn header-item waves-effect" id="page-header-user-dropdown"
                             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             @if ($user->profile)
-                                <img class="rounded-circle header-profile-user"
-                                    src="{{ asset('storage/' . $user->profile) }}" alt="Header Avatar">
+                            <img class="rounded-circle header-profile-user"
+                                src="{{ asset('storage/' . $user->profile) }}" alt="Header Avatar">
                             @else
-                                <img class="rounded-circle header-profile-user"
-                                    src="{{ Avatar::create($user->name)->toBase64() }}" alt="{{ $user->name }}">
+                            <img class="rounded-circle header-profile-user"
+                                src="{{ Avatar::create($user->name)->toBase64() }}" alt="{{ $user->name }}">
                             @endif
                             <span class="d-none d-sm-inline-block ml-1">{{ $user->name }}</span>
                             <i class="mdi mdi-chevron-down d-none d-sm-inline-block"></i>
@@ -177,10 +179,10 @@
                                 Profile
                             </a>
                             @if ($user->hasRole('Admin'))
-                                <a class="dropdown-item" href="{{ route('profile') }}">
-                                    <i class="mdi mdi-settings font-size-16 align-middle mr-1"></i>
-                                    Change Password
-                                </a>
+                            <a class="dropdown-item" href="{{ route('changepassword') }}">
+                                <i class="mdi mdi-settings font-size-16 align-middle mr-1"></i>
+                                Change Password
+                            </a>
                             @endif
 
 
@@ -254,113 +256,143 @@
                                 <i class="mdi mdi-view-dashboard"></i><span>Home</span>
                             </a>
                         </li>
-                        @if ($user->hasRole(['Project-Manager']) && $user->departments->department == 2)
-                            <li>
-                                <a class="waves-effect" href="{{ url('/projects') }}">
-                                    <i class="mdi mdi mdi-folder-multiple"></i><span>Projects</span>
-                                </a>
-                            </li>
+                        @if ($user->hasRole(['Admin', 'Project-Manager', 'Team-Leader']) && ($user->hasRole('Admin') || ($user->departments && $user->departments->department == 2)))
+                        <li class="{{ request()->is('projects*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('projects*') ? 'active' : '' }}">
+                                <i class="mdi mdi-folder-multiple"></i>
+                                <span>Projects</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="{{ request()->is('projects*') ? 'true' : 'false' }}">
+                                <li class="{{ request()->is('projects') ? 'mm-active' : '' }}"><a href="{{ url('/projects') }}" class="{{ request()->is('projects') ? 'active' : '' }}">All Projects</a></li>
+                                <li class="{{ request()->is('projects/create') ? 'mm-active' : '' }}"><a href="{{ url('/projects/create') }}" class="{{ request()->is('projects/create') ? 'active' : '' }}">Create Project</a></li>
+                            </ul>
+                        </li>
                         @endif
 
+                        @if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant']))
+                        <li class="{{ request()->is('projects*') ? 'mm-active' : '' }}">
+                            <a href="{{ url('/projects') }}" class="waves-effect {{ request()->is('projects*') ? 'active' : '' }}">
+                                <i class="mdi mdi-folder-multiple"></i>
+                                <span>My Projects</span>
+                            </a>
+                        </li>
+                        <li class="{{ request()->is('my-insights*') ? 'mm-active' : '' }}">
+                            <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
+                                <i class="mdi mdi-chart-line"></i>
+                                <span>My Insights</span>
+                            </a>
+                        </li>
+                        @endif
+
+                        @if ($user->hasRole(['Admin', 'Project-Manager']))
+                        <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
+                                <i class="mdi mdi-account-group-outline"></i>
+                                <span>Company</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="{{ request()->is('client*') || request()->is('clients*') ? 'true' : 'false' }}">
+                                <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">Companies</a></li>
+                            </ul>
+                        </li>
+                        @endif
 
 
 
                         @if ($user->hasRole('Admin'))
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="mdi mdi-account-multiple-outline"></i>
-                                    <span>Users</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="{{ url('/departments') }}">Departments</a></li>
-                                    <li><a href="{{ url('/users') }}">Users</a></li>
-                                </ul>
-                            </li>
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="mdi mdi-account-group-outline"></i>
-                                    <span>Company</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="{{ url('client/Fresh') }}">Companies</a></li>
-                                </ul>
-                            </li>
-                            <li>
-                                <a class="waves-effect" href="{{ url('/domains') }}">
-                                    <i class="mdi mdi-domain-plus"></i><span>Domains</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="waves-effect" href="{{ url('/payments') }}">
-                                    <i class="mdi mdi-wallet-outline"></i><span>Payments</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="mdi mdi-note-text"></i>
-                                    <span>Reports</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="{{ url('mysts/searchsts') }}">STS</a></li>
-                                    <li><a href="{{ url('reports/dsr/searchdsr') }}">DSR</a></li>
-                                    <li><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
-                                </ul>
-                            </li>
+                        <li class="{{ request()->is('users*') || request()->is('departments*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('users*') || request()->is('departments*') ? 'active' : '' }}">
+                                <i class="mdi mdi-account-multiple-outline"></i>
+                                <span>Users</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="{{ request()->is('users*') || request()->is('departments*') ? 'true' : 'false' }}">
+                                <li class="{{ request()->is('departments*') ? 'mm-active' : '' }}"><a href="{{ url('/departments') }}" class="{{ request()->is('departments*') ? 'active' : '' }}">Departments</a></li>
+                                <li class="{{ request()->is('users*') ? 'mm-active' : '' }}"><a href="{{ url('/users') }}" class="{{ request()->is('users*') ? 'active' : '' }}">Users</a></li>
+                            </ul>
+                        </li>
+                        <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
+                                <i class="mdi mdi-account-group-outline"></i>
+                                <span>Company</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="{{ request()->is('client*') || request()->is('clients*') ? 'true' : 'false' }}">
+                                <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">Companies</a></li>
+                            </ul>
+                        </li>
+                        <li class="{{ request()->is('domains*') ? 'mm-active' : '' }}">
+                            <a class="waves-effect {{ request()->is('domains*') ? 'active' : '' }}" href="{{ url('/domains') }}">
+                                <i class="mdi mdi-domain-plus"></i><span>Domains</span>
+                            </a>
+                        </li>
+                        <li class="{{ request()->is('payments*') ? 'mm-active' : '' }}">
+                            <a class="waves-effect {{ request()->is('payments*') ? 'active' : '' }}" href="{{ url('/payments') }}">
+                                <i class="mdi mdi-wallet-outline"></i><span>Payments</span>
+                            </a>
+                        </li>
                         @endif
 
                         @if ($user->hasRole(['Sales-Executive', 'Team-Leader']) && $user->departments->department == 1)
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="mdi mdi-cloud-print-outline"></i>
-                                    <span>My CRM </span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="{{ url('mysts/searchsts') }}">Search STS</a></li>
-                                    <li><a href="{{ route('profile') }}">Profile</a></li>
-                                    <li><a href="{{ route('changepassword') }}">Change Password</a></li>
-                                </ul>
-                            </li>
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="mdi mdi-account-group-outline"></i>
-                                    <span>Company</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="{{ url('clients/create') }}">New Company</a></li>
-                                    @if ($user->hasRole(['Sales-Executive']))
-                                        <li><a href="{{ url('client/Fresh') }}">My Companies</a></li>
-                                    @else
-                                        <li><a href="{{ url('client/Fresh') }}">Companies</a></li>
-                                    @endif
-                                </ul>
-                            </li>
+                        <li class="{{ request()->is('profile*') || request()->is('changepassword*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('profile*') || request()->is('changepassword*') ? 'active' : '' }}">
+                                <i class="mdi mdi-cloud-print-outline"></i>
+                                <span>My CRM </span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="{{ request()->is('profile*') || request()->is('changepassword*') ? 'true' : 'false' }}">
+                                <li><a href="{{ url('mysts/searchsts') }}">Search STS</a></li>
+                                <li class="{{ request()->is('profile*') ? 'mm-active' : '' }}"><a href="{{ route('profile') }}" class="{{ request()->is('profile*') ? 'active' : '' }}">Profile</a></li>
+                                <li class="{{ request()->is('changepassword*') ? 'mm-active' : '' }}"><a href="{{ route('changepassword') }}" class="{{ request()->is('changepassword*') ? 'active' : '' }}">Change Password</a></li>
+                            </ul>
+                        </li>
+                        <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
+                                <i class="mdi mdi-account-group-outline"></i>
+                                <span>Company</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="{{ request()->is('client*') || request()->is('clients*') ? 'true' : 'false' }}">
+                                <li class="{{ request()->is('clients/create*') ? 'mm-active' : '' }}"><a href="{{ url('clients/create') }}" class="{{ request()->is('clients/create*') ? 'active' : '' }}">New Company</a></li>
+                                @if ($user->hasRole(['Sales-Executive']))
+                                <li class="{{ request()->is('client/Fresh') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client/Fresh') ? 'active' : '' }}">My Companies</a></li>
+                                @else
+                                <li class="{{ request()->is('client/Fresh') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client/Fresh') ? 'active' : '' }}">Companies</a></li>
+                                @endif
+                            </ul>
+                        </li>
 
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="mdi mdi-settings-outline"></i>
-                                    <span>DSR</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="{{ url('reports/dsr/searchdsr') }}">DSR</a></li>
-                                    <li><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
-                                </ul>
-                            </li>
+                        <li>
+                            <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                <i class="mdi mdi-settings-outline"></i>
+                                <span>DSR</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><a href="{{ url('reports/dsr/searchdsr') }}">DSR</a></li>
+                                <li><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
+                            </ul>
+                        </li>
 
                         @endif
 
 
 
-                        @if (!$user->hasRole('Admin'))
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effec">
-                                    <i class="mdi mdi-page-layout-sidebar-right"></i>
-                                    <span>Others</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="https://digitalnock.ngriffinpay.com" target="_blank">My
-                                            Attendance</a></li>
-                                </ul>
-                            </li>
+                        @if($user->hasRole(['Admin', 'Project-Manager']))
+                        <li class="menu-title">Reports</li>
+                        <li class="{{ request()->is('reports/projects*') || request()->is('users*') || request()->is('reports/dsr/salesreports*') || request()->is('mysts*') || request()->is('reports/dsr/searchdsr*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                <i class="mdi mdi-file-chart-outline"></i>
+                                <span>Reports </span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                @if($user->hasRole('Admin'))
+                                <li class="{{ request()->is('mysts*') ? 'mm-active' : '' }}"><a href="{{ url('mysts/searchsts') }}">STS</a></li>
+                                <li class="{{ request()->is('reports/dsr/searchdsr') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/searchdsr') }}">DSR</a></li>
+                                @endif
+
+                                <li class="{{ request()->is('reports/projects*') ? 'mm-active' : '' }}"><a href="{{ route('reports.projects') }}">Projects</a></li>
+                                <li class="{{ request()->is('users*') || request()->is('reports/employee*') ? 'mm-active' : '' }}"><a href="{{ route('reports.employees') }}">Employees Report</a></li>
+                                
+                                @if($user->hasRole('Admin'))
+                                <li class="{{ request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
+                                @endif
+                            </ul>
+                        </li>
                         @endif
 
                     </ul>
@@ -396,14 +428,14 @@
 
     <script type="module">
         window.Echo.private('post_like.{{ $user->id }}')
-             .notification((notification) => {
+            .notification((notification) => {
                 let notif = notification.notifications;
                 swal(notif.header)
-                .then((value) => {
-                    window.location.href = notif.link;
-                });
-         })
-     </script>
+                    .then((value) => {
+                        window.location.href = notif.link;
+                    });
+            })
+    </script>
     <!-- JAVASCRIPT -->
     <script src="{{ asset('assets/libs/metismenu/metisMenu.min.js') }}"></script>
     <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
@@ -418,18 +450,25 @@
     <script src="{{ asset('assets/libs/select2/select2.min.js') }}"></script>
     <script src="{{ asset('assets/libs/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js') }}"></script>
     <script type="text/javascript" src="{{ asset('assets/libs/tinymce/js/tinymce.min.js') }}"></script>
+
+
+    <script src="{{ asset('assets/libs/datatables.net/js/jquery.dataTables.min.js')}}"></script>
+    <script src="{{ asset('assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js')}}"></script>
+    <script src="{{ asset('assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js')}}"></script>
+
     <script src="{{ asset('js/index.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
 
     @if (\Session::has('error'))
-        <script>
-            alertify.error("{!! \Session::get('error') !!}");
-        </script>
+    <script>
+        alertify.error("{!! \Session::get('error') !!}");
+    </script>
     @endif
     @if (\Session::has('success'))
-        <script>
-            alertify.success("{!! \Session::get('success') !!}");
-        </script>
+    <script>
+        alertify.success("{!! \Session::get('success') !!}");
+    </script>
     @endif
 
 

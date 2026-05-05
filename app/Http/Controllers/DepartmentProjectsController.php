@@ -16,6 +16,9 @@ use Illuminate\Http\Request;
 use Response;
 use Validator;
 
+use App\Models\Document;
+use Illuminate\Support\Facades\Storage;
+
 class DepartmentProjectsController extends Controller
 {
     public function createNewProject(Request $request){
@@ -23,10 +26,11 @@ class DepartmentProjectsController extends Controller
         $rules = array(
             'department'    => 'required|numeric',
             'category'      => 'required|numeric',
-            'package'       => 'required|numeric|gt:0',
+            'package'       => 'nullable|numeric',
             'start_date'    => 'required|date',
             'end_date'      => 'required|date',
-            'description'   => 'required|string'
+            'description'   => 'required|string',
+            'documents.*'   => 'nullable|file|max:10240', // Max 10MB per file
         );
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
@@ -47,24 +51,60 @@ class DepartmentProjectsController extends Controller
                 $dept->category         =   $request->department;
                 $dept->sub_category     =   $request->category;
                 $dept->assigned_by      =   $userid;
+                $dept->assigned_to      =   $request->team_leader;
                 $dept->created_date     =   Carbon::now();
                 $dept->project_name     =   $projectnm->name;
                 $dept->start_date       =   Carbon::parse($request->start_date)->format('Y-m-d h:i');
                 $dept->end_date         =   Carbon::parse($request->end_date)->format('Y-m-d h:i');
-                $dept->status           =   "ToDo";
+                $dept->status           =   $request->team_leader ? "InProgress" : "ToDo";
                 $dept->description      =   $request->description;
                 $dept->save();
 
+                // Handle Document Uploads
+                if ($request->hasFile('documents')) {
+                    foreach ($request->file('documents') as $file) {
+                        $originalName = $file->getClientOriginalName();
+                        $fileName = time() . '_' . $originalName;
+                        $path = $file->storeAs('documents/projects/' . $dept->id, $fileName, 'local');
 
-                //Create Client Package
-                $clipack = new ClientPackages();
-                $clipack->client           = $request->post('clientsid');
-                $clipack->project_id       = $dept->id;
-                $clipack->package          = $request->package;
-                $clipack->balance          = $request->package;
-                $clipack->created_by       = $userid;
-                $clipack->updated_by       = $userid;
-                $clipack->save();
+                        Document::create([
+                            'documentable_id'   => $dept->id,
+                            'documentable_type' => DepartmentProjects::class,
+                            'file_name'         => $fileName,
+                            'original_name'     => $originalName,
+                            'file_path'         => $path,
+                            'file_type'         => $file->getClientOriginalExtension(),
+                            'file_size'         => $file->getSize(),
+                            'user_id'           => $userid
+                        ]);
+                    }
+                }
+
+                // If TL is assigned during creation, link to their team
+                if ($request->team_leader) {
+                    $tlTeam = \App\Models\TeamMembers::where('user', $request->team_leader)->where('status', true)->first();
+                    if ($tlTeam) {
+                        \App\Models\TeamProject::create([
+                            'projectid' => $dept->id,
+                            'teamid' => $tlTeam->team,
+                            'assigned_by' => $userid,
+                            'assigned_date' => Carbon::now()
+                        ]);
+                    }
+                }
+
+
+                //Create Client Package (Only if package is provided)
+                if ($request->package) {
+                    $clipack = new ClientPackages();
+                    $clipack->client           = $request->post('clientsid');
+                    $clipack->project_id       = $dept->id;
+                    $clipack->package          = $request->package;
+                    $clipack->balance          = $request->package;
+                    $clipack->created_by       = $userid;
+                    $clipack->updated_by       = $userid;
+                    $clipack->save();
+                }
 
                 // Get Department Members and filter by role
                 $productManager = User::whereHas('roles', function($q){  $q->where('name', 'Project-Manager' ); })->where('status', 'Active')->get();

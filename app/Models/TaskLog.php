@@ -13,5 +13,9 @@ class TaskLog extends Model
         return $this->belongsTo(User::class, 'userid', 'id');
     }
 
+    public function task(){
+        return $this->belongsTo(Task::class, 'taskid', 'id');
+    }
+
 
 }

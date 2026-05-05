@@ -1,12 +1,119 @@
 @extends('layouts.app')
 @section('styles')
-<link href="{{ asset('assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css')}}" rel="stylesheet" type="text/css">
-<link href="{{ asset('assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" type="text/css">
+
+<style>
+    .pm-dashboard-custom-card {
+        border: 1.5px solid #f0f0f0 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .pm-dashboard-custom-card:hover {
+        transform: translateY(-8px);
+        border-color: #556ee6 !important;
+        box-shadow: 0 20px 40px rgba(85, 110, 230, 0.08) !important;
+    }
+
+    .admin-kpi-card {
+        border-radius: 12px !important;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        z-index: 1;
+    }
+
+    .admin-kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .gradient-primary {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .gradient-success {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .gradient-warning {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .gradient-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .admin-kpi-icon {
+        color: rgba(255, 255, 255, 0.8);
+        transition: transform 0.3s ease;
+    }
+
+    .admin-kpi-card:hover .admin-kpi-icon {
+        transform: scale(1.1);
+        color: #ffffff;
+    }
+
+    .trendy-card {
+        transition: all 0.3s ease;
+    }
+
+    .action-btn-trendy {
+        border-radius: 10px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn-trendy:hover {
+        transform: translateY(-2px);
+    }
+
+    .trendy-table th {
+        border-top: none;
+        background-color: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .trendy-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .trendy-table tbody tr:hover {
+        background-color: #fcfcfc;
+    }
+
+    @keyframes pulse-red {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.7);
+        }
+
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(244, 106, 106, 0);
+        }
+
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0);
+        }
+    }
+
+    .pulse {
+        animation: pulse-red 2s infinite;
+    }
+</style>
+
 @endsection
 @section('content')
 
 
-<div class="container-fluid">
+<div class="container-fluid pb-5">
     <!-- start page title -->
     <div class="row">
         <div class="col-12">
@@ -23,304 +130,61 @@
     </div>
     <!-- end page title -->
 
-
-    {{-- Sales Executive  --}}
-    @if($user->hasRole(['Sales-Executive', 'Team-Leader']))
-    <div class="row">
-        <div class="col-xl-4">
-            <div class="col-sm-12 col-xl-12">
-                <div class="card card-top-border">
-                    <div class="card-body">
-                        <div class="media">
-                            <div class="media-body">
-                                <h5 class="font-size-14">Total Sales</h5>
-                            </div>
-                            <div class="avatar-xs">
-                                <span class="avatar-title rounded-circle bg-primary">
-                                    <i class="dripicons-box"></i>
-                                </span>
-                            </div>
-                        </div>
-                        <h3 class="mt-2 align-self-center">{{ getTotalSales($user, $user->role) }}</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-sm-12 col-xl-12">
-                <div class="card card-top-border">
-                    <div class="card-body">
-                        <div class="media">
-                            <div class="media-body">
-                                <h5 class="font-size-14">Todays TBRO</h4>
-                            </div>
-                            <div class="avatar-xs">
-                                <span class="avatar-title rounded-circle bg-primary">
-                                    <i class="dripicons-bell"></i>
-                                </span>
-                            </div>
-                        </div>
-                        <h3 class="mt-2 align-self-center">{{ getTbrosOfToday($user) }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="col-xl-8">
-            <div class="card card-top-border">
-                <div class="card-body">
-                    <h4 class="header-title mb-4">Sales Analytics</h4>
-                    <div class="row justify-content-center">
-                        <div class="col-sm-4">
-                            <div class="text-center">
-                                <p>Sales Month Wise</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="line-column-chart" class="apex-charts" dir="ltr"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card card-top-border">
-                <div class="card-body">
-                    <h4 class="header-title mb-4" style="margin-bottom: 1.5rem!important;">Todays Follow-ups</h4>
-
-                    <div class="table-responsive">
-                        <table id="datatable"
-                            class="table table-bordered dt-responsive table-centered table-nowrap mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Sl</th>
-                                    <th>Company</th>
-                                    <th>Mobile</th>
-                                    <th>Category</th>
-                                    <th>Status</th>
-                                    <th>Remark</th>
-                                    <th> Date </th>
-                                    @if($user->hasRole(['Team-Leader']))
-                                        <th> Sal/Exc </th>
-                                    @endif
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-
-                            </tbody>
-                        </table>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- end row -->
+    {{-- Admin Dashboard --}}
+    @if($user->hasRole('Admin'))
+    @include('dashboards.admin_ui')
     @endif
 
 
-    {{-- Project Manager --}}
+    {{-- Sales Executive / Team Leader Dept 1 --}}
+    @if($user->hasRole(['Sales-Executive', 'Team-Leader']) && $user->departments->department == 1)
+    @include('dashboards.sales_ui')
+    @endif
+
+
+    {{-- Project Manager Dashboard --}}
     @if($user->hasRole(['Project-Manager']))
-    <div class="row">
-        <div class="col-12">
-            <h5>Projects</h5>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-danger">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">Total Project</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-danger">
-                                <i class="dripicons-folder-open"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ projects('ALL', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-warning">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">ToDo Projects</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-warning">
-                                <i class="dripicons-to-do"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ projects('ToDo', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-info">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">Progress Projects</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-info">
-                                <i class="dripicons-checklist"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ projects('InProgress', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-success">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">Completed Projects</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-success">
-                                <i class="dripicons-checkmark"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ projects('Completed', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <hr>
-    <div class="row">
-        <div class="col-12">
-            <h5>Tasks</h5>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-danger">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">Total Tasks</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-danger">
-                                <i class="dripicons-list"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ tasks('ALL', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-warning">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">ToDo Tasks</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-warning">
-                                <i class="dripicons-network-1"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ tasks('ToDo', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-info">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">Progress Tasks</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-info">
-                                <i class="dripicons-graph-line"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ tasks('InProgress', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-top-border-success">
-                <div class="card-body">
-                    <div class="media">
-                        <div class="media-body">
-                            <h5 class="font-size-14">Completed Tasks</h5>
-                        </div>
-                        <div class="avatar-sm">
-                            <span class="avatar-title rounded-circle bg-success">
-                                <i class="dripicons-checkmark"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <h3 class="mt-2 align-self-center">{{ tasks('Completed', $user) }}</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
+    @include('dashboards.pm_ui')
     @endif
-    <!-- end row -->
+
+
+    {{-- Team Leader Dashboard (OD Department) --}}
+    @if($user->hasRole(['Team-Leader']) && $user->departments->department == 2)
+    @include('dashboards.tl_od_ui')
+    @endif
+
+    {{-- Employee / Team Metrics (OD Department) --}}
+    @if($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
+    @include('dashboards.employee_od_ui')
+    @endif
+
+
 </div>
-
-
-
 
 @endsection
 
 @section('scripts')
-<script src="{{ asset('assets/libs/datatables.net/js/jquery.dataTables.min.js')}}"></script>
-<script src="{{ asset('assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
-<script src="{{ asset('assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js')}}"></script>
-<script src="{{ asset('assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js')}}"></script>
 
-@if($user->hasRole(['Sales-Executive', 'Team-Leader'])  && $user->departments->department == 1)
-<script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
-<script src="{{ asset("assets/js/pages/dashboard.init.js")}}"></script>
-<script>
-$(document).ready(function(){
-    $("#datatable").DataTable({
-        processing: true,
-        serverSide: true,
-        responsive: true,
-        ajax :{
-                type: 'GET',
-                url: base_url +"/todays/tbros",
-                error:function(err){ console.log(err);}
-        },
-        columns: [
-            {data: 'DT_RowIndex', name: 'id', orderable: true, searchable: false },
-            {data: 'name', name: 'name', orderable: false, searchable: true,   },
-            {data: 'mobile', name: 'mobile', orderable: false, searchable: true,   },
-            {data: 'category', name: 'history.category', orderable: false, searchable: false,   },
-            {data: 'status', name: 'status', orderable: false, searchable: false,   },
-            {data: 'remarks', name: 'history.remarks', orderable: false, searchable: false,   },
-            {data: 'tbro', name: 'history.tbro', orderable: false, searchable: false,   },
-            @if($user->hasRole(['Admin', 'Team-Leader']))
-            {data: 'telereferral', name: 'telereferral.name', orderable: false, searchable: true,   },
-            @endif
-            {data: 'action',  name: 'action', orderable: false, searchable: false ,   },
-        ],
-    });
-});
-</script>
+{{-- Role-based Scripts --}}
+@if($user->hasRole('Admin'))
+@include('dashboards.admin_scripts')
+@endif
+
+@if($user->hasRole(['Sales-Executive', 'Team-Leader']) && $user->departments->department == 1)
+@include('dashboards.sales_scripts')
+@endif
+
+@if($user->hasRole(['Project-Manager']))
+@include('dashboards.pm_scripts')
+@endif
+
+@if($user->hasRole(['Team-Leader']) && $user->departments->department == 2)
+@include('dashboards.tl_od_scripts')
+@endif
+
+{{-- Employee Scripts --}}
+@if($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
+@include('dashboards.employee_scripts')
 @endif
 
 @endsection

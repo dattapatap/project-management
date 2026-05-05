@@ -27,6 +27,15 @@ class Task extends Model
         return $this->hasMany(TaskComment::class, 'taskid', 'id');
     }
 
+    public function getTotalTimeAttribute()
+    {
+        return $this->logs->sum('time_spend');
+    }
 
 
+
+    public function documents()
+    {
+        return $this->morphMany(Document::class, 'documentable');
+    }
 }

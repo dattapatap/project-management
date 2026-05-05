@@ -27,11 +27,12 @@ class TaskUpdate extends FormRequest
             'task_id'                       => 'required|numeric',
             'txt_task_title'                => 'required|string',
             'txt_task_priority'             => 'required|string',
-            'txt_task_est_start_date'       => 'required|date|date_format:d/m/Y h:i A',
-            'txt_task_est_end_date'         => 'required|date|date_format:d/m/Y h:i A|after:task_est_start_date',
+            'txt_task_est_start_date'       => 'required|date',
+            'txt_task_est_end_date'         => 'required|date|after:txt_task_est_start_date',
             'txt_task_description'          => 'required|between:10,600000',
             'txt_task_user'                 => 'required'
         ];
     }
 
 }
+ 

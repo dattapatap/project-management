@@ -30,7 +30,7 @@ Route::prefix('projects')->middleware(['auth'])->group(function(){
     Route::post('/{project}/addtask', [TaskController::class, 'addtask']);
 
     Route::post('/assignToTeam', [ProjectController::class, 'assignToTeam']);
-
-
+    Route::get('/get-team-leaders', [ProjectController::class, 'getTeamLeadersByCategory']);
+    Route::post('/assign-to-tl', [ProjectController::class, 'assignToTL']);
 
 });

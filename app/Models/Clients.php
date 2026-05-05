@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Clients extends Model
 {
     use HasFactory, SoftDeletes;
+    protected $guarded = [];
 
     //Scopes
     public function scopeStatus(Builder $query, $status): void
@@ -28,12 +31,12 @@ class Clients extends Model
 
     public function scopeFilterStatus(Builder $query, $category, $historyType): void
     {
-        if($category == 'All'){
-            if($historyType == 'STS')
+        if ($category == 'All') {
+            if ($historyType == 'STS')
                 $query->whereIn('status', ['Fresh', 'Followup', 'Meeting Fixed', 'Not Interested']);
             else
                 $query->whereIn('status', ['Hot Prespective', 'Warm Prespective', 'Matured', 'Not Interested']);
-        }else{
+        } else {
             $query->where('status',  $category);
         }
     }
@@ -42,36 +45,38 @@ class Clients extends Model
     //End Scopes
 
 
-    public function referral(){
+    public function referral(): HasOne
+    {
         return $this->hasOne(User::class, 'id', 'ref_user');
     }
 
-    public function telereferral(){
+    public function telereferral(): HasOne
+    {
         return $this->hasOne(User::class, 'id', 'tele_ref_user');
     }
 
-    public function histories(){
+    public function histories(): HasMany
+    {
         return $this->hasMany(ClientHistory::class, 'client', 'id');
     }
 
-    public function history(){
+    public function history(): HasOne
+    {
         return $this->hasOne(ClientHistory::class, 'client', 'id');
     }
 
-    public function docs(){
+    public function docs(): HasMany
+    {
         return $this->hasMany(ClientDocs::class, 'client', 'id')->withTrashed();
     }
 
-    public function projects(){
+    public function projects(): HasMany
+    {
         return $this->hasMany(DepartmentProjects::class, 'client', 'id');
     }
 
-    public function package(){
+    public function package(): HasMany
+    {
         return $this->hasMany(ClientPackages::class, 'client', 'id');
     }
-
-
-
-
-
 }

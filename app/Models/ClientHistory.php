@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class ClientHistory extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
     public function client(){
         return $this->hasOne(Clients::class, 'id', 'client')->withTrashed();

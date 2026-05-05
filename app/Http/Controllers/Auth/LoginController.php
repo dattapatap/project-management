@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
+use App\Models\UserActivity;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,9 @@ class LoginController extends Controller
 
                 $user = Auth::user();
                 if($user->status === 'Active'){
+                   $user->last_login_at = now();
+                   $user->save();
+                   UserActivity::log('Login', 'User logged in successfully');
                    return redirect()->intended();
                 }else{
                     Session::flush();
@@ -57,6 +61,7 @@ class LoginController extends Controller
 
 
     public function logout() {
+        UserActivity::log('Logout', 'User logged out');
         $user = Auth::user();
         Session::flush();
         Auth::logout();

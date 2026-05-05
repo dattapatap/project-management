@@ -24,7 +24,7 @@
                         </div>
                         <div class="col-md-12 mt-2 taskdate" style="display: none;">
                             <label>Actual Task Start Date <span class="text_required">*</span></label>
-                            <input type="text" name="act_start_date" id="act_start_date" class="form-control">
+                            <input type="datetime-local" name="act_start_date" id="act_start_date" class="form-control" value="{{ date('Y-m-d\TH:i') }}">
                             <span class="invalid-feedback" id="act_start_date-input-error" role="alert"> <strong></strong></span>
                         </div>
                     </div>
@@ -58,24 +58,6 @@
                 $('.taskdate').css('display', 'block');
             }else{
                 $('.taskdate').css('display', 'none');
-            }
-        })
-
-        $('#act_start_date').datetimepicker({
-            minDate: moment().subtract(1,'d'),
-            allowInputToggle: false,
-            locale: moment().local('en'),
-            format: 'DD/MM/YYYY hh:mm A',
-            icons: {
-                time: 'mdi mdi-clock-outline',
-                date: 'fa fa-calendar',
-                up: 'fa fa-chevron-up',
-                down: 'fa fa-chevron-down',
-                previous: 'fa fa-chevron-left',
-                next: 'fa fa-chevron-right',
-                today: 'fa fa-check',
-                clear: 'fa fa-trash',
-                close: 'mdi mdi-clock-outline'
             }
         })
 

@@ -1,7 +1,15 @@
 // Body
-$body-bg: #f8fafc;
+$body-bg: #f3f4f6;
 
 // Typography
-$font-family-sans-serif: 'Nunito', sans-serif;
+$font-family-sans-serif: 'Inter', sans-serif;
 $font-size-base: 0.9rem;
 $line-height-base: 1.6;
+
+// Colors
+$primary: #378276; // Darker version of #48a697
+$secondary: #6c757d;
+$success: #11c46e;
+$info: #0db4d6;
+$warning: #f1b44c;
+$danger: #fb4d53;

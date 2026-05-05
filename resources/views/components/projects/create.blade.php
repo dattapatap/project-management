@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="page-title-box d-flex align-items-center justify-content-between">
                 <div class="pb-2 d-flex align-items-center justify-content-between">
-                    <a href="{{ url('/projects') }}" class="btn-back" >
+                    <a href="{{ url('/projects') }}" class="btn-back">
                         <i class="mdi mdi-keyboard-backspace fs-20"></i>
                     </a>
                 </div>
@@ -31,78 +31,103 @@
                     <h4 class="header-title"> New Project </h4>
                 </div>
                 <div class="card-body">
-                    <form id="frm_create_new_project" class="custom-validation"  method="POST">
+                    <form id="frm_create_new_project" class="custom-validation" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="row">
                             <div class="col-4">
-                                    <label> Client <span class="text_required">*</span></label>
-                                    <select class="form-control select2" name="clientsid" id="clientsid" width="100%" >
-                                        <option selected value> Select Department</option>
-                                        @foreach ($clients as $item)
-                                            <option value="{{ $item->id }}"> {{ $item->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <span class="invalid-feedback" id="clientsid-input-error" role="alert"> <strong></strong></span>
+                                <label class="d-flex justify-content-between align-items-center mb-1">
+                                    <span>Client <span class="text_required">*</span></span>
+                                    <button type="button" class="btn btn-sm btn-success py-0 px-2" data-toggle="modal" data-target="#addClientModal" title="Add New Client">
+                                        <i class="mdi mdi-plus"></i>
+                                    </button>
+                                </label>
+                                <select class="form-control select2" name="clientsid" id="clientsid" style="width: 100%;">
+                                    <option selected value> Select Client</option>
+                                    @foreach ($clients as $item)
+                                    <option value="{{ $item->id }}"> {{ $item->name }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="invalid-feedback" id="clientsid-input-error" role="alert"> <strong></strong></span>
                             </div>
 
                             <div class="col-4">
                                 <label> Project Department( Category ) <span class="text_required">*</span></label>
                                 @php
-                                    $departments = DB::table('project_category')->where('deleted_at', null)->orderBy('id', 'asc')->get();
+                                $departments = DB::table('project_category')->where('deleted_at', null)->orderBy('id', 'asc')->get();
                                 @endphp
-                                <select class="form-control select2" name="department" id="department" width="100%"  >
-                                    <option selected value> Select Category</option>
+                                <select class="form-control select2" name="{{ $user->hasRole('Team-Leader') ? '' : 'department' }}" id="department" width="100%" {{ $user->hasRole('Team-Leader') ? 'disabled' : '' }}>
                                     @foreach ($departments as $item)
-                                        <option value="{{ $item->id }}"> {{ $item->category }}</option>
+                                    <option value="{{ $item->id }}" {{ ($item->id == 1) ? 'selected' : '' }}> {{ $item->category }}</option>
                                     @endforeach
                                 </select>
+                                @if($user->hasRole('Team-Leader'))
+                                    <input type="hidden" name="department" value="1">
+                                @endif
                                 <span class="invalid-feedback" id="department-input-error" role="alert"><strong></strong></span>
-
-
                             </div>
+
+                            <div class="col-4">
+                                <label> Team Leader </label>
+                                <select class="form-control select2" name="{{ $user->hasRole('Team-Leader') ? '' : 'team_leader' }}" id="team_leader" style="width: 100%;" {{ $user->hasRole('Team-Leader') ? 'disabled' : '' }}>
+                                    @if($user->hasRole('Team-Leader'))
+                                        <option value="{{ $user->id }}" selected>{{ $user->name }}</option>
+                                    @else
+                                        <option selected value=""> Select Team Leader </option>
+                                    @endif
+                                </select>
+                                @if($user->hasRole('Team-Leader'))
+                                    <input type="hidden" name="team_leader" value="{{ $user->id }}">
+                                @endif
+                                <span class="invalid-feedback" id="team_leader-input-error" role="alert"> <strong></strong></span>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
                             <div class="col-4">
                                 <label> Sub Category </label>
                                 <div class="form-group">
-                                    <select class="form-control select2" name="category" id="category" style="width:100%"  tabindex="3">
+                                    <select class="form-control select2" name="category" id="category" style="width:100%" tabindex="3">
                                         <option selected value> Select Sub Category</option>
                                     </select>
                                     <span class="invalid-feedback" id="category-input-error" role="alert"><strong></strong></span>
                                 </div>
                             </div>
-                            <div class="col-3">
-                                <label> Package <span class="text_required">*</span></label>
+                            <div class="col-4">
+                                <label> Package </label>
                                 <div class="form-group">
                                     <input type="number" class="form-control" name="package" id="package" placeholder="Package" tabindex="4"
-                                    onKeyPress="return isNumberKey(event);">
+                                        onKeyPress="return isNumberKey(event);">
                                     <span class="invalid-feedback" id="package-input-error" role="alert">
                                         <strong></strong>
                                     </span>
                                 </div>
                             </div>
-                            <div class="col-3">
-                                <label> Estimate Start Date <span class="text_required">*</span></label>
-                                <div class="form-group">
-                                    <input type="date" class="form-control" name="start_date" id="start_date" placeholder="Start Date"
-                                    max="<?= date('Y-m-d', strtotime(date('Y-m-d').' +10 days')); ?>" tabindex="5">
-                                    <span class="invalid-feedback" id="start_date-input-error" role="alert"> <strong></strong></span>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <label>Estimate End Date </label>
-                                <div class="form-group">
-                                    <input type="date" class="form-control" name="end_date" id="end_date" placeholder="End Date" tabindex="6"
-                                    min="<?= date('Y-m-d'); ?>">
-                                    <span class="invalid-feedback" id="end_date-input-error" role="alert"> <strong></strong></span>
-                                </div>
-                            </div>
-                            <div class="col-3">
+                            <div class="col-4">
                                 <label> Reference Link</label>
                                 <div class="form-group">
                                     <input type="url" class="form-control" name="referel_link" id="referel_link" placeholder="Referel Link" tabindex="7">
                                     <span class="invalid-feedback" id="referel_link-input-error" role="alert"> <strong></strong></span>
                                 </div>
                             </div>
+                        </div>
 
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <label> Project Est. Start Date <span class="text_required">*</span></label>
+                                <div class="form-group">
+                                    <input type="datetime-local" class="form-control" name="start_date" id="start_date"
+                                        placeholder="Start Date" tabindex="5" min="<?= date('Y-m-d\TH:i'); ?>">
+                                    <span class="invalid-feedback" id="start_date-input-error" role="alert"> <strong></strong></span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label> Project Est. End Date <span class="text_required">*</span></label>
+                                <div class="form-group">
+                                    <input type="datetime-local" class="form-control" name="end_date" id="end_date"
+                                        placeholder="End Date" tabindex="6" min="<?= date('Y-m-d\TH:i'); ?>">
+                                    <span class="invalid-feedback" id="end_date-input-error" role="alert"> <strong></strong></span>
+                                </div>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12 float-right">
@@ -111,11 +136,22 @@
                                 <span class="invalid-feedback" id="description-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <label class="d-flex justify-content-between align-items-center">
+                                    <span>Project Documents <small class="text-muted">(Optional - PDF, Images, Docs)</small></span>
+                                </label>
+                                <div class="form-group custom-file-upload p-3 bg-light rounded border-dashed" style="border: 2px dashed #cbd5e1;">
+                                    <input type="file" class="form-control" name="documents[]" id="project_documents" multiple>
+                                    <small class="text-muted mt-1 d-block">You can select multiple files at once.</small>
+                                    <span class="invalid-feedback" id="documents-input-error" role="alert"> <strong></strong></span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-12 mt-3 float-roght btns_div">
                                 <div class="float-right">
-                                    <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                    > Create Project </button>
+                                    <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Create Project </button>
                                 </div>
                             </div>
                         </div>
@@ -126,13 +162,68 @@
         </div>
     </div>
     <!-- end row -->
+
+    <!-- Add Client Modal -->
+    <div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addClientModalLabel">Add New Client</h5>
+                    <button type="button" class="close btnmdlclose" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="frm_ajax_add_client">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label>Client/Company Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" required placeholder="Enter Company Name">
+                                <span class="invalid-feedback error-name"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Contact Person <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="contact_person" required placeholder="Name">
+                                <span class="invalid-feedback error-contact_person"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Designation</label>
+                                <input type="text" class="form-control" name="designation" placeholder="e.g. CEO, Manager">
+                                <span class="invalid-feedback error-designation"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" name="email" required placeholder="email@example.com">
+                                <span class="invalid-feedback error-email"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Mobile <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="mobile" required placeholder="Phone Number">
+                                <span class="invalid-feedback error-mobile"></span>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label>City <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="city" required placeholder="City">
+                                <span class="invalid-feedback error-city"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btnmdlclose" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary btn-save-client">Save Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 @section('scripts')
 <script>
-$(document).ready(function(){
+    $(document).ready(function() {
 
-    tinymce.init({
+        tinymce.init({
             selector: 'textarea#description',
             branding: false,
             plugins: [
@@ -141,76 +232,151 @@ $(document).ready(function(){
                 "insertdatetime media table paste codesample"
             ],
             toolbar: "undo redo | fontselect styleselect fontsizeselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | codesample action section button",
-            font_formats:"Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino;",
+            font_formats: "Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino;",
             fontsize_formats: "8px 9px 10px 11px 12px 14px 16px 18px 20px 22px 24px 26px 28px 30px 32px 34px 36px 38px 40px 42px 44px 46px 48px 50px 52px 54px",
             height: 300
-    });
-
-    $(document).on('change', '#department', function(){
-        let dept_value = $(this).val();
-        $('#category').empty().append('<option selected="selected" value="">Select Category</option>');
-        $.ajax({
-            type: 'GET',
-            url: base_url + "/projectcategory/subcategories",
-            data: {'projcategory' : dept_value },
-            success: function(response) {
-                if(response.status = true){
-                    $("#category").select2({data :response.data });
-                }else{
-
-                }
-            },
         });
-    })
 
-    $('#frm_create_new_project').submit(function(e){
-        e.preventDefault();
-        var formData = new FormData($(this)[0]);
-        $(".invalid-feedback").children("strong").text("");
+        $(document).on('change', '#department', function() {
+            let dept_value = $(this).val();
+            
+            // Fetch Sub Categories
+            $('#category').empty().append('<option selected="selected" value="">Select Category</option>');
+            $.ajax({
+                type: 'GET',
+                url: base_url + "/projectcategory/subcategories",
+                data: {
+                    'projcategory': dept_value
+                },
+                success: function(response) {
+                    if (response.status == true) {
+                        $("#category").select2({
+                            data: response.data
+                        });
+                    }
+                },
+            });
 
-        $.ajax({
-            type: 'POST',
-            url: base_url +'/client/createprojecct',
-            data: formData,
-            cache: false,
-            contentType: false,
-            processData: false,
-            beforeSend: function() {
-                $(".creatBtn").html('Creating...');
-                $(".creatBtn").prop('disabled', true);
-            },
-            success: function(response) {
-                console.log(response);
-                if (response.status == true) {
-                    $('#frm_create_new_project')[0].reset();
-                    alertify.success(response.message);
-                    window.location.href = "{{URL::to('/projects')}}"
+            // Fetch Team Leaders
+            $('#team_leader').empty().append('<option selected="selected" value="">Select Team Leader</option>');
+            $.ajax({
+                type: 'GET',
+                url: base_url + "/projects/get-team-leaders",
+                data: {
+                    'category_id': dept_value
+                },
+                success: function(response) {
+                    if (response.status == true) {
+                        let data = response.data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.name
+                            };
+                        });
+                        $("#team_leader").select2({
+                            data: data
+                        });
 
-                } else {
-                    alertify.error(response.message);
+                        // Auto-select if only one TL available
+                        if (data.length === 1) {
+                            $('#team_leader').val(data[0].id).trigger('change');
+                        }
+                    }
+                },
+            });
+        });
+
+        // Trigger change on load to populate subcategories and TLs for default selection
+        $('#department').trigger('change');
+
+        $('#frm_create_new_project').submit(function(e) {
+            e.preventDefault();
+            var formData = new FormData($(this)[0]);
+            $(".invalid-feedback").children("strong").text("");
+
+            $.ajax({
+                type: 'POST',
+                url: base_url + '/client/createprojecct',
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                beforeSend: function() {
+                    $(".creatBtn").html('Creating...');
+                    $(".creatBtn").prop('disabled', true);
+                },
+                success: function(response) {
+                    console.log(response);
+                    if (response.status == true) {
+                        $('#frm_create_new_project')[0].reset();
+                        alertify.success(response.message);
+                        window.location.href = "{{URL::to('/projects')}}"
+
+                    } else {
+                        alertify.error(response.message);
+                        $(".creatBtn").prop('disabled', false);
+                        $(".creatBtn").html('Create Project');
+                    }
+                },
+                error: function(response) {
                     $(".creatBtn").prop('disabled', false);
                     $(".creatBtn").html('Create Project');
+                    if (response.responseJSON.status === 400) {
+                        let errors = response.responseJSON.errors;
+                        Object.keys(errors).forEach(function(key) {
+                            $("#" + key + "Input").addClass("is-invalid");
+                            $("#" + key + "-input-error").children("strong").text(errors[key][0]);
+                        });
+                    }
                 }
-            },
-            error: function(response) {
-                $(".creatBtn").prop('disabled', false);
-                $(".creatBtn").html('Create Project');
-                if (response.responseJSON.status === 400) {
-                    let errors = response.responseJSON.errors;
-                    Object.keys(errors).forEach(function(key) {
-                        $("#" + key + "Input").addClass("is-invalid");
-                        $("#" + key + "-input-error").children("strong").text(errors[key][0]);
-                    });
-                }
-            }
 
+            });
         });
+
+        $('#frm_ajax_add_client').submit(function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var formData = new FormData(this);
+            $('.invalid-feedback').text('').hide();
+            $('.form-control').removeClass('is-invalid');
+
+            $.ajax({
+                type: 'POST',
+                url: '{{ route("client.ajax-create") }}',
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                beforeSend: function() {
+                    $(".btn-save-client").html('Saving...').prop('disabled', true);
+                },
+                success: function(response) {
+                    if (response.status) {
+                        $('#addClientModal').modal('hide');
+                        alertify.success(response.message);
+                        form[0].reset();
+
+                        var newOption = new Option(response.client.name, response.client.id, true, true);
+                        $('#clientsid').append(newOption).trigger('change');
+                    }
+                    $(".btn-save-client").html('Save Client').prop('disabled', false);
+                },
+                error: function(response) {
+                    $(".btn-save-client").html('Save Client').prop('disabled', false);
+                    if (response.responseJSON && response.responseJSON.errors) {
+                        let errors = response.responseJSON.errors;
+                        Object.keys(errors).forEach(function(key) {
+                            form.find('[name="' + key + '"]').addClass('is-invalid');
+                            form.find('.error-' + key).text(errors[key][0]).show();
+                        });
+                    } else {
+                        alertify.error('An error occurred. Please try again.');
+                    }
+                }
+            });
+        });
+
     })
-
-
-})
-
 </script>
-
 
 @endsection

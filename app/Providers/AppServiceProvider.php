@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use Illuminate\Pagination\Paginator;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Database\Eloquent\Model;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,27 +28,28 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        Model::shouldBeStrict(! $this->app->isProduction());
 
-        view()->composer(['layouts.app'], function ($view){
+        Paginator::useBootstrap();
+
+        view()->composer(['layouts.app'], function ($view) {
             $user = Auth::user();
-            if(isset($user->id)){
+            if (isset($user->id)) {
                 $notifications = DatabaseNotification::where('notifiable_id', $user->id)
-                                    ->orderBy('created_at',"DESC")->limit(15)->get();
+                    ->orderBy('created_at', "DESC")->limit(15)->get();
 
                 $unreadNotf = DatabaseNotification::where('notifiable_id',  $user->id)
-                                            ->where('read_at',null)->count();
+                    ->where('read_at', null)->count();
 
                 view()->share('notifications', $notifications);
                 view()->share('unreadNotf', $unreadNotf);
             }
-
         });
 
         View::composer('*', function ($view) {
-            if(Auth::check()){
+            if (Auth::check()) {
                 $view->with('user', Auth::user());
             }
         });
-
     }
 }

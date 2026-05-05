@@ -3,10 +3,22 @@
 <link href="{{ asset('assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css')}}" rel="stylesheet" type="text/css">
 <link href="{{ asset('assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" type="text/css">
 <style>
-    .dataTables_filter input { width: 250px!important;padding: 1.1rem 0.5rem;font-size: 0.8rem;}
-    .dataTables_filter {position: absolute;bottom: 57px; right: 0px;}
-    .table td, .table th {  padding: 0.35rem;}
+    .dataTables_filter input {
+        width: 250px !important;
+        padding: 1.1rem 0.5rem;
+        font-size: 0.8rem;
+    }
 
+    .dataTables_filter {
+        position: absolute;
+        bottom: 57px;
+        right: 0px;
+    }
+
+    .table td,
+    .table th {
+        padding: 0.35rem;
+    }
 </style>
 @endsection
 @section('content')
@@ -48,14 +60,14 @@
 
                     <ul class="nav nav-tabs nav-dept mt-3" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link @if(request()->segment(2) == 'Fresh') active @endif" href="{{ url('client/Fresh')}}" >
+                            <a class="nav-link @if(request()->segment(2) == 'Fresh') active @endif" href="{{ url('client/Fresh')}}">
                                 <span class="d-none d-md-inline-block">Fresh</span>
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link @if(request()->segment(2) != 'Matured' &&  request()->segment(2) != 'Fresh' && request()->segment(2) != 'Not Interested') active  @endif"
-                                    href="{{ url('client/Folloup') }}" role="tab">
+                                href="{{ url('client/Folloup') }}" role="tab">
                                 <span class="d-none d-md-inline-block">Followp</span>
                             </a>
                         </li>
@@ -66,30 +78,34 @@
                             </a>
                         </li>
                         @if($user->hasRole(['Admin', 'Team-Leader']))
-                            <li class="nav-item">
-                                <a class="nav-link @if(request()->segment(2) == 'Not Interested') active  @endif" href="{{ url('client/Not Interested') }}" role="tab">
-                                    <span class="d-none d-md-inline-block">Not Interested</span>
-                                </a>
-                            </li>
+                        <li class="nav-item">
+                            <a class="nav-link @if(request()->segment(2) == 'Not Interested') active  @endif" href="{{ url('client/Not Interested') }}" role="tab">
+                                <span class="d-none d-md-inline-block">Not Interested</span>
+                            </a>
+                        </li>
                         @endif
                     </ul>
 
+                    <input type="hidden" id="category_name" value="{{ request()->segment(2) }}">
+                    <script>
+                        var isPM = {{ $user->hasRole('Project-Manager') ? 'true' : 'false' }};
+                    </script>
                     <div class="tab-content p-3">
                         <div class="tab-pane active" role="tabpanel">
                             <div class="table-responsive">
                                 <table class="table table-centered mb-0 table-hover" id="datatable">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th scope="col" style="width: 3%">Sl No</th>
-                                            <th scope="col" >Name</th>
-                                            <th scope="col" style="width: 15%" >Category</th>
-                                            <th scope="col" > Number</th>
-                                            <th scope="col" > Created Date </th>
-                                            @if($user->hasRole(["Admin","Team-Leader"]))
-                                            <th scope="col" > Sales Exe.</th>
+                                            <th scope="col" class="text-center" style="width: 5%">Sl No</th>
+                                            <th scope="col">Name</th>
+                                            @if(!$user->hasRole('Project-Manager'))
+                                            <th scope="col" class="text-center" style="width: 15%">Contact Info</th>
                                             @endif
-                                            <th scope="col"> Status</th>
-                                            <th scope="col" class="text-center" style="width: 13%">Action</th>
+                                            <th scope="col" class="text-center"> Mobile</th>
+                                            <th scope="col" class="text-center"> City </th>
+                                            <th scope="col" class="text-center"> Status</th>
+                                            <th scope="col" class="text-center"> Created Date </th>
+                                            <th scope="col" class="text-center" style="width: 8%">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -97,20 +113,6 @@
                                     </tbody>
                                 </table>
                             </div>
-
-                            {{-- <div class="col-md-12">
-                                <div class="text-center">
-                                    <div class="mb-3" style="position: relative;">
-                                        <img src="{{ asset('img/clients.png') }}" style="height: 100%;width: 30%;"  class="img-fluid rounded-circle" alt="">
-                                    </div>
-                                    <h3 class="text-truncate mb-2">You don't have any companies.</h3> <br>
-                                    <h6 class="fs-15">
-                                        <a href="{{ route('clients.create')}}" class="btnAddDepartment text-success"> Click </a>
-                                            to create new Client
-                                    </h6>
-                                </div>
-                            </div> --}}
-
                         </div>
                     </div>
                 </div>
@@ -131,7 +133,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_asssign_to_opther" class="custom-validation"  method="POST" novalidate>
+                <form id="frm_asssign_to_opther" class="custom-validation" method="POST" novalidate>
                     @csrf
                     <div class="row">
                         <div class="col-12">
@@ -149,8 +151,7 @@
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Assign </button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Assign </button>
                             </div>
                         </div>
                     </div>
@@ -174,7 +175,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_create_new_project" class="custom-validation"  method="POST">
+                <form id="frm_create_new_project" class="custom-validation" method="POST">
                     @csrf
                     <input type="hidden" value="" name="clientsid" id="clientsid">
                     <div class="row">
@@ -188,32 +189,48 @@
                         <div class="col-4">
                             <label> Project Department <span class="text_required">*</span></label>
                             @php
-                                $departments = DB::table('project_category')->where('deleted_at', null)->orderBy('id', 'asc')->get();
+                            $departments = DB::table('project_category')->where('deleted_at', null)->orderBy('id', 'asc')->get();
                             @endphp
-                            <select class="form-control select2" name="department" id="department" width="100%"  tabindex="2">
-                                <option selected value> Select Department</option>
+                            <select class="form-control select2" name="{{ $user->hasRole('Team-Leader') ? '' : 'department' }}" id="department" width="100%" tabindex="2" {{ $user->hasRole('Team-Leader') ? 'disabled' : '' }}>
                                 @foreach ($departments as $item)
-                                    <option value="{{ $item->id }}"> {{ $item->category }}</option>
+                                <option value="{{ $item->id }}" {{ $item->id == 1 ? 'selected' : '' }}> {{ $item->category }}</option>
                                 @endforeach
                             </select>
+                            @if($user->hasRole('Team-Leader'))
+                                <input type="hidden" name="department" value="1">
+                            @endif
                             <span class="invalid-feedback" id="department-input-error" role="alert"><strong></strong></span>
-
-
                         </div>
                         <div class="col-4">
                             <label> Category </label>
                             <div class="form-group">
-                                <select class="form-control select2" name="category" id="category" style="width:100%"  tabindex="3">
+                                <select class="form-control select2" name="category" id="category" style="width:100%" tabindex="3">
                                     <option selected value> Select Category</option>
                                 </select>
                                 <span class="invalid-feedback" id="category-input-error" role="alert"><strong></strong></span>
                             </div>
                         </div>
+                        <div class="col-4">
+                            <label> Team Leader </label>
+                            <div class="form-group">
+                                <select class="form-control select2" name="{{ $user->hasRole('Team-Leader') ? '' : 'team_leader' }}" id="team_leader" style="width:100%" tabindex="3" {{ $user->hasRole('Team-Leader') ? 'disabled' : '' }}>
+                                    @if($user->hasRole('Team-Leader'))
+                                        <option value="{{ $user->id }}" selected>{{ $user->name }}</option>
+                                    @else
+                                        <option selected value=""> Select Team Leader </option>
+                                    @endif
+                                </select>
+                                @if($user->hasRole('Team-Leader'))
+                                    <input type="hidden" name="team_leader" value="{{ $user->id }}">
+                                @endif
+                                <span class="invalid-feedback" id="team_leader-input-error" role="alert"><strong></strong></span>
+                            </div>
+                        </div>
                         <div class="col-3">
-                            <label> Package <span class="text_required">*</span></label>
+                            <label> Package </label>
                             <div class="form-group">
                                 <input type="number" class="form-control" name="package" id="package" placeholder="Package" tabindex="4"
-                                onKeyPress="return isNumberKey(event);">
+                                    onKeyPress="return isNumberKey(event);">
                                 <span class="invalid-feedback" id="package-input-error" role="alert">
                                     <strong></strong>
                                 </span>
@@ -223,7 +240,7 @@
                             <label> Estimate Start Date <span class="text_required">*</span></label>
                             <div class="form-group">
                                 <input type="date" class="form-control" name="start_date" id="start_date" placeholder="Start Date"
-                                max="<?= date('Y-m-d', strtotime(date('Y-m-d').' +10 days')); ?>" tabindex="5">
+                                    max="<?= date('Y-m-d', strtotime(date('Y-m-d') . ' +10 days')); ?>" tabindex="5">
                                 <span class="invalid-feedback" id="start_date-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
@@ -231,7 +248,7 @@
                             <label>Estimate End Date </label>
                             <div class="form-group">
                                 <input type="date" class="form-control" name="end_date" id="end_date" placeholder="End Date" tabindex="6"
-                                min="<?= date('Y-m-d'); ?>">
+                                    min="<?= date('Y-m-d'); ?>">
                                 <span class="invalid-feedback" id="end_date-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
@@ -254,8 +271,7 @@
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Create Project </button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Create Project </button>
                             </div>
                         </div>
                     </div>
@@ -282,47 +298,45 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_create_new_domain" class="custom-validation"  method="POST" novalidate>
+                <form id="frm_create_new_domain" class="custom-validation" method="POST" novalidate>
                     @csrf
                     <div class="row">
-                            <input type="hidden" name="client_id" id="client_id" value="">
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label> Client Name <span class="text_required">*</span></label>
-                                    <input type="text" class="form-control" name="client_nm" id="client_nm" placeholder="Client" readonly tabindex="1">
-                                    <span class="invalid-feedback" id="client_nm-input-error" role="alert"> <strong></strong></span>
-                                </div>
+                        <input type="hidden" name="client_id" id="client_id" value="">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label> Client Name <span class="text_required">*</span></label>
+                                <input type="text" class="form-control" name="client_nm" id="client_nm" placeholder="Client" readonly tabindex="1">
+                                <span class="invalid-feedback" id="client_nm-input-error" role="alert"> <strong></strong></span>
                             </div>
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label> Domain <span class="text_required">*</span></label>
-                                    <input type="text" class="form-control" name="domain" id="domain" placeholder="Domain Name"  tabindex="2">
-                                    <span class="invalid-feedback" id="domain-input-error" role="alert"> <strong></strong></span>
-                                </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label> Domain <span class="text_required">*</span></label>
+                                <input type="text" class="form-control" name="domain" id="domain" placeholder="Domain Name" tabindex="2">
+                                <span class="invalid-feedback" id="domain-input-error" role="alert"> <strong></strong></span>
                             </div>
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label> Registered Date <span class="text_required">*</span></label>
-                                    <input type="date" class="form-control" name="reg_date" id="reg_date" placeholder="Client" tabindex="3"
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label> Registered Date <span class="text_required">*</span></label>
+                                <input type="date" class="form-control" name="reg_date" id="reg_date" placeholder="Client" tabindex="3"
                                     max="<?= date('Y-m-d'); ?>" />
-                                    <span class="invalid-feedback" id="reg_date-input-error" role="alert"> <strong></strong></span>
-                                </div>
+                                <span class="invalid-feedback" id="reg_date-input-error" role="alert"> <strong></strong></span>
                             </div>
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label> Expiry Date <span class="text_required">*</span></label>
-                                    <input type="date" class="form-control" name="exp_date" id="exp_date" placeholder="Expiry Date" tabindex="4"
-                                    min="<?= date('Y-m-d', strtotime(date('Y-m-d').' +11 months')); ?>"
-                                    >
-                                    <span class="invalid-feedback" id="exp_date-input-error" role="alert"> <strong></strong></span>
-                                </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label> Expiry Date <span class="text_required">*</span></label>
+                                <input type="date" class="form-control" name="exp_date" id="exp_date" placeholder="Expiry Date" tabindex="4"
+                                    min="<?= date('Y-m-d', strtotime(date('Y-m-d') . ' +11 months')); ?>">
+                                <span class="invalid-feedback" id="exp_date-input-error" role="alert"> <strong></strong></span>
                             </div>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Add Domain </button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Add Domain </button>
                             </div>
                         </div>
                     </div>
@@ -333,48 +347,13 @@
     </div>
 </div>
 
-{{-- END Models Assign to clients --}}
-
+{{-- END Models New Domain to clients --}}
 
 @endsection
+
 @section('scripts')
 <script src="{{ asset('assets/libs/datatables.net/js/jquery.dataTables.min.js')}}"></script>
 <script src="{{ asset('assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('assets/libs/tinymce/js/tinymce.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('js/clients.js') }}"></script>
-
-<script>
-    $(document).ready(function(){
-        let category ="{{ request()->segment(2) }}";
-        $("#datatable").DataTable({
-            processing: true,
-            serverSide: true,
-            bDestroy: true,
-            "responsive":true,
-            lengthMenu: [10, 25, 50, 100, 500, 'All'],
-            ajax :{
-                    type: 'GET',
-                    data:{'category':category},
-                    url: base_url +"/clients",
-                    error:function(err){ console.log(err);}
-            },
-            "language": {"sSearch": "Filter :", "searchPlaceholder": "Name, Category, Number, Status, date"},
-            columns: [
-                {data: 'DT_RowIndex', name: 'id', orderable: true, searchable: false},
-                {data: 'name', name: 'name', orderable: false, searchable: true},
-                {data: 'category', name: 'category', orderable: false, searchable: true},
-                {data: 'mobile', name: 'mobile', orderable: false, searchable: true},
-                {data: 'created_at', name: 'created_at', orderable: true, searchable: true},
-
-                @if($user->hasRole(['Admin', 'Team-Leader']))
-                    {data: 'telereferral', name: 'telereferral.name', orderable: false, searchable: true},
-                @endif
-                {data: 'status', name: 'status', orderable: false, searchable: true},
-                {data: 'action',  name: 'action', orderable: false, searchable: false },
-            ]
-        });
-
-    });
-</script>
-
 @endsection

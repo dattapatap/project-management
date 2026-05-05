@@ -58,7 +58,7 @@
                         <div class="row">
                             @forelse ($teams as $item)
                                 <div class="col-4">
-                                    <div class="card project card-top-border" style="border-top: 2px solid #ff1d00;">
+                                    <div class="card project card-top-border">
                                         <div class="card-body">
                                             <div class="department">
                                                 <div class="department-header">

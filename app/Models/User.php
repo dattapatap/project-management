@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -31,18 +30,22 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
     ];
 
 
-    public function emp(){
+    public function emp()
+    {
         return $this->hasOne(Employees::class, 'user', 'id');
     }
 
-    public function departments(){
+    public function departments()
+    {
         return $this->hasOne(UserDepartment::class, 'user', 'id');
     }
 
-    public function branch(){
+    public function branch()
+    {
         return $this->belongsTo(UserBranch::class, 'user', 'id');
     }
 
@@ -50,9 +53,31 @@ class User extends Authenticatable
 
     public function receivesBroadcastNotificationsOn()
     {
-        return 'post_like.'.$this->id;
+        return 'post_like.' . $this->id;
     }
 
+    public function tasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_to', 'id');
+    }
 
+    public function completedTasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_to', 'id')->where('status', 'Completed');
+    }
 
+    public function taskLogs()
+    {
+        return $this->hasMany(TaskLog::class, 'userid', 'id');
+    }
+
+    public function clients()
+    {
+        return $this->hasMany(Clients::class, 'ref_user', 'id');
+    }
+
+    public function teamMember()
+    {
+        return $this->hasOne(TeamMembers::class, 'user', 'id');
+    }
 }

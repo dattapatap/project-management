@@ -27,10 +27,11 @@ class TaskRequest extends FormRequest
             'task_projectid'            => 'required|numeric',
             'task_title'                => 'required|string',
             'task_priority'             => 'required|string',
-            'task_est_start_date'       => 'required|date|date_format:d/m/Y h:i A',
-            'task_est_end_date'         => 'required|date|date_format:d/m/Y h:i A|after:task_est_start_date',
+            'task_est_start_date'       => 'required|date',
+            'task_est_end_date'         => 'required|date|after:task_est_start_date',
             'task_description'          => 'required|between:10,600000',
-            'task_user'                 => 'required'
+            'task_user'                 => 'required',
+            'task_documents.*'          => 'nullable|file|max:10240',
         ];
     }
 

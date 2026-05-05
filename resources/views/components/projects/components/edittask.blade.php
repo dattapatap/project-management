@@ -33,16 +33,16 @@
                         <div class="col-3">
                             <label> Est. Start Date <span class="text_required">*</span></label>
                             <div class="form-group">
-                                <input type="text" class="form-control" name="txt_task_est_start_date" id="txt_task_est_start_date"
-                                placeholder="Est Start Date" min="<?= date('Y-m-d'); ?>" >
+                                <input type="datetime-local" class="form-control" name="txt_task_est_start_date" id="txt_task_est_start_date"
+                                placeholder="Est Start Date" min="<?= date('Y-m-d\TH:i'); ?>" >
                                 <span class="invalid-feedback" id="txt_task_est_start_date-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
                         <div class="col-3">
                             <label> Est. End Date <span class="text_required">*</span></label>
                             <div class="form-group">
-                                <input type="datepicker" class="form-control" name="txt_task_est_end_date" id="txt_task_est_end_date"
-                                placeholder="Est. End Date"  min="<?= date('Y-m-d'); ?>">
+                                <input type="datetime-local" class="form-control" name="txt_task_est_end_date" id="txt_task_est_end_date"
+                                placeholder="Est. End Date"  min="<?= date('Y-m-d\TH:i'); ?>">
                                 <span class="invalid-feedback" id="txt_task_est_end_date-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
@@ -51,19 +51,7 @@
                             <div class="form-group">
                                 <label> Assign To <span class="text_required">*</span></label>
                                 <select  class="form-control select2" name="txt_task_user" id="txt_task_user" >
-                                    <option value="" selected>Choose Employee</option>
-                                    <option value="{{ $user->id }}">Assign To Me</option>
-                                    @php
-                                        $employees = DB::table('team_members')->select('user')->where('department', 2)
-                                                            ->where('deleted_at', null)->get();
-                                    @endphp
-                                    @foreach ($employees as $item )
-                                        @php
-                                            $emp = DB::table('users')->select('id', 'name')->where('id', $item->user )->first();
-                                        @endphp
-                                        <option value="{{ $emp->id }}">{{ $emp->name }}</option>
-                                    @endforeach
-
+                                    <option value="" selected>Loading Employees...</option>
                                 </select>
                                 <span class="invalid-feedback" id="txt_task_user-input-error" role="alert"> <strong></strong></span>
                             </div>
@@ -111,24 +99,7 @@
                 height: 300,
         });
 
-        $('#txt_task_est_start_date, #txt_task_est_end_date').datetimepicker({
-            minDate: moment().subtract(1,'d'),
-            allowInputToggle: false,
-            // useCurrent: true,
-            locale: moment().local('en'),
-            format: 'DD/MM/YYYY hh:mm A',
-            icons: {
-                time: 'mdi mdi-clock-outline',
-                date: 'fa fa-calendar',
-                up: 'fa fa-chevron-up',
-                down: 'fa fa-chevron-down',
-                previous: 'fa fa-chevron-left',
-                next: 'fa fa-chevron-right',
-                today: 'fa fa-check',
-                clear: 'fa fa-trash',
-                close: 'mdi mdi-clock-outline'
-            }
-        })
+        // Native datetime-local inputs are used now instead of datetimepicker plugin
 
         $('.edittask').click(function(eve){
             let taskid = $(this).attr('taskid')
@@ -147,9 +118,26 @@
                         $('#task_id').val(task.id)
                         $('#txt_task_title').val(task.title)
                         $('#txt_task_priority').val(task.priority)
-                        $('#txt_task_est_start_date').val(moment(task.startdate).format('DD/MM/YYYY hh:mm A'))
-                        $('#txt_task_est_end_date').val(moment(task.enddate).format('DD/MM/YYYY hh:mm A'))
-                        $('#txt_task_user').val(task.assigned_to).trigger('change')
+                        $('#txt_task_est_start_date').val(moment(task.startdate).format('YYYY-MM-DDTHH:mm'))
+                        $('#txt_task_est_end_date').val(moment(task.enddate).format('YYYY-MM-DDTHH:mm'))
+                        
+                        // Dynamically load employees for this project
+                        $('#txt_task_user').empty().append('<option value="" selected>Loading...</option>');
+                        $.ajax({
+                            type: 'GET',
+                            url: "{{ route('projects.employees') }}",
+                            data: { 'project_id': task.projectid },
+                            success: function(empResponse) {
+                                if (empResponse.status == true) {
+                                    $('#txt_task_user').empty();
+                                    empResponse.data.forEach(function(emp) {
+                                        let selected = (emp.id == task.assigned_to) ? 'selected' : '';
+                                        $('#txt_task_user').append('<option value="' + emp.id + '" ' + selected + '>' + emp.name + '</option>');
+                                    });
+                                    $('#txt_task_user').trigger('change');
+                                }
+                            }
+                        });
 
                         tinymce.get("txt_task_description").setContent(task.description);
                         $('#mdleditTask').modal('show');

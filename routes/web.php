@@ -17,6 +17,8 @@ use App\Http\Controllers\ProjectSubCategoryController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Reports\AdvancedReportController;
+use App\Http\Controllers\Reports\EmployeeReportController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +65,7 @@ Route::group(['middleware' => ['auth'] ], function () {
 Route::group(['middleware' => ['auth'] ], function () {
 
     // Clients with Process
+    Route::post('client/ajax-create', [ClientsController::class, 'ajaxStore'])->name('client.ajax-create');
     Route::get('clients/{id}/edit', [ClientsController::class, 'edit']);
     Route::get('clients/{id}/{urlname}', [ClientsController::class, 'showClient'])->name('client.detail');
     Route::get('client/{category}', [ClientsController::class, 'clientsbycategory'])->name('clients.category');
@@ -106,6 +109,14 @@ Route::group(['middleware' => ['auth'] ], function () {
     Route::get('/reports/searchsts/ajax', [ReportController::class, 'getCountMyStsByCategory'])->name('report.get-count-by-category');
     Route::get('/exportsts', [ReportController::class, 'exportStsReports']);
 
+    // Advanced Reports
+    Route::get('/reports/projects', [AdvancedReportController::class, 'projectsReport'])->name('reports.projects');
+    Route::get('/reports/projects/data', [AdvancedReportController::class, 'projectsData'])->name('reports.projects.data');
+    Route::get('/reports/employees', [EmployeeReportController::class, 'index'])->name('reports.employees');
+    Route::get('/reports/employees/data', [EmployeeReportController::class, 'data'])->name('reports.employees.data');
+    Route::get('/reports/employee/{id}', [EmployeeReportController::class, 'detail'])->name('reports.employee.detail');
+    Route::get('/my-insights', [EmployeeReportController::class, 'myInsights'])->name('my-insights');
+
 
 
 
@@ -119,6 +130,9 @@ Route::group(['middleware' => ['auth'] ], function () {
 
     // Clients Projects /Sales Exxecutive
     Route::post('client/createprojecct', [DepartmentProjectsController::class, 'createNewProject']);
+    Route::get('projects/{projectid}/history', [ProjectController::class, 'history']);
+    Route::get('projects/get-employees', [ProjectController::class, 'getEmployeesByProject'])->name('projects.employees');
+    Route::get('projects/get-team-leaders', [ProjectController::class, 'getTeamLeadersByCategory'])->name('projects.teamleaders');
 
 
     // Payments
@@ -129,6 +143,7 @@ Route::group(['middleware' => ['auth'] ], function () {
     // Assign To Others
     Route::get('/users-by-team-members', [UserController::class, 'getAllUserByRole'])->name('getUsersToAssign');
     Route::post('/assignToExecutive', [ClientsController::class, 'assignToExecutive'])->name('assignUsersToexecutive');
+    Route::get('/documents/download/{id}', [\App\Http\Controllers\DocumentController::class, 'download'])->name('documents.download');
 
 });
 

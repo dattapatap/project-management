@@ -48,36 +48,101 @@ function expiredDomains(){
 
 
 
-function projects($category, $user)
+function projects($category, $user, $year = null)
 {
     if($user->hasRole('Project-Manager')){
+        $query = DepartmentProjects::query();
+        if ($year) {
+            $query->whereYear('created_date', '<=', $year)
+                  ->where(function($q) use ($year) {
+                      $q->whereNull('act_end_date')->orWhereYear('act_end_date', '>=', $year);
+                  });
+        }
+        
         if($category == 'ALL')
-            return DepartmentProjects::count();
+            return $query->count();
 
-        return DepartmentProjects::where('status', $category)->count();
+        return $query->where('status', $category)->count();
     }
 
     if($user->hasRole('Team-Leader')){
-        $projects = DepartmentProjects::where('status', $category)->count();
-    }
+        $teamMember = App\Models\TeamMembers::where('user', $user->id)->where('status', true)->first();
+        $teamId = $teamMember ? $teamMember->team : null;
+        $userDeptId = $user->departments->department ?? null;
 
+        $query = DepartmentProjects::where(function($q) use ($user, $teamId) {
+            $q->where('assigned_to', $user->id);
+            if ($teamId) {
+                $q->orWhereHas('project_team', function($sq) use ($teamId) {
+                    $sq->where('teamid', $teamId);
+                });
+            }
+        })->when($userDeptId, function($q) use ($userDeptId) {
+            $q->whereHas('category', function($sq) use ($userDeptId) {
+                $sq->where('dept_id', $userDeptId);
+            });
+        });
+
+        if ($category != 'ALL') {
+            $query->where('status', $category);
+        }
+        
+        if ($year) {
+            $query->whereYear('created_date', '<=', $year)
+                  ->where(function($q) use ($year) {
+                      $q->whereNull('act_end_date')->orWhereYear('act_end_date', '>=', $year);
+                  });
+        }
+
+        return $query->count();
+    }
 }
 
-function tasks($category, $user)
+function tasks($category, $user, $year = null)
 {
     if($user->hasRole('Project-Manager')){
+        $query = Task::query();
+        if ($year) {
+            $query->whereYear('created_at', '<=', $year)
+                  ->where(function($q) use ($year) {
+                      $q->whereNull('act_enddate')->orWhereYear('act_enddate', '>=', $year);
+                  });
+        }
+        
         if($category == 'ALL')
-            return Task::count();
+            return $query->count();
 
-        return Task::where('status', $category)->count();
+        return $query->where('status', $category)->count();
     }
 
     if($user->hasRole('Team-Leader')){
-        $projects = Task::where('status', $category)->count();
-    }
+        $teamMember = App\Models\TeamMembers::where('user', $user->id)->where('status', true)->first();
+        if (!$teamMember) return 0;
+        $teamId = $teamMember->team;
 
+        $query = Task::whereHas('user.teamMember', function($q) use ($teamId) {
+            $q->where('team', $teamId);
+        });
+
+        if ($category != 'ALL') {
+            $query->where('status', $category);
+        }
+        
+        if ($year) {
+            $query->whereYear('created_at', '<=', $year)
+                  ->where(function($q) use ($year) {
+                      $q->whereNull('act_enddate')->orWhereYear('act_enddate', '>=', $year);
+                  });
+        }
+
+        return $query->count();
+    }
 }
 
 
+function isAdminOrTeamLeader($user) {
+    if (!$user) return false;
+    return $user->hasRole(['Admin', 'Team-Leader']);
+}
 
 ?>
