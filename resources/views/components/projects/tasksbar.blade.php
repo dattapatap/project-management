@@ -1,5 +1,31 @@
 @extends('layouts.app')
 @section('content')
+<style>
+    .highlight-task {
+        border: 2px solid #556ee6 !important;
+        box-shadow: 0 0 15px rgba(85, 110, 230, 0.4) !important;
+        animation: highlight-pulse 2s infinite !important;
+        z-index: 10;
+        position: relative;
+    }
+
+    @keyframes highlight-pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 15px rgba(85, 110, 230, 0.4);
+        }
+
+        50% {
+            transform: scale(1.02);
+            box-shadow: 0 0 25px rgba(85, 110, 230, 0.6);
+        }
+
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 15px rgba(85, 110, 230, 0.4);
+        }
+    }
+</style>
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -38,10 +64,10 @@
                         </div>
                     </header>
 
-                    <main class="kanban-drag">
+                    <main class="kanban-drag" data-status="ToDo">
 
                         @foreach ($todo as $items)
-                        <div class="kanban-item task-body">
+                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}">
                             <div class="kanban-item-title">
                                 <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
                                     <h6 class="title c-p">
@@ -155,9 +181,9 @@
                             </div>
                         </div>
                     </header>
-                    <main class="kanban-drag">
+                    <main class="kanban-drag" data-status="InProgress">
                         @foreach ($inprocess as $items)
-                        <div class="kanban-item task-body">
+                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}">
                             <div class="kanban-item-title">
                                 <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
                                     <h6 class="title c-p">
@@ -261,9 +287,9 @@
                             </div>
                         </div>
                     </header>
-                    <main class="kanban-drag">
+                    <main class="kanban-drag" data-status="Completed">
                         @foreach ($completed as $items)
-                        <div class="kanban-item task-body">
+                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}">
                             <div class="kanban-item-title">
                                 <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
                                     <h6 class="title c-p">
@@ -371,6 +397,8 @@
 @endsection
 
 @section('scripts')
+<script src="{{ asset('assets/libs/draggable/Sortable.min.js') }}"></script>
+<script src="{{ asset('js/kanban.js') }}"></script>
 <script>
     function confirmation() {
         if (confirm('Do you want to delete this task? it will not revert once deleted!')) {

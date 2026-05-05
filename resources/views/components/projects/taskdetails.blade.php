@@ -47,6 +47,12 @@
     }
 
     /* Modern Progress Bar */
+    .activity-log-premium {
+        max-height: 750px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
     .progress-premium {
         height: 10px;
         border-radius: 10px;
@@ -75,6 +81,11 @@
         bottom: 0;
         width: 2px;
         background: #e9ecef;
+    }
+
+    .timeline-scroll {
+        max-height: calc(100vh - 120px);
+        padding-bottom: 30px;
     }
 
     .timeline-item {
@@ -210,6 +221,32 @@
         color: #495057;
         font-size: 14.5px;
         line-height: 1.7;
+    }
+
+    #progress-range {
+        -webkit-appearance: none;
+        height: 8px;
+        border-radius: 5px;
+        outline: none;
+        transition: background 0.2s;
+    }
+
+    #progress-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid #556ee6;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+    }
+
+    #progress-range::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+        border-color: #34c38f;
     }
 </style>
 @endsection
@@ -362,7 +399,12 @@
                                     <i class="mdi mdi-timer-outline text-primary"></i>
                                 </div>
                                 <p class="text-muted mb-1 small uppercase font-weight-bold">Total Time Spent</p>
-                                <h3 class="mb-0 font-weight-bold text-dark">{{ $task->logs->sum('time_spend') }} <span class="font-size-14 text-muted font-weight-normal">hours</span></h3>
+                                @php
+                                $totalMinutes = round($task->logs->sum('time_spend') * 60);
+                                $h = floor($totalMinutes / 60);
+                                $m = $totalMinutes % 60;
+                                @endphp
+                                <h3 class="mb-0 font-weight-bold text-dark">{{ $h }}h {{ $m }}m</h3>
                             </div>
                         </div>
                         <div class="col-md-8">
@@ -381,6 +423,9 @@
                                             <i class="mdi mdi-arrow-left-right-bold mr-1"></i> Status
                                         </button>
                                     </div>
+                                </div>
+                                <div class="progress progress-premium mb-3" style="height: 6px;">
+                                    <div class="progress-bar main-progress-bar" role="progressbar" style="width: {{ $task->progress }}%"></div>
                                 </div>
                                 <input type="range" class="custom-range w-100" id="progress-range" min="0" max="100" value="{{ $task->progress }}" step="2">
                             </div>
@@ -420,35 +465,68 @@
                             <i class="mdi mdi-history mr-2 text-primary"></i>
                             <span class="font-weight-bold">Activity Log</span>
                         </h5>
-                        <div class="timeline">
-                            @forelse ($task->logs as $items)
-                            <div class="timeline-item">
-                                <div class="timeline-content">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="d-flex align-items-center">
-                                            @if ($items->user->profile)
-                                            <img class="rounded-circle mr-2 border" style="width: 28px; height: 28px;" src="{{ asset('storage/' . $items->user->profile) }}">
-                                            @else
-                                            <img class="rounded-circle mr-2 border" style="width: 28px; height: 28px;" src="{{ Avatar::create($items->user->name)->toBase64() }}">
-                                            @endif
-                                            <span class="font-weight-bold text-dark">{{ $items->user->name }}</span>
-                                        </div>
-                                        <span class="badge badge-soft-light text-muted">{{ \Carbon\Carbon::parse($items->log_date)->format('d M, Y') }}</span>
-                                    </div>
-                                    <p class="mb-3 text-muted" style="font-size: 14px;">{{ $items->log_description }}</p>
-                                    <div class="d-flex align-items-center bg-light p-2 rounded small text-muted">
-                                        <i class="mdi mdi-clock-check-outline mr-1 text-primary"></i>
-                                        {{ \Carbon\Carbon::parse($items->starttime)->format('h:i A') }} - {{ \Carbon\Carbon::parse($items->endtime)->format('h:i A') }}
-                                        <span class="mx-3 text-light">|</span>
-                                        <i class="mdi mdi-av-timer mr-1 text-success"></i>
-                                        <span class="text-dark font-weight-bold">{{ intval($items->time_spend) .'h '.intval( ($items->time_spend - intval($items->time_spend)) * 60 ).'m' }}</span>
-                                    </div>
+
+                        <div class="activity-log-premium">
+                            @php
+                            $activities = collect();
+                            // Add Work Logs
+                            foreach($task->logs as $log) {
+                            $activities->push([
+                            'type' => 'log',
+                            'date' => $log->created_at,
+                            'user' => $log->user->name ?? 'User',
+                            'title' => 'Work Logged',
+                            'description' => $log->log_description,
+                            'duration' => $log->time_spend,
+                            'raw' => $log
+                            ]);
+                            }
+                            // Add History (Status/Progress changes)
+                            foreach($task->histories as $history) {
+                            $activities->push([
+                            'type' => 'history',
+                            'date' => $history->created_at,
+                            'user' => $history->user->name ?? 'User',
+                            'title' => 'System Update',
+                            'description' => $history->comments,
+                            'raw' => $history
+                            ]);
+                            }
+                            $activities = $activities->sortByDesc('date');
+                            @endphp
+
+                            @forelse ($activities as $item)
+                            <div class="activity-item pb-4 border-left ml-2 pl-4 position-relative" style="border-left: 2px solid #e9ecef !important;">
+                                <div class="activity-dot {{ $item['type'] == 'log' ? 'bg-primary' : 'bg-warning' }}" style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%;"></div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0 font-weight-bold text-dark">{{ $item['title'] }}</h6>
+                                    <small class="text-muted font-size-12">
+                                        <i class="mdi mdi-clock-outline mr-1"></i>{{ $item['date']->diffForHumans() }}
+                                    </small>
                                 </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="avatar-xs mr-2">
+                                        <span class="avatar-title rounded-circle bg-soft-primary text-primary font-size-10">
+                                            {{ substr($item['user'], 0, 1) }}
+                                        </span>
+                                    </div>
+                                    <span class="font-size-12 text-muted font-weight-medium">by {{ $item['user'] }}</span>
+                                    @if($item['type'] == 'log')
+                                    <span class="mx-2 text-muted">•</span>
+                                    @php
+                                    $itemMinutes = round($item['duration'] * 60);
+                                    $itemH = floor($itemMinutes / 60);
+                                    $itemM = $itemMinutes % 60;
+                                    @endphp
+                                    <span class="badge badge-soft-success font-size-11">{{ $itemH }}h {{ $itemM }}m</span>
+                                    @endif
+                                </div>
+                                <p class="mb-0 text-muted" style="font-size: 14px;">{{ $item['description'] }}</p>
                             </div>
                             @empty
-                            <div class="text-center p-5 bg-light rounded-xl">
-                                <i class="mdi mdi-clipboard-text-outline display-4 text-muted d-block mb-3"></i>
-                                <p class="text-muted mb-0">No activities recorded yet.</p>
+                            <div class="text-center py-5">
+                                <i class="mdi mdi-history text-muted font-size-40 d-block mb-2"></i>
+                                <p class="text-muted">No activities recorded yet</p>
                             </div>
                             @endforelse
                         </div>
@@ -523,41 +601,82 @@
 <script>
     $(document).ready(function() {
 
-        $('#progress-range').change(function() {
-            $('.task-progress-val').text($(this).val());
-            $('.progress-bar').css('width', $(this).val() + '%');
-            $('.project-metrics__metric-group-item__value').text($(this).val() + '%');
+        function updateProgressUI(val) {
+            $('.task-progress-val').text(val + '%');
 
-            $.ajax({
-                type: 'post',
-                url: base_url + '/projects/task/progress',
-                data: {
-                    'task_id': {
-                        {
-                            $task - > id
-                        }
+            // Dynamic Color Logic
+            let color = '#556ee6'; // Default primary (blue)
+            if (val < 30) color = '#f46a6a'; // Danger (red)
+            else if (val < 70) color = '#f1b44c'; // Warning (orange)
+            else color = '#34c38f'; // Success (green)
+
+            // Update all progress bars (sidebar and main)
+            $('.progress-bar').css({
+                'width': val + '%',
+                'background': color + ' !important',
+                'background-color': color
+            });
+
+            // Force style attribute for !important override
+            $('.progress-bar').each(function() {
+                this.style.setProperty('background', color, 'important');
+                this.style.setProperty('width', val + '%', 'important');
+            });
+
+            $('.task-progress-val').css('color', color);
+
+            // Update "Overall completion" percentage in sidebar and any other % text
+            $('.font-weight-bold').each(function() {
+                if ($(this).text().indexOf('%') !== -1) {
+                    $(this).text(val + '%');
+                    // Only update color if it's not a static label
+                    if ($(this).hasClass('text-primary') || $(this).hasClass('task-progress-val')) {
+                        $(this).css('color', color);
+                    }
+                }
+            });
+
+            // Update range slider track color (visual enhancement)
+            let percentage = (val - 0) / (100 - 0) * 100;
+            $('#progress-range').css('background', 'linear-gradient(to right, ' + color + ' 0%, ' + color + ' ' + percentage + '%, #f0f2f8 ' + percentage + '%, #f0f2f8 100%)');
+        }
+
+        // Real-time update on drag
+        $('#progress-range').on('input', function() {
+            updateProgressUI($(this).val());
+        });
+
+        let progressTimeout;
+        $('#progress-range').on('change input', function(e) {
+
+            clearTimeout(progressTimeout);
+            let val = $(this).val();
+
+            progressTimeout = setTimeout(function() {
+                $.ajax({
+                    type: 'post',
+                    url: base_url + '/projects/task/progress',
+                    data: {
+                        'task_id': "{{ $task->id }}",
+                        'progerss': val,
+                        '_token': '{{ csrf_token() }}'
                     },
-                    'progerss': $(this).val()
-                },
-                dataType: 'json',
-                success: function(res) {
-                    if (res.success == true)
-                        alertify.success(res.message);
-                    else
-                        alertify.error(res.message);
-                },
-                error: function(err) {
-                    console.log(err);
-                },
-            })
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.success == true)
+                            alertify.success(res.message);
+                        else
+                            alertify.error(res.message);
+                    },
+                    error: function(err) {
+                        console.log(err);
+                    },
+                });
+            }, 800); // Wait 800ms after last change before saving
+        });
 
-
-
-
-
-        })
-
-
-    })
+        // Initial UI state
+        updateProgressUI("{{ $task->progress }}");
+    });
 </script>
 @endsection

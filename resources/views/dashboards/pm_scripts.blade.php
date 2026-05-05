@@ -64,4 +64,34 @@
         }
     };
     new ApexCharts(document.querySelector("#pm-project-health-chart"), pmProjOptions).render();
+
+    // Nudge Functionality
+    $(document).on('click', '.nudge-btn', function() {
+        const btn = $(this);
+        const taskId = btn.data('task-id');
+        const originalHtml = btn.html();
+
+        btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
+
+        $.ajax({
+            url: "{{ url('/projects/tasks/nudge') }}/" + taskId,
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                } else {
+                    toastr.error(response.message);
+                }
+            },
+            error: function() {
+                toastr.error("Failed to send nudge.");
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalHtml);
+            }
+        });
+    });
 </script>

@@ -356,9 +356,10 @@
                         <p class="text-muted small mb-0">Chronological history of system access and security events.</p>
                     </div>
                     <div class="d-flex align-items-center">
-                        <span class="badge badge-soft-success mr-2"><span class="badge-dot bg-success mr-1"></span> Login</span>
-                        <span class="badge badge-soft-danger mr-2"><span class="badge-dot bg-danger mr-1"></span> Logout</span>
-                        <span class="badge badge-soft-primary"><span class="badge-dot bg-primary mr-1"></span> Other</span>
+                        <span class="badge badge-soft-info px-2 py-1 mr-3">Recent 10 Actions</span>
+                        <a href="javascript:void(0)" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-weight-bold" onclick="alert('Full Activity History page is coming soon with detailed pagination!')">
+                            <i class="mdi mdi-eye-outline mr-1"></i> View All
+                        </a>
                     </div>
                 </div>
 
@@ -368,7 +369,7 @@
                             <tr>
                                 <th>Action</th>
                                 <th>Details</th>
-                                <th>IP Address</th>
+                                <th>IP & Location</th>
                                 <th>Device / Browser</th>
                                 <th>Timestamp</th>
                             </tr>
@@ -385,7 +386,14 @@
                                     </div>
                                 </td>
                                 <td><span class="text-muted">{{ $act->details }}</span></td>
-                                <td><code class="text-primary">{{ $act->ip_address }}</code></td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <code class="text-primary">{{ $act->ip_address }}</code>
+                                        @if($act->location)
+                                        <small class="text-muted mt-1"><i class="mdi mdi-map-marker text-danger mr-1"></i>{{ $act->location }}</small>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="text-truncate d-inline-block" style="max-width: 250px;" title="{{ $act->user_agent }}">
                                         {{ Str::limit($act->user_agent, 45) }}
@@ -435,27 +443,15 @@
         var trendOptions = {
             series: [{
                     name: 'Tasks',
-                    data: [@foreach($monthlyTrend as $m) {
-                        {
-                            $m - > tasks
-                        }
-                    }, @endforeach]
+                    data: [@foreach($monthlyTrend as $m) {{ $m->tasks }}, @endforeach]
                 },
                 {
                     @if($isSales)
                     name: 'New Clients',
-                    data: [@foreach($monthlyTrend as $m) {
-                        {
-                            $m - > clients
-                        }
-                    }, @endforeach]
+                    data: [@foreach($monthlyTrend as $m) {{ $m->clients }}, @endforeach]
                     @else
                     name: 'Input Hours',
-                    data: [@foreach($monthlyTrend as $m) {
-                        {
-                            $m - > hours
-                        }
-                    }, @endforeach]
+                    data: [@foreach($monthlyTrend as $m) {{ $m->hours }}, @endforeach]
                     @endif
                 }
             ],

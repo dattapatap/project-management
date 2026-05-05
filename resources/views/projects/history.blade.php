@@ -1,63 +1,24 @@
 @extends('layouts.app')
 
 @section('styles')
-<!-- Tailwind CSS CDN for Modern UI -->
-<script src="https://cdn.tailwindcss.com"></script>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-    .project-history-page {
-        font-family: 'Inter', sans-serif;
-        background-color: #f9fafb;
+    /* Premium Stabilized Design for History View */
+    .sticky-header-fallback {
+        position: sticky;
+        top: 70px !important;
+        /* Offset for fixed navbar */
+        z-index: 999 !important;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
-    /* Scrollbar for the timeline */
-    .timeline-scroll {
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: #e5e7eb transparent;
+    .animate-slide-in-right {
+        animation: slideInRight 0.6s ease-out forwards;
     }
 
-    .timeline-scroll::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    .timeline-scroll::-webkit-scrollbar-thumb {
-        background-color: #e5e7eb;
-        border-radius: 20px;
-    }
-
-    /* Timeline styling */
-    .timeline-line::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0.75rem;
-        height: 100%;
-        width: 1px;
-        background-color: #e5e7eb;
-        z-index: 0;
-    }
-
-    .timeline-item:last-child .timeline-line::before {
-        height: 1rem;
-    }
-
-    /* Card enhancements */
-    .hover-lift {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 2px solid #e2e8f0 !important;
-        /* Prominent Slate border - Initial Stage */
-    }
-
-    .hover-lift:hover {
-        transform: translateY(-8px) scale(1.01);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08) !important;
-        border-color: #6366f1 !important;
-    }
-
-    /* Animations */
     @keyframes slideInRight {
         from {
             opacity: 0;
@@ -70,356 +31,490 @@
         }
     }
 
-    .animate-slide-in-right {
-        animation: slideInRight 0.6s ease-out forwards;
+    .timeline-scroll {
+        max-height: 700px;
+        overflow-y: auto;
+        padding-right: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #556ee6 rgba(85, 110, 230, 0.05);
+    }
+
+    .timeline-scroll::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .timeline-scroll::-webkit-scrollbar-track {
+        background: rgba(85, 110, 230, 0.05);
+        border-radius: 10px;
+    }
+
+    .timeline-scroll::-webkit-scrollbar-thumb {
+        background: #556ee6;
+        border-radius: 10px;
+    }
+
+    .timeline-scroll::-webkit-scrollbar-thumb:hover {
+        background: #344ec5;
+    }
+
+    .card {
+        border-radius: 12px !important;
+        transition: all 0.3s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #556ee6 0%, #344ec5 100%);
+    }
+
+    .bg-light-soft {
+        background-color: #f8f9fa;
+    }
+
+    .text-primary {
+        color: #556ee6 !important;
+    }
+
+    .bg-soft-primary {
+        background-color: rgba(85, 110, 230, 0.1);
+        color: #556ee6;
+    }
+
+    .bg-soft-success {
+        background-color: rgba(52, 195, 143, 0.1);
+        color: #34c38f;
+    }
+
+    .bg-soft-danger {
+        background-color: rgba(244, 106, 106, 0.1);
+        color: #f46a6a;
+    }
+
+    .bg-soft-warning {
+        background-color: rgba(241, 180, 76, 0.1);
+        color: #f1b44c;
+    }
+
+    .timeline-dot.pulse {
+        animation: dot-pulse 2s infinite;
+    }
+
+    @keyframes dot-pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(85, 110, 230, 0.4);
+        }
+
+        70% {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 10px rgba(85, 110, 230, 0);
+        }
+
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(85, 110, 230, 0);
+        }
     }
 </style>
 @endsection
 
 @section('content')
-<div class="project-history-page min-h-screen">
+<div class="project-history-page min-h-screen pb-5">
     <!-- Header Summary Bar (Sticky) -->
-    <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4">
-        <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <a href="{{ url()->previous() }}" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <i class="mdi mdi-arrow-left text-gray-600 text-xl"></i>
-                </a>
-                <div>
-                    <h1 class="text-xl font-bold text-gray-900 leading-none">{{ $project->project_name }}</h1>
-                    <p class="text-xs text-gray-500 mt-1">Project Command Center & Analytics</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-                @php
-                $totalTasks = $project->tasks->count();
-                $completedTasksCount = $project->tasks->where('status', 'Completed')->count();
-                $progress = $totalTasks > 0 ? round(($completedTasksCount / $totalTasks) * 100) : 0;
-                @endphp
-                <div class="hidden md:flex items-center gap-3 mr-4">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Overall Progress</span>
-                    <div class="w-32 bg-gray-100 rounded-full h-2 overflow-hidden">
-                        <div class="bg-indigo-600 h-full rounded-full" style="width: {{ $progress }}%"></div>
+    <!-- Sub Header Below Topbar -->
+    <div class="sticky-header-fallback px-4 py-2 border-bottom">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8 d-flex align-items-center">
+                    <a href="{{ url('/projects') }}" class="btn btn-sm btn-light rounded-circle mr-3">
+                        <i class="mdi mdi-arrow-left font-size-18"></i>
+                    </a>
+                    <div>
+                        <h5 class="mb-0 font-weight-bold text-dark">{{ $project->project_name }}</h5>
+                        <p class="mb-0 text-muted small"><i class="mdi mdi-history mr-1"></i> Project History & Audit Trail</p>
                     </div>
-                    <span class="text-sm font-bold text-indigo-600">{{ $progress }}%</span>
                 </div>
-                <button onclick="window.print()" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all flex items-center gap-2">
-                    <i class="mdi mdi-printer"></i> Export PDF
-                </button>
+                <div class="col-md-4 d-flex justify-content-end">
+                    @php
+                    $totalTasks = $project->tasks->count();
+                    $completedTasksCount = $project->tasks->where('status', 'Completed')->count();
+                    $progress = $totalTasks > 0 ? round(($completedTasksCount / $totalTasks) * 100) : 0;
+                    @endphp
+                    <div class="d-none d-md-flex align-items-center">
+                        <div class="text-right mr-3">
+                            <div class="text-muted small font-weight-bold">OVERALL PROGRESS</div>
+                            <div class="font-weight-bold text-primary">{{ $progress }}%</div>
+                        </div>
+                        <div class="progress rounded-pill" style="width: 100px; height: 6px; background-color: #f1f1f1;">
+                            <div class="progress-bar bg-primary rounded-pill" role="progressbar" style="width: {{ $progress }}%"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="max-w-[1600px] mx-auto p-6">
-        <div class="grid grid-cols-1 xl:grid-cols-10 gap-8">
+    <div class="container-fluid py-4">
+        <div class="row">
 
             <!-- LEFT SECTION (70%) -->
-            <div class="xl:col-span-7 space-y-8">
+            <div class="col-xl-8 col-lg-7">
 
                 <!-- 1. Project Overview Card -->
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden hover-lift transition-all duration-300">
-                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                            <i class="mdi mdi-view-dashboard-outline text-indigo-600"></i> Project Insights
-                        </h2>
-                        <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-black uppercase border border-indigo-100">
+                <div class="card mb-4 shadow-sm border-0" style="border-radius: 15px;">
+                    <div class="card-header bg-light border-bottom-0 py-3 d-flex justify-content-between align-items-center" style="border-radius: 15px 15px 0 0;">
+                        <h6 class="mb-0 font-weight-bold text-uppercase text-dark" style="letter-spacing: 1px;">
+                            <i class="mdi mdi-view-dashboard-outline text-primary mr-2"></i> Project Insights
+                        </h6>
+                        <span class="badge badge-soft-primary px-3 py-2 rounded-pill font-weight-bold uppercase">
                             {{ $project->status }}
                         </span>
                     </div>
 
-                    <div class="p-8">
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-12">
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Client</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ $project->clients->name ?? 'N/A' }}</p>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-md-3 col-6 mb-4">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Client</label>
+                                <p class="mb-0 font-weight-bold text-dark">{{ $project->clients->name ?? 'N/A' }}</p>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Category</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ $project->category->category ?? 'N/A' }}</p>
+                            <div class="col-md-3 col-6 mb-4">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Category</label>
+                                <p class="mb-0 font-weight-bold text-dark">{{ $project->category->category ?? 'N/A' }}</p>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Start Date</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ \Carbon\Carbon::parse($project->start_date)->format('d M, Y') }}</p>
+                            <div class="col-md-3 col-6 mb-4">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Start Date</label>
+                                <p class="mb-0 font-weight-bold text-dark">{{ \Carbon\Carbon::parse($project->start_date)->format('d M, Y') }}</p>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Deadline</label>
+                            <div class="col-md-3 col-6 mb-4">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Deadline</label>
                                 @php $isOverdue = \Carbon\Carbon::parse($project->end_date)->isPast() && $project->status != 'Completed'; @endphp
-                                <p class="text-sm font-bold {{ $isOverdue ? 'text-red-600' : 'text-gray-900' }}">
+                                <p class="mb-0 font-weight-bold {{ $isOverdue ? 'text-danger' : 'text-dark' }}">
                                     {{ \Carbon\Carbon::parse($project->end_date)->format('d M, Y') }}
                                     @if($isOverdue) <i class="mdi mdi-alert-circle ml-1"></i> @endif
                                 </p>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Total Duration</label>
+                            <div class="col-md-3 col-6">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Duration</label>
                                 @php
                                 $end = $project->act_end_date ? \Carbon\Carbon::parse($project->act_end_date) : now();
                                 $duration = (int) \Carbon\Carbon::parse($project->start_date)->diffInDays($end);
                                 @endphp
-                                <p class="text-sm font-semibold text-gray-900">{{ $duration }} Days</p>
+                                <p class="mb-0 font-weight-bold text-dark">{{ $duration }} Days</p>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Working Hours</label>
-                                <p class="text-sm font-bold text-indigo-600">{{ number_format($project->total_working_hours, 1) }}h</p>
+                            <div class="col-md-3 col-6">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Hours</label>
+                                <p class="mb-0 font-weight-bold text-primary">{{ number_format($project->total_working_hours, 1) }}h</p>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Completed Date</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ $project->act_end_date ? \Carbon\Carbon::parse($project->act_end_date)->format('d M, Y') : '-' }}</p>
+                            <div class="col-md-3 col-6 mt-3">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Completed Date</label>
+                                <p class="mb-0 font-weight-bold text-dark">{{ $project->act_end_date ? \Carbon\Carbon::parse($project->act_end_date)->format('d M, Y') : '-' }}</p>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Created By</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ $project->creator->name ?? 'System' }}</p>
+                            <div class="col-md-3 col-6 mt-3">
+                                <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Created By</label>
+                                <p class="mb-0 font-weight-bold text-dark">{{ $project->creator->name ?? 'System' }}</p>
                             </div>
                         </div>
 
-                        <div class="mt-10 pt-8 border-t border-gray-50">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Milestone Progress</span>
-                                <span class="text-sm font-black text-indigo-600">{{ $progress }}%</span>
+                        <div class="mt-4 pt-4 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted font-weight-bold text-uppercase" style="font-size: 10px;">Milestone Progress</span>
+                                <span class="font-weight-bold text-primary">{{ $progress }}%</span>
                             </div>
-                            <div class="w-full bg-gray-100 rounded-full h-4 p-1">
-                                <div class="bg-gradient-to-r from-indigo-600 to-blue-500 h-2 rounded-full transition-all duration-1000 shadow-sm" style="width: {{ $progress }}%"></div>
+                            <div class="progress rounded-pill" style="height: 12px; background-color: #f1f1f1;">
+                                <div class="progress-bar bg-gradient-primary rounded-pill shadow-sm" role="progressbar" style="width: {{ $progress }}%" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. Task Summary Card -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-xl shadow-sm hover-lift">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
-                                <i class="mdi mdi-checkbox-multiple-marked-outline text-xl"></i>
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-soft-primary p-2 rounded text-primary mr-2">
+                                    <i class="mdi mdi-checkbox-multiple-marked-outline font-size-18"></i>
+                                </div>
+                                <span class="text-muted font-weight-bold text-uppercase" style="font-size: 9px;">Total</span>
                             </div>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Tasks</span>
+                            <h4 class="mb-0 font-weight-bold text-dark">{{ $project->tasks->count() }}</h4>
                         </div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $project->tasks->count() }}</p>
                     </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm hover-lift">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                                <i class="mdi mdi-check-decagram text-xl"></i>
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-soft-success p-2 rounded text-success mr-2">
+                                    <i class="mdi mdi-check-decagram font-size-18"></i>
+                                </div>
+                                <span class="text-muted font-weight-bold text-uppercase" style="font-size: 9px;">Completed</span>
                             </div>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Completed</span>
+                            <h4 class="mb-0 font-weight-bold text-dark">{{ $project->tasks->where('status', 'Completed')->count() }}</h4>
                         </div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $project->tasks->where('status', 'Completed')->count() }}</p>
                     </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm hover-lift">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
-                                <i class="mdi mdi-clock-fast text-xl"></i>
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-soft-warning p-2 rounded text-warning mr-2">
+                                    <i class="mdi mdi-clock-fast font-size-18"></i>
+                                </div>
+                                <span class="text-muted font-weight-bold text-uppercase" style="font-size: 9px;">Pending</span>
                             </div>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pending</span>
+                            <h4 class="mb-0 font-weight-bold text-dark">{{ $project->tasks->whereIn('status', ['Pending', 'InProgress'])->count() }}</h4>
                         </div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $project->tasks->whereIn('status', ['Pending', 'InProgress'])->count() }}</p>
                     </div>
                     @php $overdueTasks = $project->tasks->filter(fn($t) => \Carbon\Carbon::parse($t->enddate)->isPast() && $t->status != 'Completed')->count(); @endphp
-                    <div class="bg-white p-5 rounded-xl border border-{{ $overdueTasks > 0 ? 'red-200 bg-red-50/20' : 'gray-200' }} shadow-sm hover-lift">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="p-2 bg-{{ $overdueTasks > 0 ? 'red' : 'gray' }}-50 rounded-lg text-{{ $overdueTasks > 0 ? 'red' : 'gray' }}-600">
-                                <i class="mdi mdi-alert-circle-outline text-xl"></i>
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card border-0 shadow-sm p-3 h-100 {{ $overdueTasks > 0 ? 'bg-soft-danger' : '' }}" style="border-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-soft-danger p-2 rounded text-danger mr-2">
+                                    <i class="mdi mdi-alert-circle-outline font-size-18"></i>
+                                </div>
+                                <span class="text-muted font-weight-bold text-uppercase" style="font-size: 9px;">Overdue</span>
                             </div>
-                            <span class="text-[10px] font-bold text-{{ $overdueTasks > 0 ? 'red' : 'gray' }}-400 uppercase tracking-widest">Overdue</span>
+                            <h4 class="mb-0 font-weight-bold text-danger">{{ $overdueTasks }}</h4>
                         </div>
-                        <p class="text-2xl font-bold text-{{ $overdueTasks > 0 ? 'red' : 'gray' }}-900">{{ $overdueTasks }}</p>
                     </div>
                 </div>
 
                 <!-- 3. Task Details Section -->
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden hover-lift transition-all duration-300">
-                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                            <i class="mdi mdi-format-list-bulleted text-indigo-600"></i> Task Analytics
-                        </h2>
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+                    <div class="card-header bg-white border-bottom-0 py-3">
+                        <h6 class="mb-0 font-weight-bold text-uppercase text-dark">
+                            <i class="mdi mdi-format-list-bulleted text-primary mr-2"></i> Task Analytics
+                        </h6>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                                    <th class="px-6 py-4">Task Information</th>
-                                    <th class="px-6 py-4">Assignee</th>
-                                    <th class="px-6 py-4">Timeline</th>
-                                    <th class="px-6 py-4">Work Effort</th>
-                                    <th class="px-6 py-4">Status</th>
-                                    <th class="px-6 py-4 text-right">Progress</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @forelse($project->tasks as $task)
-                                @php $isTOverdue = \Carbon\Carbon::parse($task->enddate)->isPast() && $task->status != 'Completed'; @endphp
-                                <tr class="hover:bg-gray-50/30 transition-colors {{ $isTOverdue ? 'bg-red-50/10' : '' }}">
-                                    <td class="px-6 py-5">
-                                        <div class="flex flex-col">
-                                            <span class="text-sm font-bold text-gray-900">{{ $task->title }}</span>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr class="text-uppercase font-weight-bold text-muted" style="font-size: 10px;">
+                                        <th class="border-0 px-4">Task Information</th>
+                                        <th class="border-0">Assignee</th>
+                                        <th class="border-0">Timeline</th>
+                                        <th class="border-0">Work Effort</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0 text-right">Progress</th>
+                                        <th class="border-0 text-center pr-4">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($project->tasks as $task)
+                                    @php $isTOverdue = \Carbon\Carbon::parse($task->enddate)->isPast() && $task->status != 'Completed'; @endphp
+                                    <tr class="{{ $isTOverdue ? 'table-danger' : '' }}">
+                                        <td class="px-4">
+                                            <div class="font-weight-bold text-dark">{{ $task->title }}</div>
                                             @php
-                                            $tpColor = 'gray';
-                                            if(strtolower($task->priority) == 'high') $tpColor = 'red';
-                                            elseif(strtolower($task->priority) == 'medium') $tpColor = 'amber';
-                                            elseif(strtolower($task->priority) == 'low') $tpColor = 'emerald';
+                                            $tpColor = 'secondary';
+                                            if(strtolower($task->priority) == 'high') $tpColor = 'danger';
+                                            elseif(strtolower($task->priority) == 'medium') $tpColor = 'warning';
+                                            elseif(strtolower($task->priority) == 'low') $tpColor = 'success';
                                             @endphp
-                                            <span class="mt-1 inline-flex w-fit text-[9px] font-black uppercase text-{{ $tpColor }}-600 tracking-tighter">{{ $task->priority ?? 'Medium' }} PRIORITY</span>
-                                            
-                                            @if($task->documents->count() > 0)
-                                            <div class="mt-2 flex flex-wrap gap-2">
-                                                @foreach($task->documents as $tdoc)
-                                                <a href="{{ route('documents.download', $tdoc->id) }}" class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 border border-gray-100 rounded text-[9px] text-gray-500 hover:text-indigo-600 hover:border-indigo-100 transition-colors" title="{{ $tdoc->original_name }}">
-                                                    <i class="mdi mdi-attachment"></i> Doc
+                                            <span class="badge badge-soft-{{ $tpColor }} font-size-10">{{ $task->priority ?? 'Medium' }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($task->user->name ?? 'U') }}&background=556ee6&color=fff" class="avatar-xs rounded-circle mr-2">
+                                                <span class="font-size-12 text-muted">{{ $task->user->name ?? 'Unassigned' }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="font-size-11">
+                                                <div>Due: <span class="font-weight-bold {{ $isTOverdue ? 'text-danger' : '' }}">{{ \Carbon\Carbon::parse($task->enddate)->format('d M') }}</span></div>
+                                                @if($task->act_enddate)
+                                                <div class="text-success">End: {{ \Carbon\Carbon::parse($task->act_enddate)->format('d M') }}</div>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="font-weight-bold">{{ number_format($task->total_time, 1) }}h</div>
+                                        </td>
+                                        <td>
+                                            @php
+                                            $tColor = 'secondary';
+                                            if($task->status == 'Completed') $tColor = 'success';
+                                            elseif($task->status == 'InProgress') $tColor = 'primary';
+                                            @endphp
+                                            <span class="badge badge-soft-{{ $tColor }}">{{ $task->status }}</span>
+                                        </td>
+                                        <td class="text-right">
+                                            <div class="d-flex align-items-center justify-content-end">
+                                                <span class="font-weight-bold mr-2">{{ $task->progress }}%</span>
+                                                <div class="progress progress-sm" style="width: 50px;">
+                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $task->progress }}%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center pr-4">
+                                            @if(!auth()->user()->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant']))
+                                            <div class="btn-group">
+                                                <a href="{{ url('/projects/task/'.base64_encode($task->id).'/history') }}" class="btn btn-soft-primary btn-sm rounded-pill mr-1" title="View Details">
+                                                    <i class="mdi mdi-eye-outline"></i>
                                                 </a>
-                                                @endforeach
+                                                <button type="button" class="btn btn-soft-warning btn-sm rounded-pill nudge-btn" data-task-id="{{ $task->id }}" title="Request Progress Update (Nudge)">
+                                                    <i class="mdi mdi-bell-ring-outline"></i>
+                                                </button>
                                             </div>
+                                            @else
+                                            <span class="text-muted">-</span>
                                             @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        <div class="flex items-center gap-2">
-                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($task->user->name ?? 'U') }}&background=6366f1&color=fff" class="w-6 h-6 rounded-full border border-gray-100 shadow-sm">
-                                            <span class="text-xs font-semibold text-gray-600">{{ $task->user->name ?? 'Unassigned' }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-[10px] text-gray-400">Due: <span class="font-bold {{ $isTOverdue ? 'text-red-500' : 'text-gray-600' }}">{{ \Carbon\Carbon::parse($task->enddate)->format('d M') }}</span></span>
-                                            @if($task->act_enddate)
-                                            <span class="text-[10px] text-gray-400">End: <span class="font-bold text-emerald-500">{{ \Carbon\Carbon::parse($task->act_enddate)->format('d M') }}</span></span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        <div class="flex flex-col">
-                                            <span class="text-xs font-bold text-gray-700">{{ number_format($task->total_time, 1) }}h</span>
-                                            <span class="text-[9px] text-gray-400 uppercase font-black">Logged</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        @php
-                                        $tColor = 'gray';
-                                        if($task->status == 'Completed') $tColor = 'emerald';
-                                        elseif($task->status == 'InProgress') $tColor = 'blue';
-                                        elseif($task->status == 'Pending') $tColor = 'amber';
-                                        @endphp
-                                        <span class="px-2 py-1 bg-{{ $tColor }}-50 text-{{ $tColor }}-700 rounded text-[9px] font-black uppercase border border-{{ $tColor }}-100">
-                                            {{ $task->status }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-5 text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span class="text-xs font-black text-gray-900">{{ $task->progress }}%</span>
-                                            <div class="w-12 bg-gray-100 rounded-full h-1 overflow-hidden">
-                                                <div class="bg-indigo-600 h-full" style="width: {{ $task->progress }}%"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">No tasks assigned yet.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">No tasks found.</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- 4. Project Documents Gallery -->
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden hover-lift transition-all duration-300 mt-6">
-                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                            <i class="mdi mdi-attachment text-emerald-600"></i> Project Documents
-                        </h2>
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ $project->documents->count() }} Files Attached</span>
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+                    <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 font-weight-bold text-uppercase text-dark">
+                            <i class="mdi mdi-attachment text-success mr-2"></i> Project Documents
+                        </h6>
+                        <span class="badge badge-light rounded-pill">{{ $project->documents->count() }} Files</span>
                     </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div class="card-body p-4">
+                        <div class="row">
                             @forelse($project->documents as $doc)
                             @php
                             $ext = strtolower($doc->file_type);
                             $icon = 'mdi-file-outline';
-                            $color = 'blue';
-                            if(in_array($ext, ['jpg','jpeg','png','gif'])) { $icon = 'mdi-file-image'; $color = 'blue'; }
-                            elseif($ext == 'pdf') { $icon = 'mdi-file-pdf-box'; $color = 'red'; }
-                            elseif(in_array($ext, ['doc','docx'])) { $icon = 'mdi-file-word'; $color = 'indigo'; }
-                            elseif(in_array($ext, ['xls','xlsx'])) { $icon = 'mdi-file-excel'; $color = 'emerald'; }
+                            $color = 'primary';
+                            if(in_array($ext, ['jpg','jpeg','png','gif'])) { $icon = 'mdi-file-image'; $color = 'info'; }
+                            elseif($ext == 'pdf') { $icon = 'mdi-file-pdf-box'; $color = 'danger'; }
+                            elseif(in_array($ext, ['doc','docx'])) { $icon = 'mdi-file-word'; $color = 'primary'; }
                             @endphp
-                            <div class="group relative flex items-center p-3 rounded-lg border border-gray-100 hover:border-{{ $color }}-200 hover:bg-{{ $color }}-50/30 transition-all duration-200">
-                                <div class="w-10 h-10 rounded-lg bg-{{ $color }}-50 text-{{ $color }}-600 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
-                                    <i class="mdi {{ $icon }} text-xl"></i>
-                                </div>
-                                <div class="flex-grow min-w-0">
-                                    <p class="text-xs font-bold text-gray-900 truncate pr-6" title="{{ $doc->original_name }}">{{ $doc->original_name }}</p>
-                                    <p class="text-[10px] text-gray-400 font-medium">
-                                        {{ number_format($doc->file_size / 1024, 1) }} KB • {{ $doc->user->name ?? 'System' }}
-                                    </p>
-                                </div>
-                                <a href="{{ route('documents.download', $doc->id) }}" class="absolute right-3 p-1.5 text-gray-400 hover:text-indigo-600 transition-colors">
-                                    <i class="mdi mdi-download text-lg"></i>
-                                </a>
-                            </div>
-                            @empty
-                            <div class="col-span-full py-10 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-                                <i class="mdi mdi-cloud-upload-outline text-4xl text-gray-300 block mb-2"></i>
-                                <p class="text-sm text-gray-400 font-medium">No documents attached to this project.</p>
-                            </div>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- RIGHT SECTION (30%) - ACTIVITY TIMELINE -->
-            <div class="xl:col-span-3">
-                <div class="sticky top-24 bg-white rounded-xl shadow-sm overflow-hidden h-fit hover-lift transition-all duration-300">
-                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-900 text-white flex items-center justify-between">
-                        <h2 class="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                            <i class="mdi mdi-history"></i> Activity Logs
-                        </h2>
-                    </div>
-
-                    <div class="p-6 timeline-scroll">
-                        <div class="relative space-y-8 timeline-line">
-                            @forelse($project->histories->sortByDesc('created_at') as $history)
-                            <div class="timeline-item relative pl-8">
-                                <!-- Icon/Point -->
-                                @php
-                                $icon = 'mdi-record-circle-outline'; $iColor = 'gray';
-                                if(str_contains(strtolower($history->comments), 'created')) { $icon = 'mdi-plus-circle'; $iColor = 'indigo'; }
-                                elseif(str_contains(strtolower($history->comments), 'completed')) { $icon = 'mdi-check-circle'; $iColor = 'emerald'; }
-                                elseif(str_contains(strtolower($history->comments), 'status')) { $icon = 'mdi-refresh'; $iColor = 'amber'; }
-                                elseif(str_contains(strtolower($history->comments), 'assigned')) { $icon = 'mdi-account-arrow-right'; $iColor = 'blue'; }
-                                @endphp
-                                <div class="absolute left-0 top-0.5 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-{{ $iColor }}-600">
-                                    <i class="mdi {{ $icon }} text-sm"></i>
-                                </div>
-
-                                <div class="animate-slide-in-right">
-                                    <div class="flex justify-between items-start mb-1">
-                                        <p class="text-xs font-black text-gray-900 uppercase leading-tight">
-                                            {{ explode(' by ', $history->comments)[0] }}
-                                        </p>
-                                    </div>
-                                    <p class="text-xs text-gray-500 leading-relaxed">{{ $history->comments }}</p>
-
-                                    <div class="mt-3 flex items-center justify-between">
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center text-[8px] font-bold text-gray-500">
-                                                {{ substr($history->user->name ?? 'S', 0, 1) }}
-                                            </div>
-                                            <span class="text-[9px] font-bold text-gray-400 uppercase">{{ $history->user->name ?? 'System' }}</span>
-                                        </div>
-                                        <span class="text-[9px] font-medium text-gray-400 italic">
-                                            {{ \Carbon\Carbon::parse($history->created_at)->format('d M, h:i A') }}
+                            <div class="col-md-4 mb-3">
+                                <div class="d-flex align-items-center p-2 rounded border border-light bg-light-soft">
+                                    <div class="avatar-sm mr-3">
+                                        <span class="avatar-title rounded bg-soft-{{ $color }} text-{{ $color }} font-size-18">
+                                            <i class="mdi {{ $icon }}"></i>
                                         </span>
                                     </div>
+                                    <div class="flex-grow-1 overflow-hidden">
+                                        <h5 class="font-size-12 mb-1 text-truncate"><a href="{{ route('documents.download', $doc->id) }}" class="text-dark">{{ $doc->original_name }}</a></h5>
+                                        <p class="text-muted font-size-10 mb-0">{{ number_format($doc->file_size / 1024, 1) }} KB</p>
+                                    </div>
                                 </div>
                             </div>
                             @empty
-                            <div class="text-center py-10 text-gray-400 italic">No history found.</div>
+                            <div class="col-12 text-center py-4 text-muted">No documents found.</div>
                             @endforelse
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- RIGHT SECTION (30%) -->
+            <div class="col-xl-4 col-lg-5">
+                <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+                    <div class="card-header bg-white border-bottom-0 py-3">
+                        <h6 class="mb-0 font-weight-bold text-uppercase text-dark">
+                            <i class="mdi mdi-history text-primary mr-2"></i> Full Activity Trace
+                        </h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="timeline-scroll pr-2">
+                            @php
+                            $allHistories = $project->histories->merge($project->tasks->flatMap(function($task) {
+                            return $task->histories;
+                            }))->sortByDesc('created_at');
+                            @endphp
+
+                            @forelse($allHistories as $history)
+                            <div class="position-relative pl-4 pb-4 border-left ml-2">
+                                <!-- Dot -->
+                                <div class="timeline-dot pulse position-absolute" style="left: -7px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: #556ee6; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 2;"></div>
+
+                                <div class="card border-0 shadow-none bg-light-soft mb-0 p-3 hover-lift" style="border-radius: 12px;">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="badge badge-soft-primary px-2 py-1 font-size-10 text-uppercase">{{ $history->status ?? 'UPDATE' }}</div>
+                                        <small class="text-muted font-weight-bold" style="font-size: 10px;">{{ $history->created_at->diffForHumans() }}</small>
+                                    </div>
+
+                                    <p class="mb-1 text-dark font-size-12 font-weight-medium">{{ $history->comments }}</p>
+
+                                    <div class="d-flex align-items-center mt-2">
+                                        <div class="avatar-xs mr-2" style="width: 20px; height: 20px;">
+                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($history->user->name ?? 'S') }}&background=f1f1f1&color=333" class="rounded-circle img-fluid">
+                                        </div>
+                                        <span class="text-muted font-size-10">{{ $history->user->name ?? 'System' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @empty
+                            <div class="text-center py-5">
+                                <i class="mdi mdi-history text-muted font-size-24 d-block mb-2"></i>
+                                <p class="text-muted small">No history records found.</p>
+                            </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        // Inject Project Title into Main Navbar Header
+        const projectTitle = "{{ $project->project_name }}";
+        const titleHtml = `
+            <div class="d-none d-lg-flex align-items-center ml-3">
+                <div style="height: 20px; width: 1.5px; background: rgba(0,0,0,0.08); margin: 0 15px;"></div>
+                <h4 class="mb-0 font-weight-bold text-dark" style="font-size: 15px; letter-spacing: 0.5px;">
+                    ${projectTitle}
+                    <span class="badge badge-soft-primary ml-2 px-2" style="font-size: 9px; vertical-align: middle; background-color: rgba(85, 110, 230, 0.1); color: #556ee6;">HISTORY</span>
+                </h4>
+            </div>
+        `;
+
+        // Append after the vertical menu button if it exists
+        if ($('#vertical-menu-btn').length) {
+            $('#vertical-menu-btn').after(titleHtml);
+        }
+
+        // Nudge functionality
+        $('.nudge-btn').on('click', function() {
+            const btn = $(this);
+            const taskId = btn.data('task-id');
+            const originalHtml = btn.html();
+
+            btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
+
+            $.ajax({
+                url: "{{ url('/projects/tasks/nudge') }}/" + taskId,
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success(response.message);
+                    } else {
+                        toastr.error(response.message);
+                    }
+                },
+                error: function() {
+                    toastr.error("Failed to send nudge. Please try again.");
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html(originalHtml);
+                }
+            });
+        });
+    });
+</script>
 @endsection

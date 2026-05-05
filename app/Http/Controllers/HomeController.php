@@ -37,6 +37,12 @@ class HomeController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $tab = $request->query('tab');
+        if ($tab) {
+            session(['active_dashboard_tab' => $tab]);
+            session()->save();
+        }
+
         $adminData = [];
         $selectedYear = $request->get('year', date('Y'));
 
@@ -99,7 +105,7 @@ class HomeController extends Controller
                 ->withCount(['tasks as active_tasks' => function ($q) {
                     $q->where('status', 'InProgress');
                 }])
-                ->withSum('taskLogs as total_minutes', 'time_spend')
+                ->withSum('taskLogs as total_hours', 'time_spend')
                 ->withCount(['tasks as this_month_completed' => function ($q) use ($startOfMonth) {
                     $q->where('status', 'Completed')->where('created_at', '>=', $startOfMonth);
                 }])
@@ -117,12 +123,15 @@ class HomeController extends Controller
             $adminData['team_performance'] = Teams::where('department', $odDeptId)
                 ->with(['teammembers.users' => function ($q) {
                     $q->withCount(['tasks as active_tasks' => function ($sq) {
-                        $sq->where('status', 'InProgress');
+                        $sq->whereIn('status', ['ToDo', 'InProgress']);
                     }])
                         ->withCount(['tasks as completed_tasks' => function ($sq) {
                             $sq->where('status', 'Completed');
                         }])
-                        ->withSum('taskLogs as total_hours', 'time_spend');
+                        ->withSum('taskLogs as total_hours', 'time_spend')
+                        ->with(['taskLogs' => function ($sq) {
+                            $sq->latest()->with('task');
+                        }]);
                 }])->get();
         }
 
@@ -157,12 +166,15 @@ class HomeController extends Controller
             // Employee Performance Summary (Top 5)
             $adminData['employee_performance'] = User::whereHas('tasks')
                 ->withCount(['tasks as active_tasks' => function ($q) {
-                    $q->where('status', 'InProgress');
+                    $q->whereIn('status', ['ToDo', 'InProgress']);
                 }])
                 ->withCount(['tasks as completed_tasks' => function ($q) {
                     $q->where('status', 'Completed');
                 }])
                 ->withSum('taskLogs as total_hours', 'time_spend')
+                ->with(['taskLogs' => function ($q) {
+                    $q->latest()->with('task');
+                }])
                 ->orderBy('completed_tasks', 'desc')
                 ->take(5)
                 ->get();
@@ -325,78 +337,116 @@ class HomeController extends Controller
                     ->withCount(['tasks as active_tasks_count' => function ($sq) {
                         $sq->whereIn('status', ['ToDo', 'InProgress']);
                     }])
-                    ->with(['tasks' => function ($q) {
+                    ->with(['taskLogs' => function ($q) {
+                        $q->latest()->with('task');
+                    }, 'tasks' => function ($q) {
                         $q->whereIn('status', ['ToDo', 'InProgress'])->with('project');
                     }])
                     ->get();
+            }
         }
-    }
 
-    // 👨 Employee / Team Metrics (OD Department)
-    if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader'])) {
-        $year = $selectedYear ?? date('Y');
-        
-        // Task Stats (Year-wise)
-        $tasksQuery = Task::where('assigned_to', $user->id)->whereYear('created_at', $year);
-        $adminData['total_tasks_assigned'] = (clone $tasksQuery)->count();
-        $adminData['completed_tasks_count'] = (clone $tasksQuery)->where('status', 'Completed')->count();
-        $adminData['pending_tasks_count'] = Task::where('assigned_to', $user->id)->whereIn('status', ['ToDo', 'InProgress'])->count();
-        $adminData['active_tasks_count'] = (clone $tasksQuery)->where('status', 'InProgress')->count();
-        $adminData['todo_tasks_count'] = (clone $tasksQuery)->where('status', 'ToDo')->count();
+        // 👨 Employee / Team Metrics (OD Department)
+        if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader'])) {
+            $year = $selectedYear ?? date('Y');
 
-        // Project Stats (Year-wise)
-        $projectsQuery = DepartmentProjects::whereHas('tasks', function($q) use ($user, $year) {
-            $q->where('assigned_to', $user->id)->whereYear('created_at', $year);
-        });
-        $adminData['projects_assigned_count'] = (clone $projectsQuery)->count();
-        $adminData['completed_projects_count'] = (clone $projectsQuery)->where('status', 'Completed')->count();
+            // Task Stats (Year-wise)
+            $tasksQuery = Task::where('assigned_to', $user->id)->whereYear('created_at', $year);
+            $adminData['total_tasks_assigned'] = (clone $tasksQuery)->count();
+            $adminData['completed_tasks_count'] = Task::where('assigned_to', $user->id)->where('status', 'Completed')->whereYear('updated_at', $year)->count();
+            $adminData['pending_tasks_count'] = Task::where('assigned_to', $user->id)->whereIn('status', ['ToDo', 'InProgress'])->count();
+            $adminData['active_tasks_count'] = Task::where('assigned_to', $user->id)->where('status', 'InProgress')->count();
+            $adminData['todo_tasks_count'] = Task::where('assigned_to', $user->id)->where('status', 'ToDo')->count();
 
-        // Hours & Performance (Year-wise)
-        $logsQuery = TaskLog::where('userid', $user->id)->whereYear('created_at', $year);
-        $adminData['total_hours'] = round($logsQuery->sum('time_spend') / 60, 1);
-        
-        // Average Task Delivery Time
-        $totalMinutesOnCompleted = Task::where('assigned_to', $user->id)->where('status', 'Completed')
-            ->whereYear('created_at', $year)
-            ->withSum('logs as total_minutes', 'time_spend')
-            ->get()->sum('total_minutes');
-        $adminData['avg_task_duration'] = $adminData['completed_tasks_count'] > 0 ? round(($totalMinutesOnCompleted / 60) / $adminData['completed_tasks_count'], 1) : 0;
+            // Project Stats (Year-wise)
+            $projectsQuery = DepartmentProjects::whereHas('tasks', function ($q) use ($user, $year) {
+                $q->where('assigned_to', $user->id)->whereYear('created_at', $year);
+            });
+            $adminData['projects_assigned_count'] = (clone $projectsQuery)->count();
+            $adminData['completed_projects_count'] = (clone $projectsQuery)->where('status', 'Completed')->count();
 
-        // Growth / Trends
-        $trendMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $monthlyCompleted = Task::where('assigned_to', $user->id)->where('status', 'Completed')->whereYear('created_at', $year)
-            ->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(created_at, '%b') as month"))
-            ->groupBy('month')->get()->keyBy('month');
-            
-        $adminData['growth_trend'] = collect($trendMonths)->map(function($m) use ($monthlyCompleted) {
-            return (object)[
-                'month' => $m,
-                'count' => $monthlyCompleted->has($m) ? $monthlyCompleted->get($m)->count : 0
+            // Hours & Performance (Year-wise)
+            $logsQuery = TaskLog::where('userid', $user->id)->whereYear('created_at', $year);
+            $adminData['total_hours'] = round($logsQuery->sum('time_spend'), 1);
+
+            $totalHoursOnCompleted = Task::where('assigned_to', $user->id)->where('status', 'Completed')
+                ->whereYear('created_at', $year)
+                ->withSum('logs as total_hours', 'time_spend')
+                ->get()->sum('total_hours');
+            $adminData['avg_task_duration'] = $adminData['completed_tasks_count'] > 0 ? round($totalHoursOnCompleted / $adminData['completed_tasks_count'], 1) : 0;
+
+            // Growth / Trends
+            $trendMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            $monthlyCompleted = Task::where('assigned_to', $user->id)->where('status', 'Completed')->whereYear('updated_at', $year)
+                ->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(updated_at, '%b') as month"))
+                ->groupBy('month')->get()->keyBy('month');
+
+            $adminData['growth_trend'] = collect($trendMonths)->map(function ($m) use ($monthlyCompleted) {
+                return (object)[
+                    'month' => $m,
+                    'count' => $monthlyCompleted->has($m) ? $monthlyCompleted->get($m)->count : 0
+                ];
+            });
+
+            // Current Tasks for Board
+            $adminData['my_tasks'] = Task::with(['project.category', 'project.clients'])->where('assigned_to', $user->id)
+                ->whereIn('status', ['ToDo', 'InProgress'])
+                ->orderBy('priority', 'desc')
+                ->get();
+
+            $adminData['recently_completed_tasks'] = Task::with(['project.category', 'project.clients'])->where('assigned_to', $user->id)
+                ->where('status', 'Completed')
+                ->orderBy('updated_at', 'desc')
+                ->take(10)
+                ->get();
+
+            $adminData['recent_projects'] = DepartmentProjects::whereHas('tasks', function ($q) use ($user, $year) {
+                $q->where('assigned_to', $user->id);
+            })->with(['category', 'clients'])
+                ->withCount(['tasks as user_tasks_count' => function ($q) use ($user) {
+                    $q->where('assigned_to', $user->id);
+                }])
+                ->latest()->take(5)->get();
+
+            $adminData['recent_logs'] = TaskLog::with('task.project')->where('userid', $user->id)->latest()->take(10)->get();
+
+            // Daily Pulse (Today's specific metrics)
+            $startOfToday = Carbon::now()->startOfDay();
+            $adminData['daily_pulse'] = [
+                'tasks_completed_today' => Task::where('assigned_to', $user->id)
+                    ->where('status', 'Completed')
+                    ->where('updated_at', '>=', $startOfToday)
+                    ->count(),
+                'hours_logged_today' => round(TaskLog::where('userid', $user->id)
+                    ->where('created_at', '>=', $startOfToday)
+                    ->sum('time_spend'), 1)
             ];
-        });
 
-        // Current Tasks for Board
-        $adminData['my_tasks'] = Task::with(['project.category', 'project.clients'])->where('assigned_to', $user->id)
-            ->whereIn('status', ['ToDo', 'InProgress'])
-            ->orderBy('priority', 'desc')
-            ->get();
-            
-        $adminData['recent_projects'] = DepartmentProjects::whereHas('tasks', function($q) use ($user, $year) {
-            $q->where('assigned_to', $user->id);
-        })->with(['category', 'clients'])
-        ->withCount(['tasks as user_tasks_count' => function($q) use ($user) {
-            $q->where('assigned_to', $user->id);
-        }])
-        ->latest()->take(5)->get();
+            // Year selection support: From creation year to current year
+            $startYear = $user->created_at ? $user->created_at->year : date('Y');
+            $currentYear = (int)date('Y');
+            $adminData['available_years'] = range($currentYear, $startYear);
+            $adminData['selected_year'] = $year;
+        }
 
-        $adminData['recent_logs'] = TaskLog::with('task.project')->where('userid', $user->id)->latest()->take(10)->get();
-        
-        // Year selection support: From creation year to current year
-        $startYear = $user->created_at ? $user->created_at->year : date('Y');
-        $currentYear = (int)date('Y');
-        $adminData['available_years'] = range($currentYear, $startYear);
-        $adminData['selected_year'] = $year;
-    }
+        if (isset($adminData['employee_performance'])) {
+            $adminData['employee_performance']->load(['taskLogs.task']);
+        }
+        if (isset($adminData['team_employees'])) {
+            $adminData['team_employees']->load(['taskLogs.task']);
+        }
+        if (isset($adminData['team_performance'])) {
+            // Use an Eloquent Collection so it supports the .load() method
+            $allUsers = new \Illuminate\Database\Eloquent\Collection();
+            foreach($adminData['team_performance'] as $team) {
+                foreach($team->teammembers as $tm) {
+                    if($tm->users) $allUsers->push($tm->users);
+                }
+            }
+            if($allUsers->isNotEmpty()) {
+                $allUsers->load(['taskLogs.task']);
+            }
+        }
 
         return view('home', compact('adminData'));
     }

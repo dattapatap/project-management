@@ -195,7 +195,7 @@
                                 <i class="mdi mdi-pulse mr-1"></i> Pulse
                             </a>
                             <button class="btn btn-action-trendy btn-primary shadow-sm" type="button" data-toggle="collapse" data-target="#tasks-{{ $project->id }}">
-                                <i class="mdi mdi-layers-outline mr-1"></i> Workboard
+                                <i class="mdi mdi-layers-outline mr-1"></i> Taskboard
                             </button>
                         </div>
                     </div>

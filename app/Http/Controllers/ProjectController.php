@@ -9,6 +9,8 @@ use App\Models\TeamMembers;
 use App\Models\TeamProject;
 use App\Models\Teams;
 use App\Models\User;
+use App\Models\UserActivity;
+use App\Services\ProjectNotificationService;
 use App\Notifications\ProjectAssigned;
 use App\Notifications\ProjectUpdate;
 use Auth;
@@ -31,7 +33,7 @@ class ProjectController extends Controller
 
         // Handle regular OD employees (Developer, Designer, etc.)
         if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant'])) {
-            $query->whereHas('tasks', function($q) use ($user, $request) {
+            $query->whereHas('tasks', function ($q) use ($user, $request) {
                 $q->where('assigned_to', $user->id);
                 if ($request->has('status')) {
                     if ($request->status == 'Completed') {
@@ -162,7 +164,14 @@ class ProjectController extends Controller
                         ->get();
 
                     if ($teamLeads->count() > 0) {
-                        \Notification::send($teamLeads, (new ProjectAssigned($project, "New Project"))->delay(now()->addSeconds(5)));
+                        $details = [
+                            'category' => 'Project',
+                            'header'   => 'New Project Assigned to Team',
+                            'body'     => "Project '{$project->project_name}' has been assigned to your team.",
+                            'link'     => url('/') . "/projects/" . base64_encode($project->id) . "/history"
+                        ];
+                        // Notify all team members if it's a team assignment
+                        ProjectNotificationService::notifyProject($project, $details);
                     }
                 }
 
@@ -216,15 +225,19 @@ class ProjectController extends Controller
                 $project->description      =   $request->description;
                 $project->save();
 
+                UserActivity::log('Project Updated', "Updated basic details of project '{$project->project_name}'");
+
                 DepartmentProjectHistoryController::store($project, "Project Updated", $userid);
 
 
                 // Get Department Members and filter by role
                 // Bulk notify Product Managers
-                $productManagers = User::role('Project-Manager')->where('status', 'Active')->get();
-                if ($productManagers->count() > 0) {
-                    \Notification::send($productManagers, (new ProjectUpdate($project, "Project Update"))->delay(now()->addSeconds(5)));
-                }
+                ProjectNotificationService::notifyProject($project, [
+                    'category' => 'Project',
+                    'header'   => 'Project Details Updated',
+                    'body'     => "Details for project '{$project->project_name}' have been updated by " . Auth::user()->name,
+                    'link'     => url('/') . "/projects/" . base64_encode($project->id) . "/history"
+                ]);
 
                 DB::commit();
                 return response()->json(['code' => 200, "success" => true, 'message' => "Project Updated"], 200);
@@ -256,6 +269,8 @@ class ProjectController extends Controller
                 $history->date            = Carbon::now();
                 $history->addedby         = $userid;
                 $history->save();
+
+                UserActivity::log('Project Update', "Added progress remark for project '{$project->project_name}': {$request->remarks}");
 
                 // Get Department Members and filter by role
                 // Bulk notify Product Managers
@@ -313,8 +328,17 @@ class ProjectController extends Controller
                 }
                 $project->save();
 
+                UserActivity::log('Project Status Changed', "Changed status of project '{$project->project_name}' to '{$project->status}'");
+
                 $comment = 'Project status updated as ' . $project->status . ' by ' . $user->name;
                 DepartmentProjectHistoryController::store($project, $comment, $user->id);
+
+                ProjectNotificationService::notifyProject($project, [
+                    'category' => 'Project',
+                    'header'   => 'Project Status Updated',
+                    'body'     => "Project '{$project->project_name}' is now {$project->status}",
+                    'link'     => url('/') . "/projects/" . base64_encode($project->id) . "/history"
+                ]);
 
                 return response()->json(['code' => 200, "success" => true, 'message' => "Project Status Updated"], 200);
             } catch (Exception $ex) {
@@ -332,7 +356,7 @@ class ProjectController extends Controller
             $id = $projectid;
         }
 
-        $project = DepartmentProjects::with(['histories.user', 'tasks.user', 'tasks.logs', 'tasks.documents.user', 'clients', 'category', 'documents.user'])->find($id);
+        $project = DepartmentProjects::with(['histories.user', 'tasks.user', 'tasks.logs.user', 'tasks.histories.user', 'tasks.documents.user', 'clients', 'category', 'documents.user'])->find($id);
 
         if ($project) {
             return view('projects.history', compact('project'));
@@ -410,6 +434,13 @@ class ProjectController extends Controller
             $targetUser = User::find($assign_to);
             DepartmentProjectHistoryController::store($project, "Project assigned to Team Leader: " . $targetUser->name, $user->id);
 
+            ProjectNotificationService::notifyProject($project, [
+                'category' => 'Project',
+                'header'   => 'Project Assigned to TL',
+                'body'     => "Project '{$project->project_name}' has been assigned to Team Leader {$targetUser->name}",
+                'link'     => url('/') . "/projects/" . base64_encode($project->id) . "/history"
+            ]);
+
             return response()->json(['status' => true, 'message' => 'Project successfully assigned']);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()]);
@@ -423,7 +454,7 @@ class ProjectController extends Controller
         if (!$project) return response()->json(['status' => false, 'message' => 'Project not found']);
 
         $user = Auth::user();
-        
+
         $query = User::where('status', 'Active');
 
         if ($project->project_team && $project->project_team->team) {

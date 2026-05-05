@@ -14,6 +14,7 @@ Route::prefix('projects')->middleware(['auth'])->group(function(){
     Route::get('/taskboard/{task}/edit', [TaskController::class, 'edit']);
     Route::post('/taskboard/{task}/update', [TaskController::class, 'update']);
     Route::post('/taskboard/{task}/destroy', [TaskController::class, 'destroy'])->name('tasks.destroy');
+    Route::post('/taskboard/move', [TaskController::class, 'moveTask']);
     Route::post('/taskboard/changestatus', [TaskController::class, 'changestatus']);
 
     Route::post('/taskboard/addLog', [TaskController::class, 'addTaskLog']);
@@ -21,6 +22,7 @@ Route::prefix('projects')->middleware(['auth'])->group(function(){
     Route::get('/task/{taskid}/history', [TaskController::class, 'show']);
     Route::post('/task/progress', [TaskController::class, 'updateProgress']);
     Route::post('/task/comment', [TaskController::class, 'addComment']);
+    Route::post('/tasks/nudge/{task}', [TaskController::class, 'nudge'])->name('tasks.nudge');
 
 
     Route::post('/changestatus', [ProjectController::class, 'status']);

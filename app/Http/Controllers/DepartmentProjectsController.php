@@ -6,6 +6,7 @@ use App\Models\ClientHistory;
 use App\Models\ClientPackages;
 use App\Models\Clients;
 use App\Models\DepartmentProjects;
+use App\Services\ProjectNotificationService;
 use App\Models\User;
 use App\Notifications\ClientMatured;
 use Auth;
@@ -106,12 +107,13 @@ class DepartmentProjectsController extends Controller
                     $clipack->save();
                 }
 
-                // Get Department Members and filter by role
-                $productManager = User::whereHas('roles', function($q){  $q->where('name', 'Project-Manager' ); })->where('status', 'Active')->get();
-                for($ctr=0; $ctr < count($productManager); $ctr++ ){
-                    $currUser = $productManager[$ctr];
-                    $currUser->notify((new ClientMatured($client,  $dept, $category=$projectnm->name))->delay(now()->addSeconds(5)));
-                }
+                // Notify stakeholders about the new project
+                ProjectNotificationService::notifyProject($dept, [
+                    'category' => 'Project',
+                    'header'   => 'New Project Created',
+                    'body'     => "Project '{$dept->project_name}' has been created and assigned.",
+                    'link'     => url('/') . "/projects/" . base64_encode($dept->id) . "/history"
+                ]);
 
                 DB::commit();
                 return response()->json(['code'=>200, "status"=>true, 'message'=> "Project Created" ], 200);

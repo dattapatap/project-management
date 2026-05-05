@@ -107,6 +107,58 @@
     .pulse {
         animation: pulse-red 2s infinite;
     }
+
+    /* Premium Dashboard Tabs */
+    .dashboard-tabs {
+        border-bottom: none !important;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .dashboard-tabs .nav-link {
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 12px 24px !important;
+        font-weight: 700 !important;
+        color: #74788d !important;
+        background: #f8f9fa !important;
+        transition: all 0.3s ease !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .dashboard-tabs .nav-link i {
+        font-size: 18px;
+    }
+
+    .dashboard-tabs .nav-link.active {
+        background: #556ee6 !important;
+        color: #fff !important;
+        box-shadow: 0 4px 15px rgba(85, 110, 230, 0.25) !important;
+    }
+
+    .dashboard-tabs .nav-link:hover:not(.active) {
+        background: #edf0f7 !important;
+        transform: translateY(-2px);
+    }
+
+    .tab-content-animate {
+        animation: slideUpFade 0.4s ease-out;
+    }
+
+    @keyframes slideUpFade {
+        from {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 @endsection
@@ -130,32 +182,60 @@
     </div>
     <!-- end page title -->
 
-    {{-- Admin Dashboard --}}
+    {{-- Role-specific Dashboards with Tab Support --}}
+    @php
+    $activeTab = session('active_dashboard_tab');
+
+    // Set defaults if session is empty
+    if (!$activeTab) {
+    if($user->hasRole('Team-Leader')) $activeTab = 'tab-tl-team';
+    if($user->hasRole('Project-Manager')) $activeTab = 'tab-pm-portfolio';
+    }
+    @endphp
+
+    @if($user->hasRole('Team-Leader') && $user->departments->department == 2)
+    {{-- Dashboard Tab Switcher for TL --}}
+    <ul class="nav nav-tabs dashboard-tabs" id="tlDashboardTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link {{ $activeTab == 'tab-tl-team' ? 'active' : '' }}" href="{{ route('home', ['tab' => 'tab-tl-team']) }}">
+                <i class="mdi mdi-shield-crown"></i> Team Oversight
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ $activeTab == 'tab-tl-personal' ? 'active' : '' }}" href="{{ route('home', ['tab' => 'tab-tl-personal']) }}">
+                <i class="mdi mdi-account-circle"></i> My Personal Workspace
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade {{ $activeTab == 'tab-tl-team' ? 'show active' : '' }} tab-content-animate" id="team-oversight" role="tabpanel">
+            @include('dashboards.tl_od_ui')
+        </div>
+        <div class="tab-pane fade {{ $activeTab == 'tab-tl-personal' ? 'show active' : '' }} tab-content-animate" id="my-workspace" role="tabpanel">
+            @include('dashboards.employee_od_ui')
+        </div>
+    </div>
+    @elseif($user->hasRole('Project-Manager'))
+    {{-- Project Manager Portfolio View Only --}}
+    <div class="row">
+        <div class="col-12">
+            @include('dashboards.pm_ui')
+        </div>
+    </div>
+    @else
+    {{-- Standard Dashboard Logic for others --}}
     @if($user->hasRole('Admin'))
     @include('dashboards.admin_ui')
     @endif
 
-
-    {{-- Sales Executive / Team Leader Dept 1 --}}
     @if($user->hasRole(['Sales-Executive', 'Team-Leader']) && $user->departments->department == 1)
     @include('dashboards.sales_ui')
     @endif
 
-
-    {{-- Project Manager Dashboard --}}
-    @if($user->hasRole(['Project-Manager']))
-    @include('dashboards.pm_ui')
-    @endif
-
-
-    {{-- Team Leader Dashboard (OD Department) --}}
-    @if($user->hasRole(['Team-Leader']) && $user->departments->department == 2)
-    @include('dashboards.tl_od_ui')
-    @endif
-
-    {{-- Employee / Team Metrics (OD Department) --}}
-    @if($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
+    @if($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant']))
     @include('dashboards.employee_od_ui')
+    @endif
     @endif
 
 

@@ -79,6 +79,27 @@
         border-color: #556ee6;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
     }
+
+    @keyframes pulse-urgency {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.4); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(244, 106, 106, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0); }
+    }
+    
+    @keyframes pulse-new {
+        0% { box-shadow: 0 0 0 0 rgba(0, 183, 255, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(0, 183, 255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 183, 255, 0); }
+    }
+
+    .urgent-pulse {
+        animation: pulse-urgency 1.5s infinite;
+    }
+    
+    .new-task-glow {
+        animation: pulse-new 2s infinite;
+        border-left: 3px solid #00b7ff !important;
+    }
 </style>
 
 <div class="row mb-4 align-items-center">
@@ -106,6 +127,36 @@
                         <option value="{{ $yr }}" {{ $adminData['selected_year'] == $yr ? 'selected' : '' }}>{{ $yr }}</option>
                         @endforeach
                     </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ⚡ Feature 2: Daily Pulse Banner -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-primary border-0 shadow-lg" style="border-radius: 20px; background: linear-gradient(135deg, #556ee6 0%, #3452e1 100%);">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div class="display-4 mr-3" style="font-size: 2.5rem;">⚡</div>
+                            <div>
+                                <h3 class="text-white font-weight-bold mb-1">Your Daily Pulse</h3>
+                                <p class="text-white-50 mb-0 font-weight-medium">
+                                    You've crushed <span class="text-white font-weight-bold">{{ $adminData['daily_pulse']['tasks_completed_today'] }} tasks</span> and logged <span class="text-white font-weight-bold">{{ $adminData['daily_pulse']['hours_logged_today'] }} hours</span> today. Keep it up!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                        <div class="d-inline-flex align-items-center bg-white-10 px-3 py-2 rounded-pill" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);">
+                            <div class="spinner-grow spinner-grow-sm text-white mr-2" role="status"></div>
+                            <span class="text-white font-weight-bold font-size-13">Live Session Active</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -283,34 +334,122 @@
     <!-- 📋 Sidebar: Taskboard & Activity -->
     <div class="col-lg-4">
         <div class="card trendy-card shadow-sm border-0 rounded-lg mb-4">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                <h5 class="font-size-15 mb-0 text-dark font-weight-bold">Actionable Tasks</h5>
-                <span class="badge badge-pill badge-soft-primary px-2">{{ count($adminData['my_tasks']) }} Active</span>
-            </div>
-            <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
-                <ul class="list-group list-group-flush">
-                    @forelse($adminData['my_tasks'] as $task)
-                    <li class="list-group-item border-0 py-3">
-                        <div class="d-flex">
-                            <div class="mr-3">
-                                <div class="avatar-xs">
-                                    <span class="avatar-title rounded-circle bg-soft-{{ $task->priority == 'High' ? 'danger' : ($task->priority == 'Medium' ? 'warning' : 'info') }} text-{{ $task->priority == 'High' ? 'danger' : ($task->priority == 'Medium' ? 'warning' : 'info') }} font-size-12">
-                                        {{ substr($task->priority, 0, 1) }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 overflow-hidden">
-                                <h6 class="font-size-13 mb-1 text-truncate font-weight-bold">
-                                    <a href="{{ url('projects/taskboard/' . base64_encode($task->projectid)) }}" class="text-dark">{{ $task->title }}</a>
-                                </h6>
-                                <p class="text-muted font-size-11 mb-0 text-truncate">{{ $task->project->project_name }}</p>
-                            </div>
-                        </div>
+            <div class="card-header bg-white border-bottom py-3">
+                <ul class="nav nav-tabs-custom card-header-tabs border-0" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold" data-toggle="tab" href="#active-tasks" role="tab">
+                            Active Tasks <span class="badge badge-pill badge-soft-primary ml-1">{{ count($adminData['my_tasks']) }}</span>
+                        </a>
                     </li>
-                    @empty
-                    <li class="list-group-item text-center py-4 text-muted">All caught up!</li>
-                    @endforelse
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" data-toggle="tab" href="#completed-tasks" role="tab">
+                            Completed <span class="badge badge-pill badge-soft-success ml-1">{{ count($adminData['recently_completed_tasks']) }}</span>
+                        </a>
+                    </li>
                 </ul>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content">
+                    <!-- Active Tasks Tab -->
+                    <div class="tab-pane active" id="active-tasks" role="tabpanel">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                @forelse($adminData['my_tasks'] as $task)
+                                <li class="list-group-item border-0 py-3 mb-2 mx-2 rounded-lg transition-all" style="transition: transform 0.2s;">
+                                    @php
+                                    $isUrgent = false;
+                                    $isOverdue = false;
+                                    $isNew = \Carbon\Carbon::parse($task->created_at)->gt(\Carbon\Carbon::now()->subHours(24));
+                                    
+                                    if($task->enddate) {
+                                        $end = \Carbon\Carbon::parse($task->enddate);
+                                        $daysLeft = \Carbon\Carbon::now()->diffInDays($end, false);
+                                        if($daysLeft < 0) {
+                                            $isOverdue = true;
+                                            $isUrgent = true;
+                                        } elseif($daysLeft <= 2) {
+                                            $isUrgent = true;
+                                        }
+                                    }
+                                    @endphp
+                                    <div class="d-flex align-items-center {{ $isOverdue ? 'bg-soft-rose border-left border-danger' : ($isNew ? 'new-task-glow bg-soft-info' : '') }} p-2 rounded-lg">
+                                        <div class="mr-3">
+                                            <div class="avatar-xs">
+                                                <span class="avatar-title rounded-circle bg-{{ $isOverdue ? 'danger' : ($isUrgent ? 'warning' : ($isNew ? 'info' : 'primary')) }} text-white font-size-12 {{ $isUrgent || $isNew ? 'urgent-pulse' : '' }}">
+                                                    @if($isOverdue)
+                                                        <i class="mdi mdi-alert-circle"></i>
+                                                    @elseif($isUrgent)
+                                                        <i class="mdi mdi-clock-alert"></i>
+                                                    @elseif($isNew)
+                                                        <i class="mdi mdi-star"></i>
+                                                    @else
+                                                        {{ substr($task->priority, 0, 1) }}
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <h6 class="font-size-13 mb-1 text-truncate font-weight-bold">
+                                                <a href="{{ url('projects/taskboard/' . base64_encode($task->projectid)) }}" class="text-dark">{{ $task->title }}</a>
+                                                @if($isOverdue)
+                                                    <span class="badge badge-danger ml-1">OVERDUE</span>
+                                                @elseif($isUrgent)
+                                                    <span class="badge badge-warning ml-1">URGENT</span>
+                                                @elseif($isNew)
+                                                    <span class="badge badge-info ml-1">NEW</span>
+                                                @endif
+                                            </h6>
+                                            <p class="text-muted font-size-11 mb-0 text-truncate">
+                                                {{ $task->project->project_name }}
+                                                @if($task->enddate)
+                                                    • <span class="{{ $isUrgent ? 'text-danger font-weight-bold' : '' }}">
+                                                        @if($isOverdue)
+                                                            Missed by {{ abs($daysLeft) }} days
+                                                        @else
+                                                            Due {{ \Carbon\Carbon::parse($task->enddate)->format('d M') }}
+                                                        @endif
+                                                    </span>
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </div>
+                                </li>
+                                @empty
+                                <li class="list-group-item text-center py-4 text-muted">All caught up!</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Completed Tasks Tab -->
+                    <div class="tab-pane" id="completed-tasks" role="tabpanel">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                @forelse($adminData['recently_completed_tasks'] as $task)
+                                <li class="list-group-item border-0 py-3 bg-light-50">
+                                    <div class="d-flex align-items-center">
+                                        <div class="mr-3">
+                                            <div class="avatar-xs">
+                                                <span class="avatar-title rounded-circle bg-soft-success text-success font-size-12">
+                                                    <i class="mdi mdi-check"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <h6 class="font-size-13 mb-1 text-truncate font-weight-bold text-muted">
+                                                <a href="{{ url('projects/taskboard/' . base64_encode($task->projectid)) }}" class="text-muted">{{ $task->title }}</a>
+                                            </h6>
+                                            <small class="text-muted">Done {{ $task->updated_at->diffForHumans() }}</small>
+                                        </div>
+                                    </div>
+                                </li>
+                                @empty
+                                <li class="list-group-item text-center py-4 text-muted">No recently completed tasks.</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="card-footer bg-white border-top text-center py-2">
                 <a href="{{ url('projects') }}" class="btn btn-sm btn-link text-primary font-weight-bold">View Taskboard</a>

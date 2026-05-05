@@ -9,22 +9,32 @@ class Task extends Model
 {
     use HasFactory;
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class, 'assigned_to', 'id');
     }
-    public function createdby(){
+    public function createdby()
+    {
         return $this->belongsTo(User::class, 'created_by', 'id');
     }
-    public function project(){
+    public function project()
+    {
         return $this->belongsTo(DepartmentProjects::class, 'projectid', 'id');
     }
 
-    public function logs(){
+    public function logs()
+    {
         return $this->hasMany(TaskLog::class, 'taskid', 'id');
     }
 
-    public function comments(){
+    public function comments()
+    {
         return $this->hasMany(TaskComment::class, 'taskid', 'id');
+    }
+
+    public function histories()
+    {
+        return $this->morphMany(DepartmentProjectHistory::class, 'histories');
     }
 
     public function getTotalTimeAttribute()
@@ -38,4 +48,5 @@ class Task extends Model
     {
         return $this->morphMany(Document::class, 'documentable');
     }
+
 }

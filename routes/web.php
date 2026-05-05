@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('/', function () {
-    if(Auth::check())
+    if (Auth::check())
         return redirect()->route('home');
     else
         return view('auth.login');
@@ -34,35 +34,33 @@ Auth::routes();
 
 
 
-Route::group(['middleware' => ['auth'] ], function () {
+Route::group(['middleware' => ['auth']], function () {
 
-        Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
-        Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
-        Route::post('/profile', [ProfileController::class, 'updateBasicInfo'])->name('profile.update.info');
-        Route::post('/profile/social', [ProfileController::class, 'updateSocialInfo'])->name('profile.update.socialinfo');
-        Route::post('/profile/image', [ProfileController::class, 'profileimg'])->name('profileimg');
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
+    Route::post('/profile', [ProfileController::class, 'updateBasicInfo'])->name('profile.update.info');
+    Route::post('/profile/social', [ProfileController::class, 'updateSocialInfo'])->name('profile.update.socialinfo');
+    Route::post('/profile/image', [ProfileController::class, 'profileimg'])->name('profileimg');
 
-        Route::get('/changepassword', [ProfileController::class, 'changepassword'])->name('changepassword');
-        Route::post('/changepassword', [ProfileController::class, 'updatePassword'])->name('updatePassword');
+    Route::get('/changepassword', [ProfileController::class, 'changepassword'])->name('changepassword');
+    Route::post('/changepassword', [ProfileController::class, 'updatePassword'])->name('updatePassword');
 
-        // Dashboard
+    // Dashboard
         Route::get('/home/chartdata', [DashboardController::class, 'chartdata']);
         Route::get('/todays/tbros', [DashboardController::class, 'getTodaysTbros']);
 
 
 
 
-        // Notifications
-        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
-        Route::post('/mark-as-read', [NotificationController::class, 'markAsRead'])->name('mark-as-read-notification');
-        Route::post('/mark-all-as-read', [NotificationController::class, 'markAsRead'])->name('mark-all-as-read-notification');
-
-
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::post('/mark-as-read', [NotificationController::class, 'markAsRead'])->name('mark-as-read-notification');
+    Route::post('/mark-all-as-read', [NotificationController::class, 'markAsRead'])->name('mark-all-as-read-notification');
 });
 
 
-Route::group(['middleware' => ['auth'] ], function () {
+Route::group(['middleware' => ['auth']], function () {
 
     // Clients with Process
     Route::post('client/ajax-create', [ClientsController::class, 'ajaxStore'])->name('client.ajax-create');
@@ -144,11 +142,10 @@ Route::group(['middleware' => ['auth'] ], function () {
     Route::get('/users-by-team-members', [UserController::class, 'getAllUserByRole'])->name('getUsersToAssign');
     Route::post('/assignToExecutive', [ClientsController::class, 'assignToExecutive'])->name('assignUsersToexecutive');
     Route::get('/documents/download/{id}', [\App\Http\Controllers\DocumentController::class, 'download'])->name('documents.download');
-
 });
 
 
-Route::group(['middleware' => ['role:Admin'] ], function () {
+Route::group(['middleware' => ['role:Admin']], function () {
 
     // Users
     Route::get('/users/status/{user_id}', [UserController::class, 'changestatus'])->name('users.changeStatus');
@@ -160,7 +157,7 @@ Route::group(['middleware' => ['role:Admin'] ], function () {
 
     // Manage Members in department
     Route::get('/departments/{name}/teams', [TeamsController::class, 'index']);
-    Route::resource('/departments', DepartmentController::class)->parameters(['departments' =>'department:name']);
+    Route::resource('/departments', DepartmentController::class)->parameters(['departments' => 'department:name']);
 
     // Teams
     Route::post('/teams/members/remove', [TeamsController::class, 'removeMember']);
@@ -174,8 +171,4 @@ Route::group(['middleware' => ['role:Admin'] ], function () {
     Route::get('/clientdomain/edit', [ClientDomainsController::class, 'edit']);
     Route::get('/domains', [ClientDomainsController::class, 'index']);
     Route::get('/domains/getalldomains', [ClientDomainsController::class, 'getalldomains']);
-
 });
-
-
-

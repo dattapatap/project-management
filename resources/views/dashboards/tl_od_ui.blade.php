@@ -1,4 +1,56 @@
 {{-- Team Leader OD Dashboard UI --}}
+<style>
+    @keyframes pulse-urgency {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.4);
+        }
+
+        70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 6px rgba(244, 106, 106, 0);
+        }
+
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0);
+        }
+    }
+
+    @keyframes pulse-active {
+        0% {
+            box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(52, 195, 143, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(52, 195, 143, 0);
+        }
+    }
+
+    .urgent-pulse {
+        animation: pulse-urgency 1.5s infinite;
+    }
+
+    .active-now-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #34c38f;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+        animation: pulse-active 2s infinite;
+    }
+
+    .glass-kpi {
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+</style>
 <div class="row mb-4 align-items-center">
     <div class="col-sm-6">
         <div class="d-flex align-items-center">
@@ -116,21 +168,31 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td style="width: 180px;">
-                                    <div class="progress progress-sm" style="height: 5px; border-radius: 3px;">
-                                        <div class="progress-bar bg-{{ $aProj->is_overdue ? 'danger' : ($aProj->progress >= 50 ? 'primary' : 'warning') }}" role="progressbar" style="width: {{ $aProj->progress }}%"></div>
+                                <td>
+                                    <div class="progress progress-sm" style="height: 5px; border-radius: 3px; background-color: rgba(0,0,0,0.05);">
+                                        <div class="progress-bar bg-{{ $aProj->is_overdue ? 'danger' : ($aProj->progress >= 80 ? 'success' : ($aProj->progress >= 40 ? 'primary' : 'warning')) }}" role="progressbar" style="width: {{ $aProj->progress }}%"></div>
                                     </div>
-                                    <small class="text-muted">{{ $aProj->progress }}%</small>
+                                    <small class="text-muted font-weight-bold">{{ $aProj->progress }}%</small>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge badge-soft-info font-size-11">{{ $aProj->completed_task_count }}/{{ $aProj->tasks_count }}</span>
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="badge badge-soft-info font-size-11 px-2">{{ $aProj->completed_task_count }}/{{ $aProj->tasks_count }}</span>
+                                        @if($aProj->tasks_count > 0 && ($aProj->completed_task_count / $aProj->tasks_count) < 0.3 && \Carbon\Carbon::parse($aProj->end_date)->diffInDays(now()) < 5)
+                                                <span class="badge badge-soft-danger font-size-9 mt-1 pulse">Slow Progress</span>
+                                                @endif
+                                    </div>
                                 </td>
                                 <td>
-                                    <small class="font-weight-bold {{ $aProj->is_overdue ? 'text-danger' : '' }}">
-                                        {{ \Carbon\Carbon::parse($aProj->end_date)->format('d M') }}
-                                    </small>
+                                    <div class="d-flex flex-column">
+                                        <small class="font-weight-bold {{ $aProj->is_overdue ? 'text-danger' : 'text-dark' }}">
+                                            {{ \Carbon\Carbon::parse($aProj->end_date)->format('d M') }}
+                                        </small>
+                                        @if(!$aProj->is_overdue)
+                                        <small class="text-muted" style="font-size: 9px;">{{ \Carbon\Carbon::parse($aProj->end_date)->diffForHumans() }}</small>
+                                        @endif
+                                    </div>
                                 </td>
-                                <td><a href="{{ url('projects/taskboard/' . base64_encode($aProj->id)) }}" class="btn btn-xs btn-outline-primary">View</a></td>
+                                <td><a href="{{ url('projects/taskboard/' . base64_encode($aProj->id)) }}" class="btn btn-sm btn-soft-primary btn-rounded px-3">Manage</a></td>
                             </tr>
                             @empty
                             <tr>
@@ -166,25 +228,60 @@
                         </thead>
                         <tbody>
                             @forelse($adminData['team_employees'] ?? [] as $emp)
+                            @php
+                            $isRecentActive = false;
+                            $lastLog = $emp->taskLogs->first(); // TaskLogs are typically ordered by latest
+                            if($lastLog && \Carbon\Carbon::parse($lastLog->created_at)->gt(now()->subHours(3))) {
+                            $isRecentActive = true;
+                            }
+                            @endphp
                             <tr>
-                                <td class="pl-4">
+                                <td class="pl-4 py-3">
                                     <a href="{{ route('reports.employee.detail', $emp->id) }}" class="d-flex align-items-center text-dark">
-                                        <img src="{{ Avatar::create($emp->name)->toBase64() }}" class="rounded-circle mr-2" style="width: 28px; height: 28px;">
+                                        <div class="position-relative">
+                                            <img src="{{ Avatar::create($emp->name)->toBase64() }}" class="rounded-circle mr-2" style="width: 32px; height: 32px; border: 2px solid {{ $isRecentActive ? '#34c38f' : 'transparent' }};">
+                                            @if($isRecentActive)
+                                            <span class="position-absolute" style="bottom: 0; right: 8px; width: 10px; height: 10px; background: #34c38f; border: 2px solid #fff; border-radius: 50%;"></span>
+                                            @endif
+                                        </div>
                                         <div>
-                                            <span class="font-size-13 text-dark font-weight-bold d-block">{{ $emp->name }}</span>
+                                            <span class="font-size-13 text-dark font-weight-bold d-block">
+                                                {{ $emp->name }}
+                                                @if($isRecentActive)
+                                                <span class="badge badge-soft-success font-size-9 ml-1"
+                                                    data-toggle="tooltip"
+                                                    title="Working on: {{ $emp->taskLogs->first()->task->title ?? 'General Tasks' }}">
+                                                    ACTIVE
+                                                </span>
+                                                @endif
+                                            </span>
                                             <small class="text-muted">{{ $emp->getRoleNames()->first() }}</small>
                                         </div>
                                     </a>
                                 </td>
-                                <td><span class="badge badge-soft-primary px-2">{{ $emp->active_tasks_count }} Tasks</span></td>
+                                <td>
+                                    @php
+                                    $workloadColor = 'success';
+                                    $workloadLabel = 'Optimal';
+                                    if($emp->active_tasks_count >= 5) { $workloadColor = 'danger'; $workloadLabel = 'Overloaded'; }
+                                    elseif($emp->active_tasks_count >= 3) { $workloadColor = 'warning'; $workloadLabel = 'Busy'; }
+                                    @endphp
+                                    <div class="d-flex align-items-center">
+                                        <div class="mr-2" style="width: 10px; height: 10px; border-radius: 50%; background-color: var(--{{ $workloadColor }});" title="Workload: {{ $workloadLabel }}"></div>
+                                        <span class="badge badge-soft-{{ $workloadColor }} px-2 font-size-11">{{ $emp->active_tasks_count }} Tasks</span>
+                                        @if($emp->active_tasks_count >= 5)
+                                        <i class="mdi mdi-fire text-danger ml-1 animated swing infinite" title="High Workload Bottleneck"></i>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td>
                                     @php
                                     $activeProjs = $emp->tasks->pluck('project.project_name')->unique()->take(2);
                                     @endphp
                                     @forelse($activeProjs as $pName)
-                                    <span class="badge badge-soft-info mb-1">{{ $pName }}</span>
+                                    <span class="badge badge-soft-info mb-1 font-weight-medium" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $pName }}</span>
                                     @empty
-                                    <span class="text-muted small">No active projects</span>
+                                    <span class="text-muted small italic">Awaiting allocation</span>
                                     @endforelse
                                 </td>
                             </tr>

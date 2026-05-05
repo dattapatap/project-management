@@ -163,8 +163,7 @@ class EmployeeReportController extends Controller
             $emp->active_tasks = (clone $tasksQuery)->where('status', 'InProgress')->count();
             $emp->completed_tasks = (clone $tasksQuery)->where('status', 'Completed')->count();
             $emp->matured_clients = (clone $clientsQuery)->where('status', 'Matured')->count();
-            $emp->total_minutes = $logsQuery->sum('time_spend');
-            $emp->total_hours = round($emp->total_minutes / 60, 1);
+            $emp->total_hours = round($logsQuery->sum('time_spend'), 1);
 
             // Efficiency based on Role
             if ($emp->hasRole('Sales-Executive')) {
@@ -216,7 +215,7 @@ class EmployeeReportController extends Controller
         }
 
         // 📊 Performance Metrics for Selected Timeframe
-        $compTasksQ = Task::where('assigned_to', $userId)->where('status', 'Completed')->whereYear('created_at', $selectedYear);
+        $compTasksQ = Task::where('assigned_to', $userId)->where('status', 'Completed')->whereYear('updated_at', $selectedYear);
         $pendingTasksQ = Task::where('assigned_to', $userId)->where('status', '!=', 'Completed')->whereYear('created_at', $selectedYear);
         $compProjsQ = DepartmentProjects::where('status', 'Completed')->whereYear('updated_at', $selectedYear);
         $logsQ = TaskLog::where('userid', $userId)->whereYear('created_at', $selectedYear);
@@ -244,7 +243,7 @@ class EmployeeReportController extends Controller
             'completed_projects' => $compProjsQ->whereHas('tasks', function ($q) use ($userId) {
                 $q->where('assigned_to', $userId);
             })->count(),
-            'total_hours' => round($logsQ->sum('time_spend') / 60, 1),
+            'total_hours' => round($logsQ->sum('time_spend'), 1),
             'matured' => $maturedQ->count(),
             'followup' => $followupQ->count(),
             'total_sales' => round($salesQ->sum('amount'), 2),
@@ -254,17 +253,16 @@ class EmployeeReportController extends Controller
         $daysWorked = $logsQ->distinct()->count(DB::raw('DATE(created_at)'));
         $stats['avg_daily_hours'] = $daysWorked > 0 ? round($stats['total_hours'] / $daysWorked, 1) : 0;
 
-        // 🏁 Project Delivery Speed (Average hours spent on completed tasks)
-        $totalMinutesOnCompleted = Task::where('assigned_to', $userId)->where('status', 'Completed')
+        $totalHoursOnCompleted = Task::where('assigned_to', $userId)->where('status', 'Completed')
             ->whereYear('created_at', $selectedYear)
-            ->withSum('logs as total_minutes', 'time_spend')
-            ->get()->sum('total_minutes');
-        $stats['avg_task_delivery_time'] = $stats['completed_tasks'] > 0 ? round(($totalMinutesOnCompleted / 60) / $stats['completed_tasks'], 1) : 0;
+            ->withSum('logs as total_hours', 'time_spend')
+            ->get()->sum('total_hours');
+        $stats['avg_task_delivery_time'] = $stats['completed_tasks'] > 0 ? round($totalHoursOnCompleted / $stats['completed_tasks'], 1) : 0;
 
         // 📅 Month-wise Trends for current year
         $trendMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $monthlyTasks = Task::where('assigned_to', $userId)->whereYear('created_at', $selectedYear)
-            ->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(created_at, '%b') as month"))
+        $monthlyTasks = Task::where('assigned_to', $userId)->where('status', 'Completed')->whereYear('updated_at', $selectedYear)
+            ->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(updated_at, '%b') as month"))
             ->groupBy('month')->get()->keyBy('month');
 
         $monthlyClients = DB::table('clients')->where('ref_user', $userId)->whereYear('created_at', $selectedYear)
@@ -280,7 +278,7 @@ class EmployeeReportController extends Controller
                 'month' => $m,
                 'tasks' => $monthlyTasks->has($m) ? $monthlyTasks->get($m)->count : 0,
                 'clients' => $monthlyClients->has($m) ? $monthlyClients->get($m)->count : 0,
-                'hours' => $monthlyHours->has($m) ? round($monthlyHours->get($m)->minutes / 60, 1) : 0
+                'hours' => $monthlyHours->has($m) ? round($monthlyHours->get($m)->minutes, 1) : 0
             ];
         });
 
@@ -304,7 +302,7 @@ class EmployeeReportController extends Controller
         $isSales = $employee->hasRole('Sales-Executive');
         $tasks = Task::with('project.clients')->where('assigned_to', $userId)->latest()->take(10)->get();
         $logs = TaskLog::with('task.project.clients')->where('userid', $userId)->latest()->take(15)->get();
-        $activities = \App\Models\UserActivity::where('user_id', $userId)->latest()->take(50)->get();
+        $activities = \App\Models\UserActivity::where('user_id', $userId)->latest()->take(10)->get();
 
         $recentMatured = collect();
         if ($isSales) {

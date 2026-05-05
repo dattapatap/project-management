@@ -1,14 +1,14 @@
-<div id="mdlTaslLog" class="modal fade" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+<div id="mdlTaslLog" class="modal fade" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title mt-0">Task Logs:</h5>
-                <button type="button" class="close btnmdlclose" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close btnmdlclose" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_task_log" class="custom-validation"  method="POST">
+                <form id="frm_task_log" class="custom-validation" method="POST">
                     @csrf
                     <input type="hidden" value="" name="tasklog" id="tasklog">
                     <div class="row">
@@ -16,30 +16,21 @@
                         <div class="col-md-4 mt-2">
                             <label>Log Date<span class="text_required">*</span></label>
                             <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <div class="input-group-text"><i class="mdi mdi-calendar-month"></i></div>
-                                </div>
-                                <input type="text" name="log_date" id="log_date" class="form-control">
+                                <input type="date" name="log_date" id="log_date" class="form-control" value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}">
                             </div>
                             <span class="invalid-feedback" id="log_date-input-error" role="alert"> <strong></strong></span>
                         </div>
                         <div class="col-md-3 mt-2">
-                             <label>Start Time<span class="text_required">*</span></label>
+                            <label>Start Time<span class="text_required">*</span></label>
                             <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <div class="input-group-text"><i class="mdi mdi-clock-outline"></i></div>
-                                </div>
-                                <input type="text" name="log_start_time" id="log_start_time" class="form-control">
+                                <input type="time" name="log_start_time" id="log_start_time" class="form-control">
                             </div>
                             <span class="invalid-feedback" id="log_start_time-input-error" role="alert"> <strong></strong></span>
                         </div>
                         <div class="col-md-3 mt-2">
                             <label>End Time<span class="text_required">*</span></label>
                             <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <div class="input-group-text"><i class="mdi mdi-clock-outline"></i></div>
-                                </div>
-                                <input type="text" name="log_end_time" id="log_end_time" class="form-control">
+                                <input type="time" name="log_end_time" id="log_end_time" class="form-control">
                             </div>
                             <span class="invalid-feedback" id="log_end_time-input-error" role="alert"> <strong></strong></span>
                         </div>
@@ -59,8 +50,8 @@
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Add </button>
+                                <button type="button" class="btn btn-secondary waves-effect" data-dismiss="modal" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Add </button>
                             </div>
                         </div>
                     </div>
@@ -72,49 +63,46 @@
 </div>
 
 <script>
-
-$(document).ready(function(){
-        $(document).on('click', '.tasklog', function(eve){
+    $(document).ready(function() {
+        $(document).on('click', '.tasklog', function(eve) {
             $('#tasklog').val($(this).attr('taskid'))
             $('#mdlTaslLog').modal('show');
         });
 
-        $('#log_date').datetimepicker({
-            minDate: moment().subtract(5,'d'),
-            maxDate: moment(),
-            allowInputToggle: false,
-            locale: moment().local('en'),
-            format: 'DD/MM/YYYY',
-        })
-        $('#log_start_time, #log_end_time').datetimepicker({
-            allowInputToggle: false,
-            locale: moment().local('en'),
-            format: 'hh:mm A',
-            icons: {
-                time: 'mdi mdi-clock-outline',
-                date: 'fa fa-calendar',
-                up: 'fa fa-chevron-up',
-                down: 'fa fa-chevron-down',
-                previous: 'fa fa-chevron-left',
-                next: 'fa fa-chevron-right',
-                today: 'fa fa-check',
-                clear: 'fa fa-trash',
-                close: 'mdi mdi-clock-outline'
-            }
-        })
+        function calculateTime() {
+            var start = $('#log_start_time').val();
+            var end = $('#log_end_time').val();
 
-        $('#log_start_time, #log_end_time').datetimepicker().on('dp.change', function (event) {
-            calculateLogTime()
+            if (start && end) {
+                var startParts = start.split(':');
+                var endParts = end.split(':');
+
+                var startDate = new Date(0, 0, 0, startParts[0], startParts[1], 0);
+                var endDate = new Date(0, 0, 0, endParts[0], endParts[1], 0);
+
+                if (endDate < startDate) {
+                    endDate.setDate(endDate.getDate() + 1);
+                }
+
+                var diff = endDate - startDate;
+                var hours = (diff / 1000 / 3600).toFixed(2);
+
+                $('#log_time_spend').val(hours);
+            }
+        }
+
+        $('#log_start_time, #log_end_time').on('change', function() {
+            calculateTime();
         });
 
-        $('#frm_task_log').on('submit', function(eve){
+        $('#frm_task_log').on('submit', function(eve) {
             eve.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
 
             $.ajax({
                 type: 'POST',
-                url: base_url +'/projects/taskboard/addLog',
+                url: base_url + '/projects/taskboard/addLog',
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -125,11 +113,11 @@ $(document).ready(function(){
                 success: function(response) {
                     $('#cover-spin').css('display', 'none');
                     console.log(response);
-                    if(response.success == true){
+                    if (response.success == true) {
                         alertify.success(response.message);
                         $('#mdlTaslLog').modal('hide');
                         $('#frm_task_log')[0].reset();
-                    }else{
+                    } else {
                         alertify.error(response.message);
                     }
                 },
@@ -149,19 +137,19 @@ $(document).ready(function(){
         })
 
 
-})
+    })
 
 
-function calculateLogTime(){
-    let start = $('#log_start_time').val();
-    let end   = $('#log_end_time').val();
-    if(start !='' && end !=''){
-        let timestart = moment(start, 'hh:mm A');
-        let timeend   = moment(end, 'hh:mm A');
+    function calculateLogTime() {
+        let start = $('#log_start_time').val();
+        let end = $('#log_end_time').val();
+        if (start != '' && end != '') {
+            let timestart = moment(start, 'hh:mm A');
+            let timeend = moment(end, 'hh:mm A');
 
-        let duration = moment.duration(timeend.diff(timestart));
-        let hours = Math.abs(duration.asHours()).toFixed(2);
-        $('#log_time_spend').val(hours);
+            let duration = moment.duration(timeend.diff(timestart));
+            let hours = Math.abs(duration.asHours()).toFixed(2);
+            $('#log_time_spend').val(hours);
+        }
     }
-}
 </script>

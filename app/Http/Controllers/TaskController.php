@@ -11,6 +11,8 @@ use App\Models\TaskLog;
 use App\Models\TaskUser;
 use App\Models\User;
 use App\Notifications\TaskAssigned;
+use App\Models\UserActivity;
+use App\Services\ProjectNotificationService;
 use Auth;
 use Carbon\Carbon;
 use DB;
@@ -31,7 +33,7 @@ class TaskController extends Controller
         $user = Auth::user();
 
         // Base query for tasks in this project
-        $query = Task::with('user')->where('projectid', $project_id);
+        $query = Task::with(['user', 'logs.user', 'histories.user'])->where('projectid', $project_id);
 
         // If regular employee (not Manager/Admin/TL), only show their assigned tasks
         if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant']) && !$user->hasRole('Team-Leader')) {
@@ -66,6 +68,8 @@ class TaskController extends Controller
             $task->assigned_to          =   $request->task_user;
             $task->save();
 
+            UserActivity::log('Task Created', "Added new task '{$task->title}' to project '{$project->project_name}'");
+
             // If project was completed, revert it to InProgress because new work was added
             if ($project && $project->status == 'Completed') {
                 $project->status = 'InProgress';
@@ -73,11 +77,17 @@ class TaskController extends Controller
                 DepartmentProjectHistoryController::store($project, "Project reopened automatically due to new task creation: " . $task->title, $user->id);
             }
 
-            $comment = "New Task Created by " . $user->name;
+            $comment = "New Task has been assigned: '{$task->title}' with deadline " . \Carbon\Carbon::parse($task->enddate)->format('d M, Y');
             DepartmentProjectHistoryController::store($task, $comment, $request->task_user);
 
             $currUser = User::find($request->task_user);
-            $currUser->notify((new TaskAssigned($task, $category = "New Task"))->delay(now()->addSeconds(5)));
+            $details = [
+                'category' => 'Task',
+                'header'   => 'New Task Assigned',
+                'body'     => "New Task has been assigned: '{$task->title}' with deadline " . \Carbon\Carbon::parse($task->enddate)->format('d M, Y'),
+                'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id
+            ];
+            ProjectNotificationService::notifyTask($task, $details, true);
 
             // Handle Task Document Uploads
             if ($request->hasFile('task_documents')) {
@@ -113,7 +123,7 @@ class TaskController extends Controller
     public function show(Request $request)
     {
         $taskid = base64_decode($request->taskid);
-        $task = Task::with(['logs.user', 'comments.user', 'project', 'user', 'createdby'])->find($taskid);
+        $task = Task::with(['logs.user', 'comments.user', 'project', 'user', 'createdby', 'histories.user'])->find($taskid);
         return view('components.projects.taskdetails', compact('task'));
     }
 
@@ -147,6 +157,15 @@ class TaskController extends Controller
             $comment = "Task updated by " . $user->name;
             DepartmentProjectHistoryController::store($task, $comment, $taskUpdate->txt_task_user);
 
+            // Notify Team about the update
+            $details = [
+                'category' => 'Task',
+                'header'   => 'Task Details Updated',
+                'body'     => "Task '{$task->title}' has been updated by " . $user->name . ". Deadline: " . \Carbon\Carbon::parse($task->enddate)->format('d M, Y'),
+                'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id
+            ];
+            ProjectNotificationService::notifyTask($task, $details, true);
+
             DB::commit();
             return response()->json(['code' => 200, "success" => true, 'message' => "Task Updated"], 200);
         } catch (Exception $ex) {
@@ -160,9 +179,9 @@ class TaskController extends Controller
     public function addTaskLog(Request $request)
     {
         $rules = array(
-            'log_date'             => 'required|date|date_format:d/m/Y',
-            'log_start_time'       => 'required|date_format:h:i A',
-            'log_end_time'         => 'required|date_format:h:i A',
+            'log_date'             => 'required|date',
+            'log_start_time'       => 'required',
+            'log_end_time'         => 'required',
             'log_time_spend'       => 'required',
             'log_description'      => 'required|string|min:15',
         );
@@ -173,21 +192,43 @@ class TaskController extends Controller
 
             $user = Auth::user();
             try {
-
                 $taskLog                = new TaskLog();
                 $taskLog->taskid        = $request->tasklog;
                 $taskLog->userid        = $user->id;
-                $taskLog->starttime     = Carbon::createFromFormat('h:i A', $request->log_start_time)->format('H:i:s');
-                $taskLog->endtime       = Carbon::createFromFormat('h:i A', $request->log_end_time)->format('H:i:s');
+
+                // Flexible parsing for time
+                try {
+                    $taskLog->starttime = Carbon::parse($request->log_start_time)->format('H:i:s');
+                    $taskLog->endtime   = Carbon::parse($request->log_end_time)->format('H:i:s');
+                } catch (\Exception $e) {
+                    // Fallback for older JS format if still sent
+                    $taskLog->starttime = Carbon::createFromFormat('h:i A', $request->log_start_time)->format('H:i:s');
+                    $taskLog->endtime   = Carbon::createFromFormat('h:i A', $request->log_end_time)->format('H:i:s');
+                }
+
                 $taskLog->time_spend    = $request->log_time_spend;
                 $taskLog->log_date      = Carbon::parse($request->log_date)->format('Y-m-d');
                 $taskLog->log_description = $request->log_description;
                 $taskLog->save();
 
+                $task = Task::find($request->tasklog);
+                UserActivity::log('Task Work Logged', "Logged {$taskLog->time_spend} hours for task '{$task->title}'");
+
+                $comment = "Logged {$taskLog->time_spend} hours for task '{$task->title}' by " . $user->name;
+                DepartmentProjectHistoryController::store($task, $comment, $user->id);
+
+                $details = [
+                    'category' => 'Log',
+                    'header'   => 'New Work Log',
+                    'body'     => "{$user->name} logged {$taskLog->time_spend}h on task '{$task->title}'",
+                    'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id
+                ];
+                ProjectNotificationService::notifyTask($task, $details);
+
                 return response()->json(['code' => 200, "success" => true, 'message' => "Task Log Added"], 200);
             } catch (Exception $ex) {
-                Log::error("Task Updation Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());
-                return response()->json(['code' => 200, "success" => false, 'message' => "Task log not updated, please try again!"], 200);
+                Log::error("Task Log Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());
+                return response()->json(['code' => 200, "success" => false, 'message' => "Task log not updated: " . $ex->getMessage()], 200);
             }
         }
     }
@@ -214,6 +255,14 @@ class TaskController extends Controller
             if (!$task)
                 return response()->json(['code' => 200, "success" => false, 'message' => "Task not found, please try again!"], 200);
 
+            // Authorization: Only the Assignee or Management (TL, PM, Admin) can change status
+            $isAssignee = ($task->assigned_to == $user->id);
+            $isManagement = $user->hasRole(['Team-Leader', 'Project-Manager', 'Admin']);
+
+            if (!$isAssignee && !$isManagement) {
+                return response()->json(['code' => 200, "success" => false, 'message' => "Unauthorized! You can only update your own tasks."], 200);
+            }
+
             try {
 
                 if ($request->status === 'Completed') {
@@ -222,14 +271,32 @@ class TaskController extends Controller
                     $task->act_enddate  = Carbon::now()->format('Y-m-d H:i');
                 } else if ($request->status === 'InProgress') {
                     $task->status = $request->status;
-                    $task->act_startdate = Carbon::parse($request->act_start_date)->format('Y-m-d H:i:s');
+                    if ($request->act_start_date) {
+                        try {
+                            $task->act_startdate = Carbon::parse($request->act_start_date)->format('Y-m-d H:i:s');
+                        } catch (\Exception $e) {
+                            $task->act_startdate = Carbon::createFromFormat('d/m/Y h:i A', $request->act_start_date)->format('Y-m-d H:i:s');
+                        }
+                    } else {
+                        $task->act_startdate = Carbon::now()->format('Y-m-d H:i:s');
+                    }
                 } else {
                     $task->status = $request->status;
                 }
                 $task->save();
 
+                UserActivity::log('Task Status Updated', "Changed status of task '{$task->title}' to '{$task->status}'");
+
                 $comment = 'Task status updated as ' . $task->status . ' by ' . $user->name;
                 DepartmentProjectHistoryController::store($task, $comment, $user->id);
+
+                $details = [
+                    'category' => 'Task',
+                    'header'   => $task->status == 'Completed' ? 'Task Completed' : 'Task Status Updated',
+                    'body'     => "Task '{$task->title}' is now {$task->status} (updated by {$user->name})",
+                    'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id
+                ];
+                ProjectNotificationService::notifyTask($task, $details, true);
 
                 return response()->json(['code' => 200, "success" => true, 'message' => "Task Status Updated"], 200);
             } catch (Exception $ex) {
@@ -242,7 +309,6 @@ class TaskController extends Controller
 
     public function updateProgress(Request $request)
     {
-
         $user = Auth::user();
         $task  = Task::find($request->task_id);
         if (!$task)
@@ -252,13 +318,77 @@ class TaskController extends Controller
             $task->progress = $request->progerss;
             $task->save();
 
-            $comment = 'Task progress updated as ' . $request->progerss . '% completed by ' . $user->name;
+            UserActivity::log('Task Progress Updated', "Updated progress of task '{$task->title}' to {$task->progress}%");
 
+            $comment = "Task progress updated to {$task->progress}% by " . $user->name;
             DepartmentProjectHistoryController::store($task, $comment, $user->id);
+
+            $details = [
+                'category' => 'Task',
+                'header'   => 'Task Progress Update',
+                'body'     => "Task '{$task->title}' progress is now {$task->progress}%",
+                'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id
+            ];
+            ProjectNotificationService::notifyTask($task, $details, true);
+
             return response()->json(['code' => 200, "success" => true, 'message' => "Task Progress Updated"], 200);
         } catch (Exception $ex) {
             Log::error("Task Updation Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());
             return response()->json(['code' => 200, "success" => false, 'message' => "Task progress updated, please try again!"], 200);
+        }
+    }
+
+    public function moveTask(Request $request)
+    {
+        $user = Auth::user();
+        $task = Task::find($request->task_id);
+        if (!$task) {
+            return response()->json(['success' => false, 'message' => "Task not found"], 404);
+        }
+
+        // Authorization: Only the Assignee or Management can move tasks
+        $isAssignee = ($task->assigned_to == $user->id);
+        $isManagement = $user->hasRole(['Team-Leader', 'Project-Manager', 'Admin']);
+
+        if (!$isAssignee && !$isManagement) {
+            return response()->json(['success' => false, 'message' => "Unauthorized! You can only move your own tasks."], 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $oldStatus = $task->status;
+            $newStatus = $request->status;
+            $task->status = $newStatus;
+
+            if ($newStatus === 'Completed') {
+                $task->progress = 100;
+                $task->act_enddate = Carbon::now()->format('Y-m-d H:i:s');
+            } elseif ($newStatus === 'InProgress' && !$task->act_startdate) {
+                $task->act_startdate = Carbon::now()->format('Y-m-d H:i:s');
+            }
+
+            $task->save();
+
+            UserActivity::log('Task Moved', "Moved task '{$task->title}' from '{$oldStatus}' to '{$newStatus}' via Kanban");
+
+            $comment = "Task moved from {$oldStatus} to {$newStatus} by " . $user->name;
+            DepartmentProjectHistoryController::store($task, $comment, $user->id);
+
+            $details = [
+                'category' => 'Task',
+                'header'   => 'Task Moved',
+                'body'     => "Task '{$task->title}' moved to {$newStatus}",
+                'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id
+            ];
+            ProjectNotificationService::notifyTask($task, $details, true);
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => "Task moved to {$newStatus}"]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error("Task Move Error : " . $ex->getMessage());
+            return response()->json(['success' => false, 'message' => "Failed to move task"], 500);
         }
     }
 
@@ -277,10 +407,40 @@ class TaskController extends Controller
 
             $taskComment->save();
 
+            $task = Task::find($taskid);
+            UserActivity::log('Task Comment Added', "Posted a new comment on task '{$task->title}'");
+
+            $details = [
+                'category' => 'Comment',
+                'header'   => 'New Task Comment',
+                'body'     => "{$user->name} commented on '{$task->title}': " . substr($comment, 0, 50) . "...",
+                'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id
+            ];
+            ProjectNotificationService::notifyTask($task, $details, true);
+
             return redirect()->back()->with('success', "comment posted");
         } catch (Exception $ex) {
             return redirect()->back()->with('error', "comment not posted, please try again")->withInput();
         }
+    }
+
+    public function nudge(Task $task)
+    {
+        $user = Auth::user();
+        $assignedUser = $task->user;
+
+        if (!$assignedUser) {
+            return response()->json(['success' => false, 'message' => 'No user assigned to this task.']);
+        }
+
+        // Send Notification
+        $assignedUser->notify(new \App\Notifications\TaskNudgeNotification($task, $user));
+
+        // Log in History
+        $comment = "Progress update requested by " . $user->name;
+        DepartmentProjectHistoryController::store($task, $comment, $user->id);
+
+        return response()->json(['success' => true, 'message' => 'Nudge sent successfully!']);
     }
 
     public function destroy(Task $task)

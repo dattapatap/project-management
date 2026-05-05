@@ -97,9 +97,9 @@ $(document).ready(function () {
             type: 'GET',
             url: base_url + "/projects/get-team-leaders",
             data: { 'category_id': dept_value },
-            success: function(response) {
+            success: function (response) {
                 if (response.status == true) {
-                    let data = response.data.map(function(item) {
+                    let data = response.data.map(function (item) {
                         return { id: item.id, text: item.name };
                     });
                     $("#team_leader").select2({ data: data });

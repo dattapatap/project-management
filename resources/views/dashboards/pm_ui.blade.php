@@ -1,4 +1,31 @@
 {{-- Project Manager UI --}}
+<style>
+    @keyframes pulse-urgency {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.4); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(244, 106, 106, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0); }
+    }
+    
+    @keyframes pulse-active {
+        0% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(52, 195, 143, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0); }
+    }
+
+    .urgent-pulse {
+        animation: pulse-urgency 1.5s infinite;
+    }
+    
+    .active-now-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #34c38f;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+        animation: pulse-active 2s infinite;
+    }
+</style>
 <div class="row mb-3">
     <div class="col-12 d-flex justify-content-between align-items-center">
         <h4 class="header-title mb-0">Project Command Center</h4>
@@ -70,25 +97,36 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($adminData['near_deadline_projects'] as $nProj)
-                            <tr>
-                                <td class="font-weight-bold">{{ $nProj->project_name }}</td>
+                             @forelse($adminData['near_deadline_projects'] as $nProj)
+                            @php
+                                $isOverdue = \Carbon\Carbon::parse($nProj->end_date)->isPast();
+                            @endphp
+                            <tr class="{{ $isOverdue ? 'bg-soft-rose' : '' }}">
+                                <td class="font-weight-bold">
+                                    <div class="d-flex align-items-center">
+                                        @if($isOverdue) <i class="mdi mdi-alert-circle text-danger mr-1 pulse"></i> @endif
+                                        <a href="{{ url('projects/taskboard/' . base64_encode($nProj->id)) }}" class="text-dark">{{ $nProj->project_name }}</a>
+                                    </div>
+                                </td>
                                 <td>
                                     <a href="{{ route('client.detail', [base64_encode($nProj->clients->id), 'sts']) }}" class="text-dark font-weight-bold">
                                         {{ $nProj->clients->name ?? 'N/A' }}
                                     </a>
                                 </td>
                                 <td>
-                                    <span class="text-danger font-weight-bold">
-                                        <i class="mdi mdi-clock-alert-outline mr-1"></i>
-                                        {{ \Carbon\Carbon::parse($nProj->end_date)->format('d M, Y') }}
-                                    </span>
+                                    <div class="d-flex flex-column">
+                                        <span class="{{ $isOverdue ? 'text-danger' : 'text-warning' }} font-weight-bold">
+                                            <i class="mdi mdi-clock-alert-outline mr-1"></i>
+                                            {{ \Carbon\Carbon::parse($nProj->end_date)->format('d M, Y') }}
+                                        </span>
+                                        <small class="text-muted" style="font-size: 10px;">{{ \Carbon\Carbon::parse($nProj->end_date)->diffForHumans() }}</small>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge badge-soft-warning">{{ $nProj->status }}</span>
+                                    <span class="badge badge-soft-{{ $isOverdue ? 'danger' : 'warning' }} px-2 py-1">{{ $isOverdue ? 'OVERDUE' : $nProj->status }}</span>
                                 </td>
                                 <td>
-                                    <a href="{{ url('projects/taskboard/' . base64_encode($nProj->id)) }}" class="btn btn-xs btn-primary">Track</a>
+                                    <a href="{{ url('projects/taskboard/' . base64_encode($nProj->id)) }}" class="btn btn-sm btn-soft-primary rounded-pill px-3">Review</a>
                                 </td>
                             </tr>
                             @empty
@@ -135,8 +173,13 @@
                                         <span class="text-primary font-weight-bold">{{ $aTask->progress }}%</span>
                                     </div>
                                     <p class="text-muted font-size-12 mb-2"><i class="mdi mdi-account-circle-outline mr-1"></i>{{ $aTask->user->name }} | {{ $aTask->project->project_name }}</p>
-                                    <div class="progress progress-sm" style="height: 6px; border-radius: 3px;">
-                                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $aTask->progress }}%"></div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress progress-sm flex-grow-1 mr-2" style="height: 6px; border-radius: 3px;">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $aTask->progress }}%"></div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-soft-warning nudge-btn px-2 py-0" data-task-id="{{ $aTask->id }}" title="Nudge for update">
+                                            <i class="mdi mdi-bell-ring-outline font-size-14"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -171,18 +214,35 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($adminData['employee_performance'] as $emp)
+                             @forelse($adminData['employee_performance'] as $emp)
                             <tr>
-                                <td>
+                                <td class="py-3">
                                     <div class="d-flex align-items-center">
-                                        <img src="{{ Avatar::create($emp->name)->toBase64() }}" class="rounded-circle mr-2" style="width: 28px; height: 28px; border: 1px solid #eee;">
-                                        <span class="font-weight-bold text-dark small">{{ $emp->name }}</span>
+                                        <div class="position-relative">
+                                            <img src="{{ Avatar::create($emp->name)->toBase64() }}" class="rounded-circle mr-2" style="width: 32px; height: 32px; border: 2px solid {{ $emp->total_hours > 6 ? '#34c38f' : '#eee' }};">
+                                            @if($emp->total_hours > 6)
+                                                <span class="position-absolute" style="bottom: 0; right: 8px; width: 10px; height: 10px; background: #34c38f; border: 2px solid #fff; border-radius: 50%;"></span>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <span class="font-weight-bold text-dark font-size-13 d-block">{{ $emp->name }}</span>
+                                            @if($emp->total_hours > 6)
+                                                <small class="badge badge-soft-success font-size-9" data-toggle="tooltip" title="Working on: {{ $emp->taskLogs->first()->task->title ?? 'General Tasks' }}">ACTIVE NOW</small>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
-                                <td><span class="badge badge-soft-primary small">{{ $emp->active_tasks }} Active</span></td>
-                                <td><span class="badge badge-soft-success small">{{ $emp->completed_tasks }} Done</span></td>
                                 <td>
-                                    <span class="font-weight-bold text-dark small">{{ number_format($emp->total_hours, 1) }}h</span>
+                                    @php
+                                        $wColor = 'success';
+                                        if($emp->active_tasks >= 5) $wColor = 'danger';
+                                        elseif($emp->active_tasks >= 3) $wColor = 'warning';
+                                    @endphp
+                                    <span class="badge badge-soft-{{ $wColor }} px-2">{{ $emp->active_tasks }} Active</span>
+                                </td>
+                                <td><span class="badge badge-soft-success px-2">{{ $emp->completed_tasks }} Done</span></td>
+                                <td>
+                                    <span class="font-weight-bold text-dark">{{ number_format($emp->total_hours, 1) }}h</span>
                                 </td>
                             </tr>
                             @empty
@@ -237,13 +297,32 @@
                             @if($u)
                             <tr>
                                 <td class="py-2">
+                                    @php
+                                        $uActive = false;
+                                        $uTask = 'None';
+                                        $uLastLog = $u->taskLogs->first();
+                                        if($uLastLog && \Carbon\Carbon::parse($uLastLog->created_at)->gt(now()->subHours(3))) {
+                                            $uActive = true;
+                                            $uTask = $uLastLog->task->title ?? 'General';
+                                        }
+                                    @endphp
                                     <div class="d-flex align-items-center">
-                                        <img src="{{ Avatar::create($u->name)->toBase64() }}" class="rounded-circle mr-2" style="width: 24px; height: 24px;">
-                                        <span class="font-size-13 text-dark">{{ $u->name }}</span>
+                                        <div class="position-relative">
+                                            <img src="{{ Avatar::create($u->name)->toBase64() }}" class="rounded-circle mr-2" style="width: 24px; height: 24px; border: 1.5px solid {{ $uActive ? '#34c38f' : 'transparent' }};">
+                                            @if($uActive)
+                                                <span class="position-absolute" style="bottom: 0; right: 8px; width: 8px; height: 8px; background: #34c38f; border: 1.5px solid #fff; border-radius: 50%;" data-toggle="tooltip" title="Active on: {{ $uTask }}"></span>
+                                            @endif
+                                        </div>
+                                        <span class="font-size-13 {{ $uActive ? 'text-success font-weight-bold' : 'text-dark' }}">{{ $u->name }}</span>
                                     </div>
                                 </td>
                                 <td class="py-2 text-center">
-                                    <span class="text-primary font-weight-bold">{{ $u->active_tasks }}</span>
+                                    @php
+                                        $twColor = 'primary';
+                                        if($u->active_tasks >= 5) $twColor = 'danger';
+                                        elseif($u->active_tasks >= 3) $twColor = 'warning';
+                                    @endphp
+                                    <span class="badge badge-soft-{{ $twColor }} font-weight-bold">{{ $u->active_tasks }}</span>
                                     <span class="text-muted mx-1">/</span>
                                     <span class="text-success font-weight-bold">{{ $u->completed_tasks }}</span>
                                 </td>

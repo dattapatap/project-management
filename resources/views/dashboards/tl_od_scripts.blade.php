@@ -4,7 +4,9 @@
     // TL Project Health Chart (Updated with Completed)
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof ApexCharts !== 'undefined' && document.querySelector("#tl-project-health-chart")) {
-            console.log("Initializing Project Health Chart with data:", {!! json_encode($adminData['project_health']) !!});
+            console.log("Initializing Project Health Chart with data:", {
+                !!json_encode($adminData['project_health']) !!
+            });
             var tlHealth = {
                 series: [
                     Number('{{ $adminData["project_health"]["Completed"] ?? 0 }}'),
@@ -37,11 +39,45 @@
                         }
                     }
                 },
-                legend: { position: 'bottom' },
-                dataLabels: { enabled: false }
+                legend: {
+                    position: 'bottom'
+                },
+                dataLabels: {
+                    enabled: false
+                }
             };
             var chart = new ApexCharts(document.querySelector("#tl-project-health-chart"), tlHealth);
             chart.render();
         }
+
+        // Nudge Functionality
+        $(document).on('click', '.nudge-btn', function() {
+            const btn = $(this);
+            const taskId = btn.data('task-id');
+            const originalHtml = btn.html();
+
+            btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
+
+            $.ajax({
+                url: "{{ url('/projects/tasks/nudge') }}/" + taskId,
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success(response.message);
+                    } else {
+                        toastr.error(response.message);
+                    }
+                },
+                error: function() {
+                    toastr.error("Failed to send nudge.");
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html(originalHtml);
+                }
+            });
+        });
     });
 </script>
