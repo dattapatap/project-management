@@ -178,12 +178,10 @@
                                 <i class="mdi mdi-face-profile font-size-16 align-middle mr-1"></i>
                                 Profile
                             </a>
-                            @if ($user->hasRole('Admin'))
                             <a class="dropdown-item" href="{{ route('changepassword') }}">
                                 <i class="mdi mdi-settings font-size-16 align-middle mr-1"></i>
                                 Change Password
                             </a>
-                            @endif
 
 
                             <div class="dropdown-divider"></div>
@@ -214,43 +212,6 @@
                     <!-- Left Menu Start -->
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li class="menu-title">Menu</li>
-
-                        {{-- @if ($user->hasRole(['Project-Manager']) && $user->departments->department == 2)
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="mdi mdi-plus-outline"></i>
-                                    <span>Quick Add</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li>
-                                        <a class="waves-effect" href="javascript: void(0);">
-                                            <i class="mdi mdi-checkbox-marked-circle-outline"></i><span>Task</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="waves-effect" href="javascript: void(0);">
-                                            <i class="mdi mdi-folder-outline"></i><span>Project</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="waves-effect" href="javascript: void(0);">
-                                            <i class="mdi mdi-timer"></i><span>Start Timer</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="waves-effect" href="javascript: void(0);">
-                                            <i class="mdi mdi mdi-clock-outline"></i><span>Log Time</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="waves-effect" href="javascript: void(0);">
-                                            <i class="mdi mdi-message-text-outline"></i><span>Message</span>
-                                        </a>
-                                    </li>
-
-                                </ul>
-                            </li>
-                        @endif --}}
                         <li>
                             <a class="waves-effect" href="{{url('/home')}}">
                                 <i class="mdi mdi-view-dashboard"></i><span>Home</span>
@@ -284,19 +245,6 @@
                         </li>
                         @endif
 
-                        @if ($user->hasRole(['Admin', 'Project-Manager']))
-                        <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
-                                <i class="mdi mdi-account-group-outline"></i>
-                                <span>Company</span>
-                            </a>
-                            <ul class="sub-menu" aria-expanded="{{ request()->is('client*') || request()->is('clients*') ? 'true' : 'false' }}">
-                                <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">Companies</a></li>
-                            </ul>
-                        </li>
-                        @endif
-
-
 
                         @if ($user->hasRole('Admin'))
                         <li class="{{ request()->is('users*') || request()->is('departments*') ? 'mm-active' : '' }}">
@@ -305,8 +253,8 @@
                                 <span>Users</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="{{ request()->is('users*') || request()->is('departments*') ? 'true' : 'false' }}">
-                                <li class="{{ request()->is('departments*') ? 'mm-active' : '' }}"><a href="{{ url('/departments') }}" class="{{ request()->is('departments*') ? 'active' : '' }}">Departments</a></li>
                                 <li class="{{ request()->is('users*') ? 'mm-active' : '' }}"><a href="{{ url('/users') }}" class="{{ request()->is('users*') ? 'active' : '' }}">Users</a></li>
+                                <li class="{{ request()->is('departments*') ? 'mm-active' : '' }}"><a href="{{ url('/departments') }}" class="{{ request()->is('departments*') ? 'active' : '' }}">Departments</a></li>
                             </ul>
                         </li>
                         <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
@@ -330,43 +278,49 @@
                         </li>
                         @endif
 
-                        @if ($user->hasRole(['Sales-Executive', 'Team-Leader']) && $user->departments->department == 1)
-                        <li class="{{ request()->is('profile*') || request()->is('changepassword*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('profile*') || request()->is('changepassword*') ? 'active' : '' }}">
+                        @if ($user->hasRole(['Sales-Executive', 'Team-Leader']) && !$user->hasRole('Admin') && $user->departments->department == 1)
+                        <li class="{{ request()->is('mysts/searchsts*') ? 'mm-active' : '' }}">
+                            <a href="{{ url('mysts/searchsts') }}" class="waves-effect {{ request()->is('mysts/searchsts*') ? 'active' : '' }}">
                                 <i class="mdi mdi-cloud-print-outline"></i>
-                                <span>My CRM </span>
+                                <span>Search STS</span>
                             </a>
-                            <ul class="sub-menu" aria-expanded="{{ request()->is('profile*') || request()->is('changepassword*') ? 'true' : 'false' }}">
-                                <li><a href="{{ url('mysts/searchsts') }}">Search STS</a></li>
-                                <li class="{{ request()->is('profile*') ? 'mm-active' : '' }}"><a href="{{ route('profile') }}" class="{{ request()->is('profile*') ? 'active' : '' }}">Profile</a></li>
-                                <li class="{{ request()->is('changepassword*') ? 'mm-active' : '' }}"><a href="{{ route('changepassword') }}" class="{{ request()->is('changepassword*') ? 'active' : '' }}">Change Password</a></li>
-                            </ul>
                         </li>
-                        <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
+                        <li class="{{ request()->is('client/Fresh*') || request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
+                            <a href="{{ url('client/Fresh') }}" class="waves-effect {{ request()->is('client/Fresh*') || request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
                                 <i class="mdi mdi-account-group-outline"></i>
-                                <span>Company</span>
+                                <span>Companies</span>
                             </a>
-                            <ul class="sub-menu" aria-expanded="{{ request()->is('client*') || request()->is('clients*') ? 'true' : 'false' }}">
-                                <li class="{{ request()->is('clients/create*') ? 'mm-active' : '' }}"><a href="{{ url('clients/create') }}" class="{{ request()->is('clients/create*') ? 'active' : '' }}">New Company</a></li>
-                                @if ($user->hasRole(['Sales-Executive']))
-                                <li class="{{ request()->is('client/Fresh') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client/Fresh') ? 'active' : '' }}">My Companies</a></li>
-                                @else
-                                <li class="{{ request()->is('client/Fresh') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client/Fresh') ? 'active' : '' }}">Companies</a></li>
-                                @endif
-                            </ul>
                         </li>
 
-                        <li>
-                            <a href="javascript: void(0);" class="has-arrow waves-effect">
+                        <li class="{{ request()->is('reports/dsr/searchdsr*') || request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}">
+                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('reports/dsr/searchdsr*') || request()->is('reports/dsr/salesreports*') ? 'active' : '' }}">
                                 <i class="mdi mdi-settings-outline"></i>
                                 <span>DSR</span>
                             </a>
-                            <ul class="sub-menu" aria-expanded="false">
-                                <li><a href="{{ url('reports/dsr/searchdsr') }}">DSR</a></li>
-                                <li><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
+                            <ul class="sub-menu {{ request()->is('reports/dsr/searchdsr*') || request()->is('reports/dsr/salesreports*') ? 'mm-show' : '' }}" aria-expanded="false">
+                                <li class="{{ request()->is('reports/dsr/searchdsr*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/searchdsr') }}" class="{{ request()->is('reports/dsr/searchdsr*') ? 'active' : '' }}">DSR</a></li>
+                                <li class="{{ request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/salesreports') }}" class="{{ request()->is('reports/dsr/salesreports*') ? 'active' : '' }}">Sales Report</a></li>
                             </ul>
                         </li>
+
+
+                        @if ($user->hasRole('Team-Leader') && $user->departments->department == 1)
+                        <li class="{{ request()->is('reports/employees*') || request()->is('reports/employee*') ? 'mm-active' : '' }}">
+                            <a href="{{ route('reports.employees') }}" class="waves-effect {{ request()->is('reports/employees*') || request()->is('reports/employee*') ? 'active' : '' }}">
+                                <i class="mdi mdi-chart-line"></i>
+                                <span>Team Report</span>
+                            </a>
+                        </li>
+                        @endif
+
+                        @if ($user->hasRole('Sales-Executive'))
+                        <li class="{{ request()->is('my-insights*') ? 'mm-active' : '' }}">
+                            <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
+                                <i class="mdi mdi-chart-line"></i>
+                                <span>My Insights</span>
+                            </a>
+                        </li>
+                        @endif
 
                         @endif
 
@@ -387,7 +341,7 @@
 
                                 <li class="{{ request()->is('reports/projects*') ? 'mm-active' : '' }}"><a href="{{ route('reports.projects') }}">Projects</a></li>
                                 <li class="{{ request()->is('users*') || request()->is('reports/employee*') ? 'mm-active' : '' }}"><a href="{{ route('reports.employees') }}">Employees Report</a></li>
-                                
+
                                 @if($user->hasRole('Admin'))
                                 <li class="{{ request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
                                 @endif
@@ -425,6 +379,100 @@
 
     <script src="{{ asset('assets/libs/alertifyjs/build/alertify.min.js') }}"></script>
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+    <!-- Modern Global Glassmorphic Toast Script -->
+    <script>
+        function showModernToast(type, message) {
+            let container = document.getElementById('modern-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'modern-toast-container';
+                document.body.appendChild(container);
+            }
+
+            // Determine modern line icon
+            let iconClass = 'mdi mdi-information-outline';
+            if (type === 'success') iconClass = 'mdi mdi-checkbox-marked-circle-outline';
+            if (type === 'error') iconClass = 'mdi mdi-alert-circle-outline';
+            if (type === 'warning') iconClass = 'mdi mdi-alert-outline';
+
+            // Create toast card
+            let toast = document.createElement('div');
+            toast.className = `modern-toast ${type}`;
+            toast.innerHTML = `
+                <div class="modern-toast-icon">
+                    <i class="${iconClass} font-size-18"></i>
+                </div>
+                <div class="modern-toast-body">
+                    <div class="modern-toast-title">${type}</div>
+                    <div class="modern-toast-message">${message}</div>
+                </div>
+                <div class="modern-toast-progress">
+                    <div class="modern-toast-progress-bar"></div>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate entry
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 50);
+
+            // Animate progress shrink
+            let pBar = toast.querySelector('.modern-toast-progress-bar');
+            setTimeout(() => {
+                pBar.style.width = '0%';
+            }, 100);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    toast.remove();
+                }, 350);
+            }, 4000);
+        }
+
+        // Hook alertify global object to show modern premium toasts instantly
+        (function() {
+            if (window.alertify) {
+                const nativeAlertify = {
+                    ...window.alertify
+                };
+                window.alertify = {
+                    ...nativeAlertify,
+                    success: function(msg) {
+                        showModernToast('success', msg);
+                    },
+                    error: function(msg) {
+                        showModernToast('error', msg);
+                    },
+                    warning: function(msg) {
+                        showModernToast('warning', msg);
+                    },
+                    message: function(msg) {
+                        showModernToast('info', msg);
+                    }
+                };
+            }
+            // Also register as window.toastr for standard calls
+            window.toastr = {
+                success: function(msg) {
+                    showModernToast('success', msg);
+                },
+                error: function(msg) {
+                    showModernToast('error', msg);
+                },
+                warning: function(msg) {
+                    showModernToast('warning', msg);
+                },
+                info: function(msg) {
+                    showModernToast('info', msg);
+                }
+            };
+        })();
+    </script>
 
     <script type="module">
         window.Echo.private('post_like.{{ $user->id }}')

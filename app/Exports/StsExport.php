@@ -69,7 +69,7 @@ class StsExport extends  DefaultValueBinder implements FromArray , WithHeadings 
                                             $query->where('category',  $searchCat);
                                             $query->filterStatus($category, $searchCat);
                                             $query->whereBetween("created_at",[ $frms, $todt]);
-                                            $query->select('remarks','created_at' , 'category', 'tbro_type', 'time', 'tbro','remarks', 'client', );
+                                            $query->select('remarks','created_at' , 'category', 'tbro_type', 'time', 'tbro','remarks', 'client' );
                                     }])
                                     ->with('telereferral:id,name', 'referral:id,name')
                                     ->whereIn('tele_ref_user', $allmem)->get();
@@ -85,7 +85,8 @@ class StsExport extends  DefaultValueBinder implements FromArray , WithHeadings 
                                     $query->where('category',  $searchCat);
                                     $query->filterStatus($category, $searchCat);
                                     $query->whereBetween("created_at",[ $frms, $todt]);
-                            }]);
+                            }])
+                            ->with('telereferral:id,name', 'referral:id,name');
 
                 $clients = $eloquent->filterStatus($category, $searchCat)->get();
             }
@@ -105,6 +106,7 @@ class StsExport extends  DefaultValueBinder implements FromArray , WithHeadings 
                                             $query->filterStatus($category, $searchCat);
                                             $query->whereBetween("created_at",[ $frms, $todt]);
                                     }])
+                                    ->with('telereferral:id,name', 'referral:id,name')
                                     ->where(function ($query) use($employee) {
                                             $query->where('tele_ref_user', $employee);
                                     });
@@ -121,6 +123,7 @@ class StsExport extends  DefaultValueBinder implements FromArray , WithHeadings 
                                                     $query->filterStatus($category, $searchCat);
                                                     $query->whereBetween("created_at",[ $frms, $todt]);
                                             }])
+                                            ->with('telereferral:id,name', 'referral:id,name')
                                             ->where('ref_user', $employee);
             }
             $clients = $eloquent->filterStatus($category, $searchCat)->get();
@@ -135,15 +138,15 @@ class StsExport extends  DefaultValueBinder implements FromArray , WithHeadings 
             $innerArray['client-category']          = $client->category;
             $innerArray['contact-person']           = $client->cont_person;
             $innerArray['contactinfo']              = $client->mobile;
-            $innerArray['telerefuser']              = $client->telereferral->name;
-            $innerArray['salesexec']                = $client->referral->name;
+            $innerArray['telerefuser']              = $client->telereferral->name ?? 'Unassigned';
+            $innerArray['salesexec']                = $client->referral->name ?? 'Unassigned';
             $innerArray['status']                   = $client->status;
-            $innerArray['history-category']         = $client->history->category;
-            $innerArray['type']                     = $client->history->tbro_type;
-            $innerArray['time']                     = $client->history->time;
-            $innerArray['tbro']                     = $client->history->tbro;
-            $innerArray['remarks']                  = $client->history->remarks;
-            $innerArray['stsadded']                 = Carbon::parse($client->history->created_at)->format('d M Y');
+            $innerArray['history-category']         = $client->history->category ?? '';
+            $innerArray['type']                     = $client->history->tbro_type ?? '';
+            $innerArray['time']                     = $client->history->time ?? '';
+            $innerArray['tbro']                     = $client->history->tbro ?? '';
+            $innerArray['remarks']                  = $client->history->remarks ?? '';
+            $innerArray['stsadded']                 = $client->history && $client->history->created_at ? Carbon::parse($client->history->created_at)->format('d M Y') : '';
 
             array_push($arrClients, $innerArray);
             $ctr++;

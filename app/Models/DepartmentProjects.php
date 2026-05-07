@@ -62,10 +62,22 @@ class DepartmentProjects extends Model
     }
     public function getProgressAttribute()
     {
-        // Use pre-loaded counts if available, otherwise query
-        $total = isset($this->attributes['tasks_count']) ? $this->attributes['tasks_count'] : $this->tasks->count();
+        if (isset($this->attributes['tasks_count'])) {
+            $total = $this->attributes['tasks_count'];
+        } elseif ($this->relationLoaded('tasks')) {
+            $total = $this->tasks->count();
+        } else {
+            $total = $this->tasks()->count();
+        }
+
         if ($total > 0) {
-            $completed = isset($this->attributes['completed_task_count']) ? $this->attributes['completed_task_count'] : $this->completedTask->count();
+            if (isset($this->attributes['completed_task_count'])) {
+                $completed = $this->attributes['completed_task_count'];
+            } elseif ($this->relationLoaded('completedTask')) {
+                $completed = $this->completedTask->count();
+            } else {
+                $completed = $this->completedTask()->count();
+            }
             return round(($completed / $total) * 100);
         }
         return 0;

@@ -1,12 +1,17 @@
 @extends('layouts.app')
 
+@php
+    $user = Auth::user();
+    $isSalesTL = $user->hasRole('Team-Leader') && ($user->departments && $user->departments->department == 1);
+@endphp
+
 @section('content')
 <div class="container-fluid py-4" style="background: #f1f5f9; min-height: 100vh;">
     <!-- 🚀 Professional Employee Report Header -->
     <div class="row mb-5 align-items-center">
         <div class="col-lg-6">
-            <h1 class="header-glow mb-2">Employee Report</h1>
-            <p class="text-muted font-size-15 font-weight-medium">Strategic productivity tracking and departmental efficiency trends.</p>
+            <h1 class="header-glow mb-2">{{ $isSalesTL ? 'Team Sales Report' : (Auth::user()->hasRole('Team-Leader') ? 'Team Report' : 'Employee Report') }}</h1>
+            <p class="text-muted font-size-15 font-weight-medium">{{ $isSalesTL ? 'Strategic team sales conversions and pipeline intelligence.' : (Auth::user()->hasRole('Team-Leader') ? 'Strategic productivity tracking and team member insights.' : 'Strategic productivity tracking and departmental efficiency trends.') }}</p>
         </div>
         <div class="col-lg-6">
             <div class="d-flex align-items-center justify-content-lg-end">
@@ -35,8 +40,8 @@
             <div class="modern-card p-4 h-100">
                 <div class="d-flex align-items-center justify-content-between mb-4">
                     <div>
-                        <h4 class="font-weight-bold text-dark mb-1">{{ $showSales ? 'Organizational Velocity' : 'Operations Velocity' }}</h4>
-                        <p class="text-muted small mb-0">{{ $showSales ? 'Ops Delivery vs Sales Maturity Trend' : 'Monthly Project Delivery Performance' }}</p>
+                        <h4 class="font-weight-bold text-dark mb-1">{{ $isSalesTL ? 'Sales Pipeline Trend' : ($showSales ? 'Organizational Velocity' : 'Operations Velocity') }}</h4>
+                        <p class="text-muted small mb-0">{{ $isSalesTL ? 'Monthly client lead acquisitions and maturity tracking' : ($showSales ? 'Ops Delivery vs Sales Maturity Trend' : 'Monthly Project Delivery Performance') }}</p>
                     </div>
                 </div>
                 <div id="efficiency-trend-chart" style="height: 350px;"></div>
@@ -53,8 +58,8 @@
                                 <i class="mdi mdi-account-group"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted font-weight-bold text-uppercase mb-1" style="font-size: 10px; letter-spacing: 1.5px;">Workforce Size</h6>
-                                <h2 class="font-weight-bold mb-0 text-dark">{{ $employeesCount }} <small class="text-muted" style="font-size: 14px;">Talents</small></h2>
+                                <h6 class="text-muted font-weight-bold text-uppercase mb-1" style="font-size: 10px; letter-spacing: 1.5px;">{{ $isSalesTL ? 'Sales Force Size' : 'Workforce Size' }}</h6>
+                                <h2 class="font-weight-bold mb-0 text-dark">{{ $employeesCount }} <small class="text-muted" style="font-size: 14px;">{{ $isSalesTL ? 'Specialist(s)' : 'Talents' }}</small></h2>
                             </div>
                         </div>
                     </div>
@@ -78,6 +83,20 @@
                 </div>
                 @endif
                 <div class="col-12">
+                    @if($isSalesTL)
+                    <div class="modern-card p-4 h-100 shadow-sm border border-light">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="kpi-icon-box bg-purple text-white mr-3" style="background-color: #6366f1 !important;">
+                                <i class="mdi mdi-shield-check"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted font-weight-bold text-uppercase mb-1" style="font-size: 10px; letter-spacing: 1.5px;">Team Matured Sales</h6>
+                                <h2 class="font-weight-bold mb-0 text-dark">{{ $maturedCount }} <small class="text-muted" style="font-size: 14px;">Matured Clients</small></h2>
+                            </div>
+                        </div>
+                        <div class="mt-2 small text-muted"><i class="mdi mdi-trophy-outline mr-1 text-warning"></i> Converted Leads pipeline</div>
+                    </div>
+                    @else
                     <div class="modern-card p-4">
                         <div class="d-flex align-items-center mb-3">
                             <div class="kpi-icon-box bg-warning text-white mr-3">
@@ -92,6 +111,7 @@
                             <div class="progress-bar bg-warning" style="width: {{ $opsRate }}%"></div>
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -103,8 +123,8 @@
             <div class="modern-card p-5">
                 <div class="d-flex align-items-center justify-content-between mb-5">
                     <div>
-                        <h3 class="font-weight-bold text-dark mb-1">Performance Matrix</h3>
-                        <p class="text-muted small mb-0">Role-aware efficiency tracking and task delivery logs</p>
+                        <h3 class="font-weight-bold text-dark mb-1">{{ Auth::user()->hasRole('Team-Leader') ? 'Team Performance Matrix' : 'Performance Matrix' }}</h3>
+                        <p class="text-muted small mb-0">{{ $isSalesTL ? 'Team sales conversions and callback tracking metrics' : (Auth::user()->hasRole('Team-Leader') ? 'Team performance and client maturity tracking metrics' : 'Role-aware efficiency tracking and task delivery logs') }}</p>
                     </div>
                     <div class="neon-toggle">
                         <button class="btn btn-sm range-btn" data-range="weekly">Weekly</button>
@@ -119,9 +139,15 @@
                             <tr>
                                 <th>Professional Identity</th>
                                 <th>Department & Role</th>
+                                @if($isSalesTL)
+                                <th>Assigned Leads</th>
+                                <th>Active Followups</th>
+                                <th>Matured Clients</th>
+                                @else
                                 <th>Load (Tasks/Clients)</th>
                                 <th>Logged Time</th>
                                 <th>Productivity Index</th>
+                                @endif
                                 <th>Review</th>
                             </tr>
                         </thead>
@@ -181,7 +207,7 @@
                     data: 'departments', 
                     name: 'departments.dept.name',
                     render: function(data, type, row) {
-                        const dept = data && data.dept ? data.dept.name : 'Operation';
+                        const dept = data && data.dept ? data.dept.name : 'Sales';
                         const role = row.roles && row.roles[0] ? row.roles[0].name : 'Specialist';
                         return `<div>
                                     <span class="badge badge-soft-info px-3 rounded-pill d-block mb-1">${dept}</span>
@@ -189,6 +215,29 @@
                                 </div>`;
                     }
                 },
+                @if($isSalesTL)
+                { 
+                    data: 'total_leads', 
+                    name: 'total_leads',
+                    render: function(data) {
+                        return `<span class="font-weight-bold text-primary font-size-14"><i class="mdi mdi-account-plus mr-1"></i>${data} Leads</span>`;
+                    }
+                },
+                { 
+                    data: 'active_followups', 
+                    name: 'active_followups',
+                    render: function(data) {
+                        return `<span class="font-weight-bold text-warning font-size-14"><i class="mdi mdi-phone-in-talk mr-1"></i>${data} Followups</span>`;
+                    }
+                },
+                { 
+                    data: 'matured_clients', 
+                    name: 'matured_clients',
+                    render: function(data) {
+                        return `<span class="badge badge-soft-success px-3 py-1 rounded-pill font-size-13 font-weight-bold">${data} Matured</span>`;
+                    }
+                },
+                @else
                 { 
                     data: 'active_tasks', 
                     name: 'active_tasks',
@@ -226,6 +275,7 @@
                                 </div>`;
                     }
                 },
+                @endif
                 { 
                     data: 'action', 
                     name: 'action',
@@ -255,11 +305,14 @@
         // 📈 Dual-Track Efficiency Trend Chart
         var efficiencyOptions = {
             series: [
+                @if(!$isSalesTL)
                 {
                     name: 'Ops Delivery (Tasks)',
                     data: [ @foreach($performanceTrend as $p) {{ $p->ops }}, @endforeach ]
                 }
-                @if($showSales),
+                @endif
+                @if($showSales)
+                @if(!$isSalesTL),@endif
                 {
                     name: 'Sales Maturity (Clients)',
                     data: [ @foreach($performanceTrend as $p) {{ $p->sales }}, @endforeach ]
@@ -273,7 +326,7 @@
                 dropShadow: { enabled: true, top: 10, blur: 15, opacity: 0.1 }
             },
             stroke: { curve: 'smooth', width: 4 },
-            colors: ['#6366f1', '#34c38f'],
+            colors: [@if($isSalesTL) '#34c38f' @else '#6366f1', '#34c38f' @endif],
             fill: { 
                 type: 'gradient', 
                 gradient: { 

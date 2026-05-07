@@ -19,8 +19,26 @@ use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Reports\AdvancedReportController;
 use App\Http\Controllers\Reports\EmployeeReportController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+
+
+Route::get('/cache-clear', function () {
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('view:clear');
+    Artisan::call('route:clear');
+    Artisan::call('optimize:clear');
+    return "All Laravel caches and configurations cleared successfully!";
+});
+
+Route::get('/storage-link', function () {
+    Artisan::call('storage:link');
+    return "Storage folder symlink created successfully on the server!";
+});
+
 
 
 Route::get('/', function () {
@@ -31,6 +49,7 @@ Route::get('/', function () {
 });
 
 Auth::routes();
+
 
 
 
@@ -47,8 +66,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/changepassword', [ProfileController::class, 'updatePassword'])->name('updatePassword');
 
     // Dashboard
-        Route::get('/home/chartdata', [DashboardController::class, 'chartdata']);
-        Route::get('/todays/tbros', [DashboardController::class, 'getTodaysTbros']);
+    Route::get('/home/chartdata', [DashboardController::class, 'chartdata']);
+    Route::get('/todays/tbros', [DashboardController::class, 'getTodaysTbros']);
 
 
 
@@ -57,10 +76,19 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::post('/mark-as-read', [NotificationController::class, 'markAsRead'])->name('mark-as-read-notification');
     Route::post('/mark-all-as-read', [NotificationController::class, 'markAsRead'])->name('mark-all-as-read-notification');
+
+    // Shared Category & User Allocation Lookup Routes
+    Route::get('/projectcategory/subcategories', [ProjectSubCategoryController::class, 'getcategorybyid']);
+    Route::get('/users-by-team-members', [UserController::class, 'getAllUserByRole'])->name('getUsersToAssign');
 });
 
 
-Route::group(['middleware' => ['auth']], function () {
+// 🔒 Sales Department Protected Routes
+Route::group(['middleware' => ['auth', 'restrict.sales']], function () {
+    // Bulk Upload
+    Route::get('clients/bulk-upload', [ClientsController::class, 'bulkUploadForm'])->name('clients.bulkupload');
+    Route::post('clients/bulk-upload', [ClientsController::class, 'bulkUploadStore'])->name('clients.bulkupload.store');
+    Route::get('clients/bulk-upload/sample', [ClientsController::class, 'bulkUploadSample'])->name('clients.bulkupload.sample');
 
     // Clients with Process
     Route::post('client/ajax-create', [ClientsController::class, 'ajaxStore'])->name('client.ajax-create');
@@ -91,8 +119,6 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('client/payment/byProjecct', [ClientPaymentsController::class, 'getPaymentByProject'])->name('client.getPendingPayments.byProject');
     Route::post('client/payment/add', [ClientPaymentsController::class, 'addPayment'])->name('client.addPayment');
 
-
-
     //Report Part
     Route::get('/mysts/searchsts', [ReportController::class, 'index']);
     Route::get('/mysts/searchsts/get', [ReportController::class, 'searchSTS'])->name('report.searchsts');
@@ -107,41 +133,43 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/reports/searchsts/ajax', [ReportController::class, 'getCountMyStsByCategory'])->name('report.get-count-by-category');
     Route::get('/exportsts', [ReportController::class, 'exportStsReports']);
 
+    // Nudges & Allocation
+    Route::post('/assignToExecutive', [ClientsController::class, 'assignToExecutive'])->name('assignUsersToexecutive');
+    Route::post('client/{client}/nudge', [ClientsController::class, 'nudgeExecutive'])->name('client.nudge');
+    Route::post('clients/nudge-exec', [ClientsController::class, 'nudgeExecutiveByUserId']);
+});
+
+// 🔒 WMS / Operations (DO) Department Protected Routes
+Route::group(['middleware' => ['auth', 'restrict.wms']], function () {
     // Advanced Reports
     Route::get('/reports/projects', [AdvancedReportController::class, 'projectsReport'])->name('reports.projects');
     Route::get('/reports/projects/data', [AdvancedReportController::class, 'projectsData'])->name('reports.projects.data');
-    Route::get('/reports/employees', [EmployeeReportController::class, 'index'])->name('reports.employees');
-    Route::get('/reports/employees/data', [EmployeeReportController::class, 'data'])->name('reports.employees.data');
-    Route::get('/reports/employee/{id}', [EmployeeReportController::class, 'detail'])->name('reports.employee.detail');
-    Route::get('/my-insights', [EmployeeReportController::class, 'myInsights'])->name('my-insights');
-
-
-
 
     // Departments
     Route::get('/department/category', [ProjectCategoryController::class, 'getcategorybyid']);
     Route::get('/department/filter', [DepartmentController::class, 'filterDepartment'])->name('departments.filterDepartment');
 
-
-    // Project & Caregory
-    Route::get('/projectcategory/subcategories', [ProjectSubCategoryController::class, 'getcategorybyid']);
-
-    // Clients Projects /Sales Exxecutive
+    // Clients Projects / WMS Tasks & Projects
     Route::post('client/createprojecct', [DepartmentProjectsController::class, 'createNewProject']);
     Route::get('projects/{projectid}/history', [ProjectController::class, 'history']);
     Route::get('projects/get-employees', [ProjectController::class, 'getEmployeesByProject'])->name('projects.employees');
     Route::get('projects/get-team-leaders', [ProjectController::class, 'getTeamLeadersByCategory'])->name('projects.teamleaders');
 
-
     // Payments
     Route::get('/payments', [ClientPaymentsController::class, 'index']);
     Route::get('/payments/getallpayments', [ClientPaymentsController::class, 'getallpayments']);
     Route::get('/payments/getpayments-by-package', [ClientPaymentsController::class, 'getPaymentsByPackage']);
+});
 
-    // Assign To Others
-    Route::get('/users-by-team-members', [UserController::class, 'getAllUserByRole'])->name('getUsersToAssign');
-    Route::post('/assignToExecutive', [ClientsController::class, 'assignToExecutive'])->name('assignUsersToexecutive');
+// 🌐 Shared Authenticated Routes
+Route::group(['middleware' => ['auth']], function () {
     Route::get('/documents/download/{id}', [\App\Http\Controllers\DocumentController::class, 'download'])->name('documents.download');
+
+    // Employee & Sales Reports
+    Route::get('/reports/employees', [EmployeeReportController::class, 'index'])->name('reports.employees');
+    Route::get('/reports/employees/data', [EmployeeReportController::class, 'data'])->name('reports.employees.data');
+    Route::get('/reports/employee/{id}', [EmployeeReportController::class, 'detail'])->name('reports.employee.detail');
+    Route::get('/my-insights', [EmployeeReportController::class, 'myInsights'])->name('my-insights');
 });
 
 

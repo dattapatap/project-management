@@ -71,5 +71,8 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\Admin::class,
         'teamleader' => \App\Http\Middleware\TeamLeader::class,
         'employee' => \App\Http\Middleware\Employee::class,
+        'restrict.sales' => \App\Http\Middleware\RestrictToSales::class,
+        'restrict.wms' => \App\Http\Middleware\RestrictToWms::class,
     ];
 }
+

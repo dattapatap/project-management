@@ -26,6 +26,12 @@ class EmployeeReportController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+
+        // 👮 Sales Executive is redirected directly to My Insights
+        if ($user->hasRole('Sales-Executive')) {
+            return redirect()->route('my-insights');
+        }
+
         $selectedYear = $request->get('year', date('Y'));
         $selectedMonth = $request->get('month', 'All');
 
@@ -33,17 +39,36 @@ class EmployeeReportController extends Controller
         $query = User::where('status', 'Active')->where('id', '!=', 1);
 
         $showSales = true;
+        $departmentId = $user->departments->department ?? null;
+
         if ($user->hasRole('Project-Manager')) {
-            $departmentId = $user->departments->department ?? null;
             if ($departmentId) {
                 $query->whereHas('departments', function ($q) use ($departmentId) {
                     $q->where('department', $departmentId);
                 });
 
-                // Determine if this department is Sales (assuming 1 is Sales, 2 is OD based on HomeController logic)
                 if ($departmentId != 1) {
                     $showSales = false;
                 }
+            }
+        } elseif ($user->hasRole('Team-Leader')) {
+            // Find teams managed by the Team Leader
+            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+
+            // Find all Sales/Operations Executives registered in those teams
+            $allMembers = \App\Models\TeamMembers::whereIn('team', $teams)
+                ->where('status', true)
+                ->pluck('user')
+                ->toArray();
+
+            if (!in_array($user->id, $allMembers)) {
+                $allMembers[] = $user->id;
+            }
+
+            $query->whereIn('id', $allMembers);
+
+            if ($departmentId != 1) {
+                $showSales = false;
             }
         }
 
@@ -52,26 +77,55 @@ class EmployeeReportController extends Controller
 
         // 📊 Calculate Summary KPIs
         $opsQuery = Task::whereYear('updated_at', $selectedYear);
-        if ($user->hasRole('Project-Manager')) {
-            $opsQuery->whereHas('user.departments', function ($q) use ($departmentId) {
-                $q->where('department', $departmentId);
-            });
+        if ($user->hasRole('Project-Manager') || $user->hasRole('Team-Leader')) {
+            if ($user->hasRole('Project-Manager')) {
+                $opsQuery->whereHas('user.departments', function ($q) use ($departmentId) {
+                    $q->where('department', $departmentId);
+                });
+            } else {
+                $opsQuery->whereIn('assigned_to', $allMembers);
+            }
         }
+
+        $leadsQuery = DB::table('clients')->whereYear('created_at', $selectedYear);
+        $maturedQuery = DB::table('clients')->where('status', 'Matured')->whereYear('updated_at', $selectedYear);
+        $activeFollowupQuery = DB::table('clients')->whereIn('status', ['Followup', 'Meeting Fixed']);
+
+        if ($showSales && ($user->hasRole('Project-Manager') || $user->hasRole('Team-Leader'))) {
+            if ($user->hasRole('Project-Manager')) {
+                $existsClosure = function ($q) use ($departmentId) {
+                    $q->select(DB::raw(1))->from('users_departments')->whereColumn('users_departments.user', 'clients.ref_user')->where('department', $departmentId);
+                };
+                $leadsQuery->whereExists($existsClosure);
+                $maturedQuery->whereExists($existsClosure);
+                $activeFollowupQuery->whereExists($existsClosure);
+            } else {
+                $leadsQuery->whereIn('ref_user', $allMembers);
+                $maturedQuery->whereIn('ref_user', $allMembers);
+                $activeFollowupQuery->whereIn('ref_user', $allMembers);
+            }
+        }
+
+        if ($selectedMonth != 'All') {
+            $monthNum = date('m', strtotime($selectedMonth));
+            $opsQuery->whereMonth('updated_at', $monthNum);
+            $leadsQuery->whereMonth('created_at', $monthNum);
+            $maturedQuery->whereMonth('updated_at', $monthNum);
+        }
+
         $totalOps = (clone $opsQuery)->count();
         $completedOps = (clone $opsQuery)->where('status', 'Completed')->count();
         $opsRate = $totalOps > 0 ? round(($completedOps / $totalOps) * 100) : 0;
 
         $salesRate = 0;
+        $totalLeadsCount = 0;
+        $maturedCount = 0;
+        $activeFollowupCount = 0;
         if ($showSales) {
-            $clientsQuery = DB::table('clients')->whereYear('created_at', $selectedYear);
-            if ($user->hasRole('Project-Manager')) {
-                $clientsQuery->whereExists(function ($q) use ($departmentId) {
-                    $q->select(DB::raw(1))->from('users_departments')->whereColumn('users_departments.user', 'clients.ref_user')->where('department', $departmentId);
-                });
-            }
-            $totalClients = (clone $clientsQuery)->count();
-            $maturedClients = (clone $clientsQuery)->where('status', 'Matured')->count();
-            $salesRate = $totalClients > 0 ? round(($maturedClients / $totalClients) * 100) : 0;
+            $totalLeadsCount = $leadsQuery->count();
+            $maturedCount = $maturedQuery->count();
+            $activeFollowupCount = $activeFollowupQuery->count();
+            $salesRate = $totalLeadsCount > 0 ? round(($maturedCount / $totalLeadsCount) * 100) : 0;
         }
 
         // 📈 12-Month Dual Trend (Operations vs Sales)
@@ -84,18 +138,22 @@ class EmployeeReportController extends Controller
             $opsTrendQ->whereHas('user.departments', function ($q) use ($departmentId) {
                 $q->where('department', $departmentId);
             });
+        } elseif ($user->hasRole('Team-Leader')) {
+            $opsTrendQ->whereIn('assigned_to', $allMembers);
         }
         $opsTrendRaw = $opsTrendQ->get()->keyBy('month');
 
         // 💰 Sales Trend
         $salesTrendRaw = collect();
         if ($showSales) {
-            $salesTrendQ = DB::table('clients')->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(created_at, '%b') as month"))
-                ->where('status', 'Matured')->whereYear('created_at', $selectedYear)->groupBy('month');
+            $salesTrendQ = DB::table('clients')->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(updated_at, '%b') as month"))
+                ->where('status', 'Matured')->whereYear('updated_at', $selectedYear)->groupBy('month');
             if ($user->hasRole('Project-Manager')) {
                 $salesTrendQ->whereExists(function ($q) use ($departmentId) {
                     $q->select(DB::raw(1))->from('users_departments')->whereColumn('users_departments.user', 'clients.ref_user')->where('department', $departmentId);
                 });
+            } elseif ($user->hasRole('Team-Leader')) {
+                $salesTrendQ->whereIn('ref_user', $allMembers);
             }
             $salesTrendRaw = $salesTrendQ->get()->keyBy('month');
         }
@@ -108,7 +166,7 @@ class EmployeeReportController extends Controller
             ];
         });
 
-        return view('components.reports.employees', compact('employeesCount', 'performanceTrend', 'selectedYear', 'selectedMonth', 'months', 'showSales', 'opsRate', 'salesRate'));
+        return view('components.reports.employees', compact('employeesCount', 'performanceTrend', 'selectedYear', 'selectedMonth', 'months', 'showSales', 'opsRate', 'salesRate', 'totalLeadsCount', 'maturedCount', 'activeFollowupCount'));
     }
 
     /**
@@ -132,37 +190,57 @@ class EmployeeReportController extends Controller
                     $q->where('department', $departmentId);
                 });
             }
+        } elseif ($user->hasRole('Team-Leader')) {
+            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+            $allMembers = \App\Models\TeamMembers::whereIn('team', $teams)
+                ->where('status', true)
+                ->pluck('user')
+                ->toArray();
+
+            if (!in_array($user->id, $allMembers)) {
+                $allMembers[] = $user->id;
+            }
+
+            $query->whereIn('id', $allMembers);
         }
 
         $data = $query->get()->map(function ($emp) use ($range, $year, $monthName) {
             $tasksQuery = Task::where('assigned_to', $emp->id);
             $logsQuery = TaskLog::where('userid', $emp->id);
-            $clientsQuery = DB::table('clients')->where('ref_user', $emp->id);
+            $leadsQuery = DB::table('clients')->where('ref_user', $emp->id);
+            $maturedClientsQuery = DB::table('clients')->where('ref_user', $emp->id)->where('status', 'Matured');
+            $activeFollowupsQuery = DB::table('clients')->where('ref_user', $emp->id)->whereIn('status', ['Followup', 'Meeting Fixed']);
 
             if ($range == 'weekly') {
                 $tasksQuery->where('created_at', '>=', Carbon::now()->startOfWeek());
                 $logsQuery->where('created_at', '>=', Carbon::now()->startOfWeek());
-                $clientsQuery->where('created_at', '>=', Carbon::now()->startOfWeek());
+                $leadsQuery->where('created_at', '>=', Carbon::now()->startOfWeek());
+                $maturedClientsQuery->where('updated_at', '>=', Carbon::now()->startOfWeek());
             } elseif ($range == 'monthly') {
                 $tasksQuery->whereYear('created_at', $year);
                 $logsQuery->whereYear('created_at', $year);
-                $clientsQuery->whereYear('created_at', $year);
+                $leadsQuery->whereYear('created_at', $year);
+                $maturedClientsQuery->whereYear('updated_at', $year);
 
                 if ($monthName != 'All') {
                     $monthNum = date('m', strtotime($monthName));
                     $tasksQuery->whereMonth('created_at', $monthNum);
                     $logsQuery->whereMonth('created_at', $monthNum);
-                    $clientsQuery->whereMonth('created_at', $monthNum);
+                    $leadsQuery->whereMonth('created_at', $monthNum);
+                    $maturedClientsQuery->whereMonth('updated_at', $monthNum);
                 }
             } elseif ($range == 'yearly') {
                 $tasksQuery->whereYear('created_at', $year);
                 $logsQuery->whereYear('created_at', $year);
-                $clientsQuery->whereYear('created_at', $year);
+                $leadsQuery->whereYear('created_at', $year);
+                $maturedClientsQuery->whereYear('updated_at', $year);
             }
 
             $emp->active_tasks = (clone $tasksQuery)->where('status', 'InProgress')->count();
             $emp->completed_tasks = (clone $tasksQuery)->where('status', 'Completed')->count();
-            $emp->matured_clients = (clone $clientsQuery)->where('status', 'Matured')->count();
+            $emp->matured_clients = $maturedClientsQuery->count();
+            $emp->total_leads = $leadsQuery->count();
+            $emp->active_followups = $activeFollowupsQuery->count();
             $emp->total_hours = round($logsQuery->sum('time_spend'), 1);
 
             // Efficiency based on Role
@@ -208,10 +286,28 @@ class EmployeeReportController extends Controller
         $months = ['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         // 👮 Authorization Check
-        if (Auth::user()->hasRole('Project-Manager')) {
-            $myDept = Auth::user()->departments->department ?? null;
-            $empDept = $employee->departments->department ?? null;
-            if ($myDept != $empDept) abort(403, 'Unauthorized access.');
+        $user = Auth::user();
+        if (!$user->hasRole('Admin')) {
+            if ($userId == $user->id) {
+                // Anyone can view their own details/insights
+            } elseif ($user->hasRole('Project-Manager')) {
+                $myDept = $user->departments->department ?? null;
+                $empDept = $employee->departments->department ?? null;
+                if ($myDept != $empDept) abort(403, 'Unauthorized access.');
+            } elseif ($user->hasRole('Team-Leader')) {
+                $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+                $isTeamMember = DB::table('team_members')
+                    ->whereIn('team', $teams)
+                    ->where('user', $userId)
+                    ->where('status', true)
+                    ->exists();
+                if (!$isTeamMember) {
+                    abort(403, 'Unauthorized access. You can only view reports of your team members or yourself.');
+                }
+            } else {
+                // Regular employees can only view themselves
+                abort(403, 'Unauthorized access.');
+            }
         }
 
         // 📊 Performance Metrics for Selected Timeframe
@@ -221,9 +317,12 @@ class EmployeeReportController extends Controller
         $logsQ = TaskLog::where('userid', $userId)->whereYear('created_at', $selectedYear);
 
         // Sales Queries
-        $maturedQ = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')->whereYear('created_at', $selectedYear);
+        $maturedQ = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')->whereYear('updated_at', $selectedYear);
         $followupQ = DB::table('clients')->where('ref_user', $userId)->where('status', 'Followup')->whereYear('created_at', $selectedYear);
         $salesQ = DB::table('client_payments')->where('created_by', $userId)->whereYear('created_at', $selectedYear);
+
+        $leadsQ = DB::table('clients')->where('ref_user', $userId)->whereYear('created_at', $selectedYear);
+        $activeFollowupQ = DB::table('clients')->where('ref_user', $userId)->whereIn('status', ['Followup', 'Meeting Fixed']);
 
         if ($selectedMonth != 'All') {
             $monthNum = date('m', strtotime($selectedMonth));
@@ -231,9 +330,10 @@ class EmployeeReportController extends Controller
             $pendingTasksQ->whereMonth('created_at', $monthNum);
             $compProjsQ->whereMonth('updated_at', $monthNum);
             $logsQ->whereMonth('created_at', $monthNum);
-            $maturedQ->whereMonth('created_at', $monthNum);
+            $maturedQ->whereMonth('updated_at', $monthNum);
             $followupQ->whereMonth('created_at', $monthNum);
             $salesQ->whereMonth('created_at', $monthNum);
+            $leadsQ->whereMonth('created_at', $monthNum);
         }
 
         $stats = [
@@ -247,6 +347,8 @@ class EmployeeReportController extends Controller
             'matured' => $maturedQ->count(),
             'followup' => $followupQ->count(),
             'total_sales' => round($salesQ->sum('amount'), 2),
+            'total_leads' => $leadsQ->count(),
+            'active_followups' => $activeFollowupQ->count(),
         ];
 
         // 🧠 Advanced Productivity Insights
@@ -269,16 +371,21 @@ class EmployeeReportController extends Controller
             ->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(created_at, '%b') as month"))
             ->groupBy('month')->get()->keyBy('month');
 
+        $monthlyMatured = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')->whereYear('created_at', $selectedYear)
+            ->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(created_at, '%b') as month"))
+            ->groupBy('month')->get()->keyBy('month');
+
         $monthlyHours = TaskLog::where('userid', $userId)->whereYear('created_at', $selectedYear)
             ->select(DB::raw('SUM(time_spend) as minutes'), DB::raw("DATE_FORMAT(created_at, '%b') as month"))
             ->groupBy('month')->get()->keyBy('month');
 
-        $monthlyTrend = collect($trendMonths)->map(function ($m) use ($monthlyTasks, $monthlyClients, $monthlyHours) {
+        $monthlyTrend = collect($trendMonths)->map(function ($m) use ($monthlyTasks, $monthlyClients, $monthlyHours, $monthlyMatured) {
             return (object)[
                 'month' => $m,
                 'tasks' => $monthlyTasks->has($m) ? $monthlyTasks->get($m)->count : 0,
                 'clients' => $monthlyClients->has($m) ? $monthlyClients->get($m)->count : 0,
-                'hours' => $monthlyHours->has($m) ? round($monthlyHours->get($m)->minutes, 1) : 0
+                'hours' => $monthlyHours->has($m) ? round($monthlyHours->get($m)->minutes, 1) : 0,
+                'matured' => $monthlyMatured->has($m) ? $monthlyMatured->get($m)->count : 0
             ];
         });
 
@@ -299,16 +406,27 @@ class EmployeeReportController extends Controller
                 return Carbon::parse($date->created_at)->format('d M, Y');
             });
 
-        $isSales = $employee->hasRole('Sales-Executive');
+        $isSales = $employee->hasRole('Sales-Executive') || ($employee->departments && $employee->departments->department == 1);
         $tasks = Task::with('project.clients')->where('assigned_to', $userId)->latest()->take(10)->get();
         $logs = TaskLog::with('task.project.clients')->where('userid', $userId)->latest()->take(15)->get();
         $activities = \App\Models\UserActivity::where('user_id', $userId)->latest()->take(10)->get();
 
         $recentMatured = collect();
+        $salesLogs = collect();
         if ($isSales) {
-            $recentMatured = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')->latest()->take(10)->get();
+            $recentMaturedQuery = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')->whereYear('updated_at', $selectedYear);
+            $salesLogsQuery = \App\Models\ClientHistory::with('client')->where('created', $userId)->whereYear('created_at', $selectedYear);
+
+            if ($selectedMonth != 'All') {
+                $monthNum = date('m', strtotime($selectedMonth));
+                $recentMaturedQuery->whereMonth('updated_at', $monthNum);
+                $salesLogsQuery->whereMonth('created_at', $monthNum);
+            }
+
+            $recentMatured = $recentMaturedQuery->latest('updated_at')->take(10)->get();
+            $salesLogs = $salesLogsQuery->latest()->take(15)->get();
         }
 
-        return view('components.reports.employee_detail', compact('employee', 'tasks', 'logs', 'stats', 'selectedYear', 'selectedMonth', 'months', 'monthlyTrend', 'dailyLogs', 'isSales', 'recentMatured', 'activities'));
+        return view('components.reports.employee_detail', compact('employee', 'tasks', 'logs', 'salesLogs', 'stats', 'selectedYear', 'selectedMonth', 'months', 'monthlyTrend', 'dailyLogs', 'isSales', 'recentMatured', 'activities'));
     }
 }

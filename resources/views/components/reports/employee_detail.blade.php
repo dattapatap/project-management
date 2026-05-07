@@ -111,22 +111,30 @@
         </div>
 
         <!-- ⚡ Comprehensive Performance Metrics -->
+        <!-- ⚡ Comprehensive Performance Metrics -->
         <div class="col-xl-8">
             <!-- Summary Row 1 -->
             <div class="row">
                 @if($isSales)
                 <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 mesh-gradient-success">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Matured Clients</h6>
-                        <h2 class="font-weight-bold text-success mb-0">{{ $stats['matured'] }}</h2>
-                        <div class="mt-2 small font-weight-bold text-success-50"><i class="mdi mdi-shield-check"></i> High Conversion</div>
+                    <div class="modern-card p-4 h-100 mesh-gradient-primary">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Assigned Leads</h6>
+                        <h2 class="font-weight-bold text-primary mb-0">{{ $stats['total_leads'] }}</h2>
+                        <div class="mt-2 small text-muted"><i class="mdi mdi-account-plus"></i> Lead pipeline size</div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Sales Volume</h6>
-                        <h2 class="font-weight-bold text-primary mb-0">₹{{ number_format($stats['total_sales'], 2) }}</h2>
-                        <div class="mt-2 small text-muted"><i class="mdi mdi-cash mr-1"></i> Revenue Impact</div>
+                    <div class="modern-card p-4 h-100 bg-white shadow-sm border border-light">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Active Followups</h6>
+                        <h2 class="font-weight-bold text-warning mb-0">{{ $stats['active_followups'] }}</h2>
+                        <div class="mt-2 small text-muted"><i class="mdi mdi-phone-in-talk"></i> Active negotiations</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="modern-card p-4 h-100 mesh-gradient-success">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Matured Clients</h6>
+                        <h2 class="font-weight-bold text-success mb-0">{{ $stats['matured'] }}</h2>
+                        <div class="mt-2 small font-weight-bold text-success-50"><i class="mdi mdi-shield-check"></i> Sales conversions</div>
                     </div>
                 </div>
                 @else
@@ -144,7 +152,6 @@
                         <div class="mt-2 small text-muted"><i class="mdi mdi-timer-outline mr-1"></i> Working Rhythm</div>
                     </div>
                 </div>
-                @endif
                 <div class="col-md-4 mb-4">
                     <div class="modern-card p-4 h-100 bg-white shadow-sm">
                         <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Productivity Index</h6>
@@ -152,22 +159,18 @@
                         <div class="mt-2 small text-warning font-weight-bold"><i class="mdi mdi-rocket-launch"></i> Output Velocity</div>
                     </div>
                 </div>
+                @endif
             </div>
 
+            @if(!$isSales)
             <!-- Summary Row 2 -->
             <div class="row">
-                <div class="{{ $isSales ? 'col-md-6' : 'col-md-3' }} mb-4">
+                <div class="col-md-3 mb-4">
                     <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        @if($isSales)
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Followups</h6>
-                        <h4 class="font-weight-bold text-info mb-0">{{ $stats['followup'] }}</h4>
-                        @else
                         <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Resolved Tasks</h6>
                         <h4 class="font-weight-bold text-primary mb-0">{{ $stats['completed_tasks'] }}</h4>
-                        @endif
                     </div>
                 </div>
-                @if(!$isSales)
                 <div class="col-md-3 mb-4">
                     <div class="modern-card p-4 h-100 bg-white border border-light text-center">
                         <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Taken Time</h6>
@@ -186,25 +189,19 @@
                         <h4 class="font-weight-bold text-success mb-0">{{ $stats['completed_projects'] }}</h4>
                     </div>
                 </div>
-                @else
-                <div class="col-md-6 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Active Lead Engagement</h6>
-                        <h4 class="font-weight-bold text-success mb-0">{{ $stats['matured'] + $stats['followup'] }} <small>Interactions</small></h4>
-                    </div>
-                </div>
-                @endif
             </div>
+            @endif
 
             <!-- 📈 Multi-Track Trend (Tasks vs Clients) -->
             <div class="modern-card p-4 mb-4 border-0">
                 <div class="d-flex align-items-center justify-content-between mb-4">
                     <h5 class="font-weight-bold text-dark mb-0">Performance Trend</h5>
                     <div class="d-flex align-items-center">
-                        <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Tasks</small></div>
                         @if($isSales)
-                        <div class="d-flex align-items-center"><span class="badge-dot bg-success mr-1"></span> <small class="font-weight-bold">New Clients</small></div>
+                        <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Assigned Leads</small></div>
+                        <div class="d-flex align-items-center"><span class="badge-dot bg-success mr-1"></span> <small class="font-weight-bold">Matured Clients</small></div>
                         @else
+                        <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Tasks</small></div>
                         <div class="d-flex align-items-center"><span class="badge-dot bg-warning mr-1"></span> <small class="font-weight-bold">Input Hours</small></div>
                         @endif
                     </div>
@@ -265,9 +262,53 @@
     @endif
 
     <div class="row mt-4">
-        <!-- 📜 Recent Activity Logs -->
+        <!-- 📜 Recent Activity/Followup Logs -->
         <div class="col-xl-8">
             <div class="modern-card p-5 h-100">
+                @if($isSales)
+                <h5 class="font-weight-bold text-dark mb-5">Recent Followup & Callback Logs</h5>
+                <div class="table-responsive px-1" style="max-height: 480px; overflow-y: auto;">
+                    <table class="table modern-table mb-0" style="border: none !important;">
+                        <thead>
+                            <tr style="background: transparent !important; border: none !important; position: sticky; top: 0; background-color: #ffffff; z-index: 10;">
+                                <th style="text-align: left; padding-top: 0;">Timestamp</th>
+                                <th style="text-align: left; padding-top: 0;">Client Name</th>
+                                <th style="text-align: left; padding-top: 0;">Status / Remarks</th>
+                                <th style="padding-top: 0;">Next Followup</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($salesLogs as $sLog)
+                            <tr>
+                                <td class="text-left"><span class="badge badge-soft-secondary">{{ Carbon\Carbon::parse($sLog->created_at)->format('d M, H:i') }}</span></td>
+                                <td class="text-left">
+                                    <span class="font-weight-bold text-dark d-block">{{ $sLog->client()->first()->name ?? 'N/A' }}</span>
+                                    <small class="text-muted">STS Callback History</small>
+                                </td>
+                                <td class="text-left">
+                                    <span class="badge {{ $sLog->status == 'Matured' ? 'badge-success' : ($sLog->status == 'Followup' ? 'badge-info' : 'badge-warning') }} mb-1">{{ $sLog->status }}</span>
+                                    <p class="text-muted small mb-0">{{ Str::limit($sLog->remarks, 75) }}</p>
+                                </td>
+                                <td>
+                                    @if($sLog->tbro)
+                                    <span class="text-primary font-weight-bold">{{ Carbon\Carbon::parse($sLog->tbro)->format('d M, Y') }}</span>
+                                    @else
+                                    <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <img src="https://illustrations.popsy.co/gray/fogg-searching.png" style="width: 120px;" class="mb-3 opacity-50">
+                                    <p class="text-muted mb-0">No followups logged for the selected period.</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                @else
                 <h5 class="font-weight-bold text-dark mb-5">Recent Activity Logs</h5>
                 <div class="table-responsive">
                     <table class="table modern-table mb-0" style="border: none !important;">
@@ -300,6 +341,7 @@
                         </tbody>
                     </table>
                 </div>
+                @endif
             </div>
         </div>
 
@@ -441,19 +483,26 @@
 
         // Dual-Track Trend Chart for Individual
         var trendOptions = {
-            series: [{
+            series: [
+                @if($isSales)
+                {
+                    name: 'Assigned Leads',
+                    data: [@foreach($monthlyTrend as $m) {{ $m->clients }}, @endforeach]
+                },
+                {
+                    name: 'Matured Clients',
+                    data: [@foreach($monthlyTrend as $m) {{ $m->matured }}, @endforeach]
+                }
+                @else
+                {
                     name: 'Tasks',
                     data: [@foreach($monthlyTrend as $m) {{ $m->tasks }}, @endforeach]
                 },
                 {
-                    @if($isSales)
-                    name: 'New Clients',
-                    data: [@foreach($monthlyTrend as $m) {{ $m->clients }}, @endforeach]
-                    @else
                     name: 'Input Hours',
                     data: [@foreach($monthlyTrend as $m) {{ $m->hours }}, @endforeach]
-                    @endif
                 }
+                @endif
             ],
             chart: {
                 height: 280,
@@ -512,6 +561,22 @@
         width: 10px;
         border-radius: 50%;
         display: inline-block;
+    }
+    /* Sleek custom scrollbar */
+    .table-responsive::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
     }
 </style>
 @endsection

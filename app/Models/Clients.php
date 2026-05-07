@@ -50,9 +50,14 @@ class Clients extends Model
         return $this->hasOne(User::class, 'id', 'ref_user');
     }
 
+    public function creator(): HasOne
+    {
+        return $this->hasOne(User::class, 'id', 'created_by')->withTrashed();
+    }
+
     public function telereferral(): HasOne
     {
-        return $this->hasOne(User::class, 'id', 'tele_ref_user');
+        return $this->hasOne(User::class, 'id', 'tele_ref_user')->withTrashed();
     }
 
     public function histories(): HasMany

@@ -14,11 +14,11 @@ class ClientServices
 
         if ($user->hasRole(['Sales-Executive'])) {
             if ($category == 'Fresh') {
-                $clients = Clients::with('referral')->where('ref_user', $user->id)->where('status', $category)->latest();
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where('ref_user', $user->id)->where('status', $category)->latest();
             } else if ($category == 'Matured') {
-                $clients = Clients::with('referral')->where('ref_user', $user->id)->where('status', $category)->latest();
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where('ref_user', $user->id)->where('status', $category)->latest();
             } else {
-                $clients = Clients::with('referral')->where('ref_user', $user->id)->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])->latest();
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where('ref_user', $user->id)->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])->latest();
             }
         }
 
@@ -36,28 +36,28 @@ class ClientServices
             array_push($allmem, $user->id);
 
             if ($category == 'Fresh') {
-                $clients = Clients::with('telereferral')
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])
                     ->where(function ($query) use ($allmem, $user) {
                         $query->whereIn('ref_user', $allmem);
                         $query->orWhere('tele_ref_user', $user->id);
                     })
                     ->where('status', $category)->latest();
             } else if ($category == 'Matured') {
-                $clients = Clients::with('telereferral')
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])
                     ->where(function ($query) use ($allmem, $user) {
                         $query->whereIn('ref_user', $allmem);
                         $query->orWhere('tele_ref_user', $user->id);
                     })
                     ->where('status', $category)->latest();
             } else if ($category == 'Not Interested') {
-                $clients = Clients::with('telereferral')
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])
                     ->where(function ($query) use ($allmem, $user) {
                         $query->whereIn('ref_user', $allmem);
                         $query->orWhere('tele_ref_user', $user->id);
                     })
                     ->where('status', $category)->latest();
             } else {
-                $clients = Clients::with('telereferral')->where(function ($query) use ($allmem, $user) {
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where(function ($query) use ($allmem, $user) {
                     $query->whereIn('ref_user', $allmem);
                     $query->orWhere('tele_ref_user', $user->id);
                 })
@@ -67,28 +67,28 @@ class ClientServices
 
         if ($user->hasRole(['Branch-Manager'])) {
             if ($category == 'Fresh') {
-                $clients = Clients::with('referral')
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])
                     ->where(function ($query) use ($allmem, $user) {
                         $query->whereIn('ref_user', $allmem);
                         $query->orWhere('tele_ref_user', $user->id);
                     })
                     ->where('status', $category)->latest();
             } else if ($category == 'Matured') {
-                $clients = Clients::with('referral')
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])
                     ->where(function ($query) use ($allmem, $user) {
                         $query->whereIn('ref_user', $allmem);
                         $query->orWhere('tele_ref_user', $user->id);
                     })
                     ->where('status', $category)->latest();
             } else if ($category == 'Not Interested') {
-                $clients = Clients::with('referral')
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])
                     ->where(function ($query) use ($allmem, $user) {
                         $query->whereIn('ref_user', $allmem);
                         $query->orWhere('tele_ref_user', $user->id);
                     })
                     ->where('status', $category)->latest();
             } else {
-                $clients = Clients::with('referral')->where(function ($query) use ($allmem, $user) {
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where(function ($query) use ($allmem, $user) {
                     $query->whereIn('ref_user', $allmem);
                     $query->orWhere('tele_ref_user', $user->id);
                 })
@@ -98,9 +98,9 @@ class ClientServices
 
         if ($user->hasRole(['Admin', 'Project-Manager'])) {
             if ($category == 'Fresh' || $category == 'Not Interested' || $category == 'Matured') {
-                $clients = Clients::with('telereferral')->where('status', $category)->latest();
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where('status', $category)->latest();
             } else {
-                $clients = Clients::with('telereferral')->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])->latest();
+                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])->latest();
             }
         }
 

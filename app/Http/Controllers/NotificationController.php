@@ -12,7 +12,7 @@ class NotificationController extends Controller
 
     public function index(Request $request){
         if(isset(Auth::user()->id)){
-            $notification = DatabaseNotification::where('notifiable_id', Auth::user()->id)->orderBy('created_at',"DESC")->get();
+            $notification = DatabaseNotification::where('notifiable_id', Auth::user()->id)->orderBy('created_at',"DESC")->paginate(20);
             return view('components.notifications.index',  compact('notification'));
         }
         abort(403, 'Unauthorized action.');

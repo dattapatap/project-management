@@ -102,6 +102,12 @@ class ClientsController extends Controller
             ->editColumn('telereferral', function ($data) {
                 return $data->telereferral ? $data->telereferral->name : '-';
             })
+            ->addColumn('created_by_name', function ($data) {
+                return $data->creator ? $data->creator->name : 'System';
+            })
+            ->addColumn('following_by_name', function ($data) {
+                return $data->referral ? $data->referral->name : '-';
+            })
             ->addColumn('created_at', function ($data) {
                 return Carbon::parse($data->created_at)->format('d M Y');
             })
@@ -114,7 +120,16 @@ class ClientsController extends Controller
                 if ($data->status == 'Fresh') $class = 'badge-soft-info';
                 if ($data->status == 'Not Interested') $class = 'badge-soft-danger';
 
-                return '<span class="badge ' . $class . ' font-size-12">' . $data->status . '</span>';
+                $html = '<div class="status-trigger-wrapper text-center" style="cursor: pointer;" data-client-id="' . $data->id . '" title="Click to view full touchpoint history">';
+                $html .= '<span class="badge ' . $class . ' font-size-12 px-2 py-1">' . $data->status . '</span>';
+                if ($data->status != 'Fresh' && $data->status != 'Matured' && $data->status != 'Not Interested') {
+                    if ($data->history && $data->history->tbro) {
+                        $html .= '<br><small class="text-danger font-weight-bold d-block mt-1"><i class="mdi mdi-calendar mr-1"></i>' . Carbon::parse($data->history->tbro)->format('d M Y') . '</small>';
+                    }
+                }
+                $html .= '<span class="text-muted font-size-10 d-block mt-1 toggle-history-text" style="opacity: 0.8;"><i class="mdi mdi-chevron-down mr-1 text-primary"></i>History</span>';
+                $html .= '</div>';
+                return $html;
             })
             ->rawColumns(['action', 'status', 'contactinfo'])
             ->make(true);
@@ -232,6 +247,255 @@ class ClientsController extends Controller
         $client->website_link  = $request->website_link;
         $client->address       = $request->address ?? $request->address1;
         $client->description   = $request->remarks ?? $client->description;
+    }
+
+    public function bulkUploadForm()
+    {
+        $user = Auth::user();
+        $requiresAssign = $user->hasRole(['Admin', 'Branch-Manager', 'Manager']);
+
+        $users = [];
+        if ($requiresAssign) {
+            $users = User::where('deleted_at', null)->where('status', 'Active')
+                ->whereHas('roles', function ($q) {
+                    $q->whereIn('name', ['Sales-Executive', 'Team-Leader']);
+                })->get();
+        }
+
+        return view('components.clients.bulkupload', compact('users', 'requiresAssign'));
+    }
+
+    public function bulkUploadSample()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="companies_bulk_upload_template.csv"',
+        ];
+
+        $callback = function () {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'Company Name',
+                'Contact Person',
+                'Designation',
+                'Email ID',
+                'Mobile',
+                'City',
+                'Website Link',
+                'Address',
+                'Remarks',
+                'TBRO Touchpoint Type',
+                'Schedule Time',
+                'Schedule Date (TBRO)',
+                'STS Routing Status'
+            ]);
+            fputcsv($file, [
+                'Acme Corporation Ltd',
+                'John Doe',
+                'Business Head',
+                'john.doe@acme.com',
+                '9876543210',
+                'Chicago',
+                'https://acmecorp.com',
+                '456 Enterprise Boulevard',
+                'Interested in custom SEO and portal design services',
+                'Call',
+                '03:30 PM',
+                '15-05-2026',
+                'Fresh'
+            ]);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function bulkUploadStore(Request $request)
+    {
+        $user = Auth::user();
+        $requiresAssign = $user->hasRole(['Admin', 'Branch-Manager', 'Manager']);
+
+        $rules = [
+            'file' => 'required|file|mimes:csv,txt|max:5120'
+        ];
+
+        if ($requiresAssign) {
+            $rules['referral'] = 'required|exists:users,id';
+        }
+
+        $request->validate($rules);
+
+        $file = $request->file('file');
+        $referralId = $requiresAssign ? $request->referral : $user->id;
+        $userId = $user->id;
+
+        $successCount = 0;
+        $failedCount = 0;
+        $errorsList = [];
+
+        // Enforce maximum record upload limit of 200 records
+        if (($handle = fopen($file->getRealPath(), "r")) !== FALSE) {
+            $totalRowsInFile = 0;
+            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                $totalRowsInFile++;
+            }
+            fclose($handle);
+
+            $dataRowsCount = $totalRowsInFile - 1;
+            if ($dataRowsCount > 200) {
+                return redirect()->back()
+                    ->with('error', "The uploaded file contains $dataRowsCount records, which exceeds the maximum allowed limit of 200 records per upload. Please split your file and try again.")
+                    ->withInput();
+            }
+        }
+
+        if (($handle = fopen($file->getRealPath(), "r")) !== FALSE) {
+            $rowNumber = 0;
+            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                $rowNumber++;
+
+                // Skip header row
+                if ($rowNumber === 1) {
+                    continue;
+                }
+
+                // Skip totally empty rows
+                if (empty(array_filter($data))) {
+                    continue;
+                }
+
+                // Extract and trim fields
+                $name         = trim($data[0] ?? '');
+                $cont_person  = trim($data[1] ?? '');
+                $designation  = trim($data[2] ?? '');
+                $email        = trim($data[3] ?? '');
+                $mobile       = trim($data[4] ?? '');
+                $city         = trim($data[5] ?? '');
+                $website_link = trim($data[6] ?? '');
+                $address      = trim($data[7] ?? '');
+                $remarks      = trim($data[8] ?? '');
+                $tbro_type    = trim($data[9] ?? '');
+                $tbro_time    = trim($data[10] ?? '');
+                $tbro_date    = trim($data[11] ?? '');
+                $sts_status   = trim($data[12] ?? '') ?: 'Fresh';
+
+                // Validation rules
+                if (empty($name) || empty($cont_person) || empty($designation) || empty($mobile) || empty($city) || empty($address) || empty($remarks)) {
+                    $failedCount++;
+                    $errorsList[] = "Row $rowNumber skipped: Missing required fields. Company Name, Contact Person, Designation, Mobile, City, Address, and Remarks are all mandatory.";
+                    continue;
+                }
+
+                // Duplicate check
+                $duplicateExists = Clients::where('name', $name)->whereNull('deleted_at')->exists();
+                if ($duplicateExists) {
+                    $failedCount++;
+                    $errorsList[] = "Row $rowNumber skipped: Company Name '$name' already exists in the system (Duplicate detected).";
+                    continue;
+                }
+
+                // Mobile validation (must be 10 digits starting with 6-9)
+                if (!preg_match('/^[6-9][0-9]{9}$/', $mobile)) {
+                    $failedCount++;
+                    $errorsList[] = "Row $rowNumber skipped: Mobile '$mobile' is invalid. Must be exactly 10 digits starting with 6, 7, 8, or 9.";
+                    continue;
+                }
+
+                // Email validation (optional but must be valid if provided)
+                if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $failedCount++;
+                    $errorsList[] = "Row $rowNumber skipped: Email ID '$email' is invalid.";
+                    continue;
+                }
+
+                // Optional TBRO parsing
+                $parsedTime = null;
+                if (!empty($tbro_time)) {
+                    try {
+                        $parsedTime = Carbon::parse($tbro_time)->format('H:i:s');
+                    } catch (\Exception $e) {
+                        // ignore or fail silently
+                    }
+                }
+
+                $parsedDate = null;
+                if (!empty($tbro_date)) {
+                    try {
+                        $parsedDate = Carbon::parse($tbro_date)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // ignore or fail silently
+                    }
+                }
+
+                try {
+                    DB::beginTransaction();
+
+                    $client = new Clients();
+                    $client->name          = ucfirst($name);
+                    $client->cont_person   = ucfirst($cont_person);
+                    $client->designation   = ucfirst($designation);
+                    $client->email         = $email ?: null;
+                    $client->mobile        = $mobile;
+                    $client->city          = ucfirst($city);
+                    $client->website_link  = $website_link ?: null;
+                    $client->address       = $address ?: null;
+                    $client->description   = $remarks ?: null;
+
+                    // Compute matching category based on routing status
+                    $category = 'Fresh';
+                    if (strtolower($sts_status) !== 'fresh') {
+                        $category = 'Folloup';
+                    }
+                    if (strtolower($sts_status) === 'not interested') {
+                        $category = 'Not Interested';
+                    }
+
+                    $client->category      = $category;
+                    $client->status        = $sts_status;
+                    $client->is_active     = false;
+                    $client->ref_user      = $referralId;
+                    $client->created_by    = $userId;
+                    $client->tele_ref_user = $userId;
+                    $client->updated_by    = $userId;
+                    $client->save();
+
+                    // Add STS history with optional parameters
+                    $client->histories()->create([
+                        'category'  => 'STS',
+                        'status'    => $sts_status,
+                        'tbro_type' => $tbro_type ?: null,
+                        'time'      => $parsedTime,
+                        'tbro'      => $parsedDate,
+                        'remarks'   => $remarks ?: 'Company added via bulk CSV upload',
+                        'created'   => $userId,
+                    ]);
+
+                    DB::commit();
+                    $successCount++;
+                } catch (\Exception $ex) {
+                    DB::rollBack();
+                    $failedCount++;
+                    $errorsList[] = "Row $rowNumber failed: " . $ex->getMessage();
+                }
+            }
+            fclose($handle);
+        }
+
+        $message = "Successfully uploaded $successCount companies!";
+        if ($failedCount > 0) {
+            $message .= " However, $failedCount rows failed/skipped.";
+        }
+
+        if ($failedCount > 0) {
+            return redirect()->back()
+                ->with('success', $message)
+                ->with('bulk_errors', $errorsList);
+        }
+
+        return redirect()->route('clients.category', 'Fresh')->with('success', $message);
     }
 
     public function show(Clients $client)
@@ -366,6 +630,115 @@ class ClientsController extends Controller
                 Log::error($ex->getMessage());
                 return response()->json(['status' => false, 'message' => 'Opps! somthing went wrong, please try again']);
             }
+        }
+    }
+
+    /**
+     * Nudge Sales Executive for quick callback/follow-up status updates
+     */
+    public function nudgeExecutive(Request $request, $client_id)
+    {
+        $user = Auth::user();
+        try {
+            $client = Clients::findOrFail($client_id);
+            if (!$client->ref_user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This client has no assigned sales executive to nudge.'
+                ], 400);
+            }
+
+            $executive = User::findOrFail($client->ref_user);
+
+            // Notify the assigned sales executive
+            $executive->notify(new \App\Notifications\SalesLeadNudgeNotification($client, $user));
+
+            // Log this nudge inside ClientHistory for tracking
+            $history = new ClientHistory();
+            $history->category = 'STS';
+            $history->client = $client->id;
+            $history->remarks = "⚠️ Team Leader {$user->name} nudged {$executive->name} for an immediate follow-up update.";
+            $history->status = $client->status;
+            $history->time = Carbon::now()->format('H:i');
+            $history->created = $user->id;
+            $history->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => "Executive {$executive->name} has been nudged successfully!"
+            ]);
+        } catch (\Exception $ex) {
+            \Log::error("Sales Lead Nudge Error: " . $ex->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to nudge executive. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Nudge Sales Executive by User ID (finds their oldest overdue follow-up and notifies them)
+     */
+    public function nudgeExecutiveByUserId(Request $request)
+    {
+        $user = Auth::user();
+        $execId = $request->get('executive_id');
+        if (!$execId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Executive ID is required.'
+            ], 400);
+        }
+
+        try {
+            $executive = User::findOrFail($execId);
+
+            // Find the executive's oldest overdue client callback
+            $client = Clients::where('ref_user', $executive->id)
+                ->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])
+                ->whereHas('histories', function ($q) {
+                    $q->where('tbro', '<', Carbon::today()->toDateString());
+                })
+                ->orderBy('created_at', 'asc')
+                ->first();
+
+            // Fallback: any active client if no overdue found
+            if (!$client) {
+                $client = Clients::where('ref_user', $executive->id)
+                    ->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])
+                    ->first();
+            }
+
+            if (!$client) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This executive currently has no active clients to nudge.'
+                ], 400);
+            }
+
+            // Notify the assigned sales executive
+            $executive->notify(new \App\Notifications\SalesLeadNudgeNotification($client, $user));
+
+            // Log this nudge inside ClientHistory for tracking
+            $history = new ClientHistory();
+            $history->category = 'STS';
+            $history->client = $client->id;
+            $history->remarks = "⚠️ Team Leader {$user->name} nudged {$executive->name} for an immediate follow-up on '{$client->name}'.";
+            $history->status = $client->status;
+            $history->time = Carbon::now()->format('H:i');
+            $history->created = $user->id;
+            $history->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => "Executive {$executive->name} has been nudged successfully!"
+            ]);
+        } catch (\Exception $ex) {
+            \Log::error("Sales Executive Nudge Error: " . $ex->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to nudge executive. Please try again.'
+            ], 500);
         }
     }
 }

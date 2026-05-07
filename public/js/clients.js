@@ -131,19 +131,105 @@ $(document).ready(function () {
             columns: [
                 { data: 'DT_RowIndex', name: 'id', orderable: true, searchable: false, className: 'text-center' },
                 { data: 'name', name: 'name', orderable: true, searchable: true },
-                ...(!isPM ? [{ data: 'contactinfo', name: 'cont_person', orderable: false, searchable: true, className: 'text-center' }] : []),
+                ...(isPM !== 'true' && isPM !== true ? [{ data: 'contactinfo', name: 'cont_person', orderable: false, searchable: true, className: 'text-center' }] : []),
                 { data: 'mobile', name: 'mobile', orderable: false, searchable: true, className: 'text-center' },
                 { data: 'city', name: 'city', orderable: true, searchable: true, className: 'text-center' },
+                ...(isAuthority === 'true' || isAuthority === true ? [
+                    { data: 'created_by_name', name: 'creator.name', orderable: true, searchable: true, className: 'text-center' },
+                    { data: 'following_by_name', name: 'referral.name', orderable: true, searchable: true, className: 'text-center' }
+                ] : []),
                 { data: 'status', name: 'status', orderable: true, searchable: true, className: 'text-center' },
                 { data: 'created_at', name: 'created_at', orderable: true, searchable: true, className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' },
             ],
-            order: [[6, 'desc']], // Sort by Created At by default
+            order: [[isAuthority === 'true' || isAuthority === true ? 8 : 6, 'desc']], // Dynamic Sort index
             drawCallback: function () {
                 $('[data-toggle="tooltip"]').tooltip();
             }
         });
     }
+
+    function formatHistory(d) {
+        return '<div id="history-detail-' + d.id + '" class="p-3 bg-light rounded" style="border-left: 4px solid #7F00FF; margin: 10px 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);">' +
+               '   <div class="d-flex align-items-center justify-content-center p-3">' +
+               '       <div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div>' +
+               '       <span class="font-weight-semibold text-dark font-size-13">Loading Touchpoint History...</span>' +
+               '   </div>' +
+               '</div>';
+    }
+
+    function loadHistoryAjax(clientId, placeholderId) {
+        $.ajax({
+            type: 'GET',
+            url: base_url + "/client/history/bycategory",
+            data: { 'client': clientId, 'category': 'STS' },
+            dataType: 'json',
+            success: function (response) {
+                let container = $('#' + placeholderId);
+                if (response.status === true && response.data.length > 0) {
+                    let html = '<div class="table-responsive"><table class="table table-sm table-centered mb-0 bg-white shadow-sm rounded" style="font-size: 12.5px; border: 1px solid rgba(220, 220, 235, 0.6);">' +
+                               '  <thead>' +
+                               '    <tr style="background: #f4f6fc; color: #495057;">' +
+                               '      <th class="p-2 font-weight-bold">Date & Time</th>' +
+                               '      <th class="p-2 font-weight-bold">Followed By</th>' +
+                               '      <th class="p-2 font-weight-bold">Touchpoint Status</th>' +
+                               '      <th class="p-2 font-weight-bold" style="width: 40%;">Remarks / Discussion Summary</th>' +
+                               '      <th class="p-2 font-weight-bold">Next Followup Schedule</th>' +
+                               '    </tr>' +
+                               '  </thead>' +
+                               '  <tbody>';
+                    response.data.forEach(function (h) {
+                        let nextFollow = '-';
+                        if (h.tbro) {
+                            let timeStr = h.time ? ' at ' + h.time : '';
+                            let formattedDate = new Date(h.tbro).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                            nextFollow = '<span class="badge badge-soft-danger font-size-11"><i class="mdi mdi-calendar-clock mr-1"></i>' + formattedDate + timeStr + '</span>';
+                        }
+                        let creatorName = h.referel ? h.referel.name : 'System';
+                        let remarks = h.remarks ? h.remarks : 'N/A';
+                        
+                        let dateStr = h.created_at ? new Date(h.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+                        let timeCreated = h.created_at ? ' ' + new Date(h.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+
+                        html += '<tr style="border-bottom: 1px solid rgba(230,230,245,0.7);">' +
+                                '  <td class="p-2"><strong>' + dateStr + '</strong><br><small class="text-muted">' + timeCreated + '</small></td>' +
+                                '  <td class="p-2"><span class="text-dark font-weight-semibold"><i class="mdi mdi-account-circle-outline text-muted mr-1"></i>' + creatorName + '</span></td>' +
+                                '  <td class="p-2"><span class="badge badge-soft-info px-2 py-1">' + h.status + '</span></td>' +
+                                '  <td class="p-2" style="white-space: normal; max-width: 300px; line-height: 1.5; color: #555;">' + remarks + '</td>' +
+                                '  <td class="p-2">' + nextFollow + '</td>' +
+                                '</tr>';
+                    });
+                    html += '  </tbody></table></div>';
+                    container.html(html);
+                } else {
+                    container.html('<div class="text-center text-muted p-4 font-size-13"><i class="mdi mdi-information-outline mr-1 font-size-16 align-middle text-primary"></i>No touchpoint history logs found for this client.</div>');
+                }
+            },
+            error: function () {
+                $('#' + placeholderId).html('<div class="text-center text-danger p-4 font-size-13"><i class="mdi mdi-alert-circle-outline mr-1 font-size-16 align-middle"></i>Failed to fetch touchpoint history. Please try again.</div>');
+            }
+        });
+    }
+
+    $(document).on('click', '.status-trigger-wrapper', function (e) {
+        e.stopPropagation();
+        var tr = $(this).closest('tr');
+        var table = $('#datatable').DataTable();
+        var row = table.row(tr);
+        var clientId = $(this).attr('data-client-id');
+        var placeholderId = 'history-detail-' + clientId;
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            tr.removeClass('shown-history');
+            $(this).find('.toggle-history-text').html('<i class="mdi mdi-chevron-down mr-1 text-primary"></i>History');
+        } else {
+            row.child(formatHistory({ id: clientId })).show();
+            tr.addClass('shown-history');
+            $(this).find('.toggle-history-text').html('<i class="mdi mdi-chevron-up mr-1 text-danger"></i>Close');
+            loadHistoryAjax(clientId, placeholderId);
+        }
+    });
 
     getAllClients();
 

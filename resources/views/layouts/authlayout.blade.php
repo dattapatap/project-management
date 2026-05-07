@@ -1,68 +1,86 @@
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-        <meta charset="utf-8">
-        <!-- Meta Tags -->
-        <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-        <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 
-        <!-- Favicon and Touch Icons -->
-        <link href="{{ asset('assets/images/Icon.png') }}" rel="shortcut icon" type="image/png">
-        <link href="{{ asset('assets/images/Icon.png') }}" rel="apple-touch-icon">
-        <link href="{{ asset('assets/images/Icon.png') }}" rel="apple-touch-icon" sizes="72x72">
-        <link href="{{ asset('assets/images/Icon.png') }}" rel="apple-touch-icon" sizes="114x114">
-        <link href="{{ asset('assets/images/Icon.png') }}" rel="apple-touch-icon" sizes="144x144">
+    <link href="{{ asset('assets/images/Icon.png') }}" rel="shortcut icon" type="image/png">
+    <link href="{{ asset('assets/images/Icon.png') }}" rel="apple-touch-icon">
 
-        <title>ERP : {{ config('app.name', 'Digitalnock It Solutions') }}</title>
+    <title>{{ config('app.name', 'ERP') }} — Workspace</title>
 
-        <meta property="og:type" content="ERP Application">
-        <meta property="og:image" content="{{ asset('assets/images/Icon.png') }}" property="og:image" />
+    {{-- Bootstrap --}}
+    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
 
-        <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
-        <!-- Icons Css -->
-        <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
-        <!-- App Css-->
-        <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
-        <link href="{{ asset('assets/libs/alertifyjs/build/css/alertify.min.css') }}" rel="stylesheet" type="text/css">
-        <!-- Fonts -->
-        <link href="https://fonts.bunny.net/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-        <style>
-            body {
-                font-family: 'Nunito', sans-serif;
-            }
-        </style>
-    </head>
+    {{-- Boxicons CDN (required for bx-* icon classes) --}}
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
-    <body class="bg-primary bg-pattern" style="background-color: #06223c !important;">
-        <div class="account-pages my-5">
-            <div class="container">
-                @yield('authcontent')
+    {{-- Auth Design System --}}
+    <link href="{{ asset('css/auth.css') }}" rel="stylesheet">
+</head>
+
+<body>
+<div class="auth-wrapper">
+
+    {{-- ── Left Branded Panel ── --}}
+    <div class="auth-brand">
+        <div class="auth-brand-top">
+            <div class="auth-brand-logo">
+                <img src="{{ asset('assets/images/logo-light1.png') }}" alt="{{ config('app.name') }} Logo">
             </div>
+
+            <h2 class="auth-brand-headline">
+                Your Workspace.<br>
+                <span>Unified & Powerful.</span>
+            </h2>
+            <p class="auth-brand-sub">
+                One platform to manage projects, teams, and operations — from onboarding to delivery.
+            </p>
+
+            <ul class="auth-features">
+                <li>
+                    <span class="check-icon">&#10003;</span>
+                    Real-time task &amp; project management
+                </li>
+                <li>
+                    <span class="check-icon">&#10003;</span>
+                    Department-level access control
+                </li>
+                <li>
+                    <span class="check-icon">&#10003;</span>
+                    Team performance intelligence
+                </li>
+                <li>
+                    <span class="check-icon">&#10003;</span>
+                    Sales pipeline &amp; CRM tracking
+                </li>
+            </ul>
         </div>
-        <!-- end Account pages -->
 
-        <!-- JAVASCRIPT -->
-        <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
-        <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-        <script src="{{ asset('assets/libs/metismenu/metisMenu.min.js') }}"></script>
-        <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
-        <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
-        <script src="{{ asset('assets/libs/alertifyjs/build/alertify.min.js') }}"></script>
+        <div class="auth-brand-bottom">
+            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+        </div>
+    </div>
 
-        <script src="{{ asset('assets/js/app.js') }}"></script>
+    {{-- ── Right Form Panel ── --}}
+    <div class="auth-form-panel">
+        @yield('authcontent')
+    </div>
 
-        @if (\Session::has('error'))
-            <script>
-                alertify.error("{!! \Session::get('error') !!}");
-            </script>
-        @endif
-        @if (\Session::has('success'))
-            <script>
-                alertify.success("{!! \Session::get('success') !!}");
-            </script>
-        @endif
+</div>
 
+<script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
+<script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ asset('assets/libs/alertifyjs/build/alertify.min.js') }}"></script>
 
-    </body>
+@if (\Session::has('error'))
+<script>alertify.error("{!! \Session::get('error') !!}");</script>
+@endif
+@if (\Session::has('success'))
+<script>alertify.success("{!! \Session::get('success') !!}");</script>
+@endif
 
+@yield('auth_scripts')
+</body>
 </html>

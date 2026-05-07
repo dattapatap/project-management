@@ -19,8 +19,29 @@ class ProjectNotificationService
     {
         $recipients = collect();
 
-        // 1. Assignee
+        // Determine the target department of the task/project
+        $targetDeptId = null;
         $assigneeId = $task->assigned_to;
+
+        if ($task->projectid) {
+            $project = $task->project ?: DepartmentProjects::find($task->projectid);
+            if ($project) {
+                if ($project->category) {
+                    $category = \DB::table('project_category')->where('id', $project->category)->first();
+                    if ($category) {
+                        $targetDeptId = $category->dept_id;
+                    }
+                }
+            }
+        }
+        if (!$targetDeptId && $assigneeId) {
+            $assignee = $task->user ?: User::find($assigneeId);
+            if ($assignee && $assignee->departments) {
+                $targetDeptId = $assignee->departments->department;
+            }
+        }
+
+        // 1. Assignee
         if ($toAssignee && $assigneeId) {
             $assignee = $task->user ?: User::find($assigneeId);
             if ($assignee) $recipients->push($assignee);
@@ -31,7 +52,14 @@ class ProjectNotificationService
             $project = $task->project ?: DepartmentProjects::find($task->projectid);
             if ($project && $project->assigned_by) {
                 $owner = User::find($project->assigned_by);
-                if ($owner) $recipients->push($owner);
+                if ($owner) {
+                    // Only include the project owner if they are not a Team Leader of a different department
+                    $ownerDeptId = optional($owner->departments)->department;
+                    $isTL = $owner->hasRole('Team-Leader');
+                    if (!$isTL || !$targetDeptId || (int)$ownerDeptId === (int)$targetDeptId) {
+                        $recipients->push($owner);
+                    }
+                }
             }
         }
 
@@ -44,15 +72,27 @@ class ProjectNotificationService
                     $q->where('team', $teamId);
                 })->whereHas('roles', function ($q) {
                     $q->where('name', 'Team-Leader');
-                })->get();
+                })
+                ->when($targetDeptId, function ($q) use ($targetDeptId) {
+                    $q->whereHas('departments', function ($dq) use ($targetDeptId) {
+                        $dq->where('department', $targetDeptId);
+                    });
+                })
+                ->get();
                 $recipients = $recipients->concat($tls);
             }
         }
 
-        // 4. All Project Managers
+        // 4. All Project Managers of the same department
         $pms = User::whereHas('roles', function ($q) {
             $q->where('name', 'Project-Manager');
-        })->get();
+        })
+        ->when($targetDeptId, function ($q) use ($targetDeptId) {
+            $q->whereHas('departments', function ($dq) use ($targetDeptId) {
+                $dq->where('department', $targetDeptId);
+            });
+        })
+        ->get();
         $recipients = $recipients->concat($pms);
 
         self::dispatch($recipients, $details);
@@ -64,6 +104,15 @@ class ProjectNotificationService
     public static function notifyProject(DepartmentProjects $project, array $details)
     {
         $recipients = collect();
+
+        // Determine target department of project
+        $targetDeptId = null;
+        if ($project->category) {
+            $category = \DB::table('project_category')->where('id', $project->category)->first();
+            if ($category) {
+                $targetDeptId = $category->dept_id;
+            }
+        }
 
         // 1. All users currently assigned to tasks in this project
         $assignees = User::whereHas('tasks', function ($q) use ($project) {
@@ -78,19 +127,64 @@ class ProjectNotificationService
                 $q->whereIn('team', $teamIds);
             })->whereHas('roles', function ($q) {
                 $q->where('name', 'Team-Leader');
-            })->get();
+            })
+            ->when($targetDeptId, function ($q) use ($targetDeptId) {
+                $q->whereHas('departments', function ($dq) use ($targetDeptId) {
+                    $dq->where('department', $targetDeptId);
+                });
+            })
+            ->get();
             $recipients = $recipients->concat($tls);
         }
 
-        // 3. Project Owner and all PMs
+        // 3. Project Owner (who created/assigned the project)
         if ($project->assigned_by) {
             $owner = User::find($project->assigned_by);
-            if ($owner) $recipients->push($owner);
+            if ($owner) {
+                // Only include the owner if they are not a Team Leader of a different department
+                $ownerDeptId = optional($owner->departments)->department;
+                $isTL = $owner->hasRole('Team-Leader');
+                if (!$isTL || !$targetDeptId || (int)$ownerDeptId === (int)$targetDeptId) {
+                    $recipients->push($owner);
+                }
+            }
         }
 
+        // 4. Assigned Team Leader (direct assignment to project)
+        if ($project->assigned_to) {
+            $assignedTL = User::find($project->assigned_to);
+            if ($assignedTL) {
+                $recipients->push($assignedTL);
+            }
+        }
+
+        // 5. Team Leaders of the assigned team (via team_projects table)
+        $teamProjects = \DB::table('team_projects')->where('projectid', $project->id)->pluck('teamid')->unique();
+        if ($teamProjects->isNotEmpty()) {
+            $teamTLs = User::whereHas('teamMember', function ($q) use ($teamProjects) {
+                $q->whereIn('team', $teamProjects);
+            })->whereHas('roles', function ($q) {
+                $q->where('name', 'Team-Leader');
+            })
+            ->when($targetDeptId, function ($q) use ($targetDeptId) {
+                $q->whereHas('departments', function ($dq) use ($targetDeptId) {
+                    $dq->where('department', $targetDeptId);
+                });
+            })
+            ->get();
+            $recipients = $recipients->concat($teamTLs);
+        }
+
+        // 6. All Project Managers of the same department
         $pms = User::whereHas('roles', function ($q) {
             $q->where('name', 'Project-Manager');
-        })->get();
+        })
+        ->when($targetDeptId, function ($q) use ($targetDeptId) {
+            $q->whereHas('departments', function ($dq) use ($targetDeptId) {
+                $dq->where('department', $targetDeptId);
+            });
+        })
+        ->get();
         $recipients = $recipients->concat($pms);
 
         self::dispatch($recipients, $details);

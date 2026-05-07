@@ -8,7 +8,7 @@
     <div class="row">
         <div class="col-12">
             <div class="pb-2 d-flex align-items-center justify-content-between">
-                <a href="{{ url('client/Fresh')  }}" class="btn-back" >
+                <a href="{{ url('client/Fresh')  }}" class="btn-back">
                     <i class="mdi mdi-keyboard-backspace fs-20"></i>
                 </a>
             </div>
@@ -27,7 +27,7 @@
                 <ul class="nav nav-tabs nav-dept mt-3" role="tablist">
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url('clients/'.base64_encode($client->id).'/'.'contacts' ) }}" >
+                        <a class="nav-link" href="{{ url('clients/'.base64_encode($client->id).'/'.'contacts' ) }}">
                             <span class="d-none d-md-inline-block">Contacts</span>
                         </a>
                     </li>
@@ -52,7 +52,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link"
-                            @if($user->hasRole([1,3,4,7])) href="{{ url('clients/'.base64_encode($client->id).'/'.'designing' ) }}" @endif  role="tab">
+                            @if($user->hasRole([1,3,4,7])) href="{{ url('clients/'.base64_encode($client->id).'/'.'designing' ) }}" @endif role="tab">
                             <span class="d-none d-md-inline-block">Designing</span>
                         </a>
                     </li>
@@ -76,7 +76,7 @@
 
                     @if($client->is_active)
                     <li class="nav-item">
-                        <a class="nav-link"  @if($user->hasRole([1,2,3,4,5])) href="{{ url('clients/'.base64_encode($client->id).'/'.'payment' ) }}" @endif role="tab">
+                        <a class="nav-link" @if($user->hasRole([1,2,3,4,5])) href="{{ url('clients/'.base64_encode($client->id).'/'.'payment' ) }}" @endif role="tab">
                             <span class="d-none d-md-inline-block">Payment</span>
                         </a>
                     </li>
@@ -93,15 +93,15 @@
                             <h4 class="lbl-heading-pane fs-15"> STS Update</h4>
                             <div>
                                 @php
-                                    $lstupdate = DB::table('client_histories')->where('client', $client->id)
-                                    ->where('category', 'STS')->orderBy('id','desc')->first();
+                                $lstupdate = DB::table('client_histories')->where('client', $client->id)
+                                ->where('category', 'STS')->orderBy('id','desc')->first();
                                 @endphp
                                 <span> Last Updated :
-                                    @if($lstupdate) {{ Carbon\Carbon::parse($lstupdate->created_at)->format('d M Y h:i') }}  @endif
+                                    @if($lstupdate) {{ Carbon\Carbon::parse($lstupdate->created_at)->format('d M Y h:i') }} @endif
                                 </span>
                             </div>
                             <div>
-                                <span id="pane-timer"> <?= date('M d Y h:m:s')?></span>
+                                <span id="pane-timer"> <?= date('M d Y h:m:s') ?></span>
                                 <i class="mdi mdi-calendar-month"></i>
                             </div>
                         </div>
@@ -129,9 +129,9 @@
                                             <div class="col-3">
                                                 <div class="form-group">
                                                     <label>TBRO Type : </label>
-                                                    <select class="form-control" name="tbro_type" id="tbro_type" width="100%"  tabindex="4" autocomplete="off">
+                                                    <select class="form-control" name="tbro_type" id="tbro_type" width="100%" tabindex="4" autocomplete="off">
                                                         <option selected value> Select</option>
-                                                        <option value="Call" > Call </option>
+                                                        <option value="Call"> Call </option>
                                                         <option value="Direct visit"> Direct visit </option>
                                                     </select>
                                                     <span class="invalid-feedback" id="tbro_type-input-error" role="alert"><strong></strong></span>
@@ -141,23 +141,23 @@
                                                 <div class="form-group">
                                                     <label>Time : </label>
                                                     <input type="text" name="tbro_time" id="tbro_time" class="form-control" autocomplete="off"
-                                                    placeholder="HH:MM A"  tabindex="5" >
+                                                        placeholder="HH:MM A" tabindex="5">
                                                     <span class="invalid-feedback" id="tbro_time-input-error" role="alert"><strong></strong></span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div  style="width:30%">
+                                    <div style="width:30%">
                                         <div class="col-12 text-right">
                                             <span class="fs-14 fw-600">
-                                                    Sales Executive :
-                                                    <span class="fw-500"> {{ $client->referral->name }} ( {{  $client->referral->mobile }})</span>
+                                                Sales Executive :
+                                                <span class="fw-500"> {{ $client->referral->name }} ( {{ $client->referral->mobile }})</span>
                                             </span>
                                         </div>
                                         <div class="col-12 mt-2 text-right">
                                             <span class="fs-14 fw-600">
                                                 Tele/CC Executive :
-                                                <span class="fw-500"> {{ $client->telereferral->name }} ( {{  $client->telereferral->mobile }})</span>
+                                                <span class="fw-500"> {{ $client->telereferral->name }} ( {{ $client->telereferral->mobile }})</span>
                                             </span>
                                         </div>
                                     </div>
@@ -192,8 +192,8 @@
                                             <label class="pr-3">Attach : </label>
                                             <div class="col-5 p-0">
                                                 <div class="form-group">
-                                                    <select class="form-control " name="attachment_type" width="100%"  tabindex="2">
-                                                        <option value="" selected > Select attachment type</option>
+                                                    <select class="form-control " name="attachment_type" width="100%" tabindex="2">
+                                                        <option value="" selected> Select attachment type</option>
                                                         <option value="Company Profile"> Company Profile </option>
                                                         <option value="Brochure"> Brochure </option>
                                                     </select>
@@ -202,7 +202,7 @@
                                             <div class="col-5">
                                                 <div class="form-group">
                                                     <div class="custom-file">
-                                                        <input type="file" class="pl-3 custom-file-input" name="attachment" id="attachment" accept="image/*, .pdf"  tabindex="3">
+                                                        <input type="file" class="pl-3 custom-file-input" name="attachment" id="attachment" accept="image/*, .pdf" tabindex="3">
                                                         <label class="custom-file-label" for="validationCustomFile">Choose file</label>
                                                         <span class="invalid-feedback" id="attachment-input-error" role="alert"><strong></strong></span>
                                                     </div>
@@ -213,9 +213,9 @@
                                             <div class="col-3">
                                                 <div class="form-group">
                                                     <label>TBRO Type : </label>
-                                                    <select class="form-control" name="tbro_type" id="tbro_type" width="100%"  tabindex="4">
+                                                    <select class="form-control" name="tbro_type" id="tbro_type" width="100%" tabindex="4">
                                                         <option selected value> Select</option>
-                                                        <option value="Call" > Call </option>
+                                                        <option value="Call"> Call </option>
                                                         <option value="Direct visit"> Direct visit </option>
                                                     </select>
                                                     <span class="invalid-feedback" id="tbro_type-input-error" role="alert"><strong></strong></span>
@@ -225,7 +225,7 @@
                                                 <div class="form-group">
                                                     <label>Time : </label>
                                                     <input type="text" name="tbro_time" id="tbro_time" class="form-control"
-                                                    placeholder="HH:MM A"  tabindex="5" autocomplete="off" >
+                                                        placeholder="HH:MM A" tabindex="5" autocomplete="off">
                                                     <span class="invalid-feedback" id="tbro_time-input-error" role="alert"><strong></strong></span>
                                                 </div>
                                             </div>
@@ -233,21 +233,20 @@
                                                 <div class="form-group">
                                                     <label>TBRO :</label>
                                                     <input type="text" name="tbro_date" id="tbro_date" class="form-control" autocomplete="off"
-                                                    placeholder="MM/DD/YYYY"  tabindex="6">
+                                                        placeholder="MM/DD/YYYY" tabindex="6">
                                                     <span class="invalid-feedback" id="tbro_date-input-error" role="alert"><strong></strong></span>
                                                 </div>
 
                                             </div>
                                             <div class="col-3">
                                                 @php
-                                                        $stsStatus = App\Models\ParentStatus::where('category', 'STS')
-                                                                                                ->where('name', '!=', 'Fresh')->get();
+                                                $stsStatus = App\Models\ParentStatus::where('category', 'STS')->get();
                                                 @endphp
                                                 <label>STS Status :</label>
-                                                <select class="form-control" name="sts_status" name="sts_status" width="100%"  tabindex="7">
+                                                <select class="form-control" name="sts_status" name="sts_status" width="100%" tabindex="7">
                                                     <option selected value="">Select STS status</option>
                                                     @foreach ($stsStatus as $item)
-                                                        <option value="{{$item->name}}"> {{$item->name}} </option>
+                                                    <option value="{{$item->name}}"> {{$item->name}} </option>
                                                     @endforeach
                                                 </select>
                                                 <span class="invalid-feedback" id="sts_status-input-error" role="alert"><strong></strong></span>
@@ -255,17 +254,17 @@
                                         </div>
                                     </div>
 
-                                    <div  style="width:30%">
+                                    <div style="width:30%">
                                         <div class="col-12 text-right">
                                             <span class="fs-14 fw-600">
-                                                    Sales Executive :
-                                                    <span class="fw-500"> {{ $client->referral->name }} ( {{  $client->referral->mobile }})</span>
+                                                Sales Executive :
+                                                <span class="fw-500"> {{ $client->referral->name }} ( {{ $client->referral->mobile }})</span>
                                             </span>
                                         </div>
                                         <div class="col-12 mt-2 text-right">
                                             <span class="fs-14 fw-600">
                                                 Tele/CC Executive :
-                                                <span class="fw-500"> {{ $client->telereferral->name }} ( {{  $client->telereferral->mobile }})</span>
+                                                <span class="fw-500"> {{ $client->telereferral->name }} ( {{ $client->telereferral->mobile }})</span>
                                             </span>
                                         </div>
                                     </div>
@@ -307,12 +306,12 @@
 
 @section('scripts')
 <script>
-    $(document).ready(function(){
+    $(document).ready(function() {
 
         $('#tbro_time').datetimepicker({
             format: 'hh:mm A',
-            useCurrent:false,
-            defaultDate:new Date(),
+            useCurrent: false,
+            defaultDate: new Date(),
             icons: {
                 time: 'fa fa-clock-o',
                 date: 'fa fa-calendar',
@@ -327,22 +326,22 @@
         });
 
         $('#tbro_date').datetimepicker({
-            format:'DD-MM-YYYY',
+            format: 'DD-MM-YYYY',
             maxDate: moment().add(90, 'days'),
             minDate: moment(),
-            useCurrent:false,
+            useCurrent: false,
 
         })
 
 
-        $('.frm_sts_update').submit(function(e){
+        $('.frm_sts_update').submit(function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
 
             $.ajax({
                 type: 'POST',
-                url: '{{ route('client.createSts') }}',
+                url: "{{ route('client.createSts') }}",
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -380,14 +379,14 @@
 
         });
 
-        $('.frm_matured_sts_update').submit(function(e){
+        $('.frm_matured_sts_update').submit(function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
 
             $.ajax({
                 type: 'POST',
-                url: '{{ route('client.updateSts') }}',
+                url: "{{ route('client.updateSts') }}",
                 data: formData,
                 cache: false,
                 contentType: false,

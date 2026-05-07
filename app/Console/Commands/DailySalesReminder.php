@@ -32,17 +32,23 @@ class DailySalesReminder extends Command
      */
     public function handle()
     {
-        $clientHistories = ClientHistory::with('clientNotif')
+        $users = User::all();
 
-                                    ->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])
-                                    ->where('tbro', Carbon::today()->toDateString())
-                                    ->get();
+        foreach ($users as $user) {
+            if ($user->hasRole('Sales-Executive') || $user->hasRole('Team-Leader')) {
+                // Count callbacks scheduled for today for this user
+                $count = \App\Models\Clients::where('ref_user', $user->id)
+                    ->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])
+                    ->whereHas('histories', function ($q) {
+                        $q->where('tbro', Carbon::today()->toDateString());
+                    })
+                    ->count();
 
-        foreach($clientHistories as $items){
-            $user = User::where('id', $items->created)->first();
-            $user->notify(new DailySalesReminderNot($items, $items->clientNotif, $cat="TBRO Reminder"));
+                if ($count > 0) {
+                    $user->notify(new \App\Notifications\DailySummaryFollowupNotification($count));
+                }
+            }
         }
-
     }
 }
 

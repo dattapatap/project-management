@@ -1,57 +1,62 @@
 @extends('layouts.authlayout')
 
 @section('authcontent')
-<div class="row">
-    <div class="col-lg-12 mt-5">
-        <div class="text-center mb-5">
-            <a href="{{ url('/') }}" class="logo"><img src="{{ asset('assets/images/logo-light1.png')}}" height="80" alt="logo"></a>
-        </div>
+<div class="auth-card">
+
+    {{-- Company Logo --}}
+    <div class="auth-card-logo">
+        <img src="{{ asset('assets/images/logo-light2.png') }}" alt="{{ env('APP_NAME') }}">
     </div>
-</div>
-    <div class="row justify-content-center">
-        <div class="col-lg-5">
-            <div class="card">
-                <div class="card-body p-4">
-                    <div class="p-2">
-                    <h5 class="mb-4 text-center">Reset Your Password.</h5>
-                        @if (session('status'))
-                            <div class="alert alert-success" role="alert">
-                                {{ session('status') }}
-                            </div>
-                        @endif
 
-                        <form method="POST" class="form-horizontal" action="{{ route('password.email') }}">
-                            @csrf
 
-                            <div class="row mb-3">
-                                <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
+    <h1 class="auth-card-title">Forgot password?</h1>
+    <p class="auth-card-subtitle">Enter your email and we'll send you a secure reset link</p>
 
-                                <div class="col-md-12">
-                                    <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+    {{-- Success status --}}
+    @if (session('status'))
+    <div class="auth-success-alert">
+        <i class='bx bx-check-circle'></i>
+        <span>{{ session('status') }}</span>
+    </div>
+    @endif
 
-                                    @error('email')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
+    <form method="POST" action="{{ route('password.email') }}">
+        @csrf
 
-                            <div class="row mb-0 mt-4">
-                                <div class="col-md-12">
-                                    <button type="submit" class="btn btn-success btn-block waves-effect waves-light">
-                                        {{ __('Send Password Reset Link') }}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-
-                    </div>
-
-                </div>
+        {{-- Email --}}
+        <div class="auth-field">
+            <label class="auth-label" for="email">Email Address</label>
+            <div class="auth-input-wrap">
+                <span class="auth-input-icon"><i class='bx bx-envelope'></i></span>
+                <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    class="auth-input{{ $errors->has('email') ? ' is-invalid' : '' }}"
+                    value="{{ old('email') }}"
+                    placeholder="you@company.com"
+                    required
+                    autofocus
+                    autocomplete="email">
             </div>
+            @error('email')
+            <div class="auth-error-msg">
+                <i class='bx bx-error-circle'></i> {{ $message }}
+            </div>
+            @enderror
         </div>
 
+        {{-- Submit --}}
+        <button type="submit" class="auth-submit-btn" style="margin-top: 0.5rem;">
+            <i class='bx bx-send'></i> Send Reset Link
+        </button>
+    </form>
+
+    <div class="auth-back-wrap">
+        <a href="{{ route('login') }}" class="auth-back-link">
+            <i class='bx bx-arrow-back'></i> Back to Sign In
+        </a>
     </div>
 
+</div>
 @endsection

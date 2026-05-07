@@ -193,7 +193,7 @@
     }
     @endphp
 
-    @if($user->hasRole('Team-Leader') && $user->departments->department == 2)
+    @if($user->hasRole('Team-Leader'))
     {{-- Dashboard Tab Switcher for TL --}}
     <ul class="nav nav-tabs dashboard-tabs" id="tlDashboardTabs" role="tablist">
         <li class="nav-item">
@@ -210,10 +210,21 @@
 
     <div class="tab-content">
         <div class="tab-pane fade {{ $activeTab == 'tab-tl-team' ? 'show active' : '' }} tab-content-animate" id="team-oversight" role="tabpanel">
+            @if(optional($user->departments)->department == 1)
+            @include('dashboards.tl_sales_ui')
+            @else
             @include('dashboards.tl_od_ui')
+            @endif
         </div>
         <div class="tab-pane fade {{ $activeTab == 'tab-tl-personal' ? 'show active' : '' }} tab-content-animate" id="my-workspace" role="tabpanel">
+            @if(optional($user->departments)->department == 1)
+            @include('dashboards.sales_ui', [
+                'adminData' => !empty($personalData) ? $personalData : $adminData,
+                'forceExecutiveView' => true
+            ])
+            @else
             @include('dashboards.employee_od_ui')
+            @endif
         </div>
     </div>
     @elseif($user->hasRole('Project-Manager'))
@@ -229,7 +240,7 @@
     @include('dashboards.admin_ui')
     @endif
 
-    @if($user->hasRole(['Sales-Executive', 'Team-Leader']) && $user->departments->department == 1)
+    @if($user->hasRole('Sales-Executive') && optional($user->departments)->department == 1)
     @include('dashboards.sales_ui')
     @endif
 
@@ -250,15 +261,19 @@
 @include('dashboards.admin_scripts')
 @endif
 
-@if($user->hasRole(['Sales-Executive', 'Team-Leader']) && $user->departments->department == 1)
+@if($user->hasRole(['Sales-Executive', 'Team-Leader']) && optional($user->departments)->department == 1)
 @include('dashboards.sales_scripts')
+@endif
+
+@if($user->hasRole('Team-Leader') && optional($user->departments)->department == 1)
+@include('dashboards.tl_sales_scripts')
 @endif
 
 @if($user->hasRole(['Project-Manager']))
 @include('dashboards.pm_scripts')
 @endif
 
-@if($user->hasRole(['Team-Leader']) && $user->departments->department == 2)
+@if($user->hasRole(['Team-Leader']) && optional($user->departments)->department == 2)
 @include('dashboards.tl_od_scripts')
 @endif
 
