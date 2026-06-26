@@ -108,14 +108,14 @@ class TeamsController extends Controller
         //get All user under team leader
         $deptMems = TeamMembers::with('users.roles:name')->where('team', $teamid)->where('status', true)->get();
 
-        // get All users under department excludiing assigned
+        // get All users under department excluding assigned and non-team roles
         $arrUsr = $deptMems->pluck('user')->toArray();
         $unsignedUsers = User::with('roles:name')->where('status', 'Active')
                                 ->whereHas('departments', function($query) use($department){
                                     $query->where('department', $department);
                                 })
-                                ->whereHas('roles', function($role) {
-                                    $role->where('name', '!=' ,'Project-Manager');
+                                ->whereDoesntHave('roles', function ($role) {
+                                    $role->whereIn('name', ['Project-Manager', 'Branch-Manager']);
                                 })
                                 ->whereNotIn('id', $arrUsr)
                                 ->orderBy('name', 'asc')->get()->toArray();
@@ -127,6 +127,15 @@ class TeamsController extends Controller
         $departmentId  = $request->deptid;
         $userid      = $request->userid;
         $teamid      = $request->teamid;
+
+        $user = User::find($userid);
+        if ($user && $user->hasRole(['Branch-Manager', 'Project-Manager'])) {
+            return response()->json([
+                'code' => 403,
+                'status' => false,
+                'message' => 'Branch Managers and Project Managers cannot be assigned to teams.',
+            ], 403);
+        }
 
         $member = TeamMembers::where('user', $userid)
                                     ->where('team', $teamid)

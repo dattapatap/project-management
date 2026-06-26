@@ -43,6 +43,9 @@
     <link href="{{ asset('assets/libs/select2/select2.css') }}" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/libs/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('css/reports.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('css/erp-theme.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('css/erp-components.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('css/sales-dashboard.css') }}">
 
     <link href="{{ asset('assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css')}}" rel="stylesheet" type="text/css">
     <link href="{{ asset('assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" type="text/css">
@@ -52,12 +55,18 @@
     <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 
-    @vite(['resources/js/app.js'])
+    @vite(['resources/js/app.js', 'resources/sass/app.scss'])
+
     @yield('styles')
 
 </head>
 
-<body data-sidebar="dark">
+@php
+    $bodyDept = optional($user->departments ?? null)->department ?? ($user->hasBranchWideAccess() ? 'admin' : null);
+    $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') || request()->is('clients*') || request()->is('mysts*') || request()->is('reports/dsr*') ? 'nsd-module' : (request()->is('projects*') ? 'od-module' : ''));
+@endphp
+
+<body data-sidebar="dark" data-dept="{{ $bodyDept }}" class="{{ $bodyModule }}">
     <!-- Begin page -->
     <div id="cover-spin"></div>
 
@@ -209,148 +218,7 @@
 
                 <!--- Sidemenu -->
                 <div id="sidebar-menu">
-                    <!-- Left Menu Start -->
-                    <ul class="metismenu list-unstyled" id="side-menu">
-                        <li class="menu-title">Menu</li>
-                        <li>
-                            <a class="waves-effect" href="{{url('/home')}}">
-                                <i class="mdi mdi-view-dashboard"></i><span>Home</span>
-                            </a>
-                        </li>
-                        @if ($user->hasRole(['Admin', 'Project-Manager', 'Team-Leader']) && ($user->hasRole('Admin') || ($user->departments && $user->departments->department == 2)))
-                        <li class="{{ request()->is('projects*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('projects*') ? 'active' : '' }}">
-                                <i class="mdi mdi-folder-multiple"></i>
-                                <span>Projects</span>
-                            </a>
-                            <ul class="sub-menu" aria-expanded="{{ request()->is('projects*') ? 'true' : 'false' }}">
-                                <li class="{{ request()->is('projects') ? 'mm-active' : '' }}"><a href="{{ url('/projects') }}" class="{{ request()->is('projects') ? 'active' : '' }}">All Projects</a></li>
-                                <li class="{{ request()->is('projects/create') ? 'mm-active' : '' }}"><a href="{{ url('/projects/create') }}" class="{{ request()->is('projects/create') ? 'active' : '' }}">Create Project</a></li>
-                            </ul>
-                        </li>
-                        @endif
-
-                        @if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant']))
-                        <li class="{{ request()->is('projects*') ? 'mm-active' : '' }}">
-                            <a href="{{ url('/projects') }}" class="waves-effect {{ request()->is('projects*') ? 'active' : '' }}">
-                                <i class="mdi mdi-folder-multiple"></i>
-                                <span>My Projects</span>
-                            </a>
-                        </li>
-                        <li class="{{ request()->is('my-insights*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
-                                <i class="mdi mdi-chart-line"></i>
-                                <span>My Insights</span>
-                            </a>
-                        </li>
-                        @endif
-
-
-                        @if ($user->hasRole('Admin'))
-                        <li class="{{ request()->is('users*') || request()->is('departments*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('users*') || request()->is('departments*') ? 'active' : '' }}">
-                                <i class="mdi mdi-account-multiple-outline"></i>
-                                <span>Users</span>
-                            </a>
-                            <ul class="sub-menu" aria-expanded="{{ request()->is('users*') || request()->is('departments*') ? 'true' : 'false' }}">
-                                <li class="{{ request()->is('users*') ? 'mm-active' : '' }}"><a href="{{ url('/users') }}" class="{{ request()->is('users*') ? 'active' : '' }}">Users</a></li>
-                                <li class="{{ request()->is('departments*') ? 'mm-active' : '' }}"><a href="{{ url('/departments') }}" class="{{ request()->is('departments*') ? 'active' : '' }}">Departments</a></li>
-                            </ul>
-                        </li>
-                        <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
-                                <i class="mdi mdi-account-group-outline"></i>
-                                <span>Company</span>
-                            </a>
-                            <ul class="sub-menu" aria-expanded="{{ request()->is('client*') || request()->is('clients*') ? 'true' : 'false' }}">
-                                <li class="{{ request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}"><a href="{{ url('client/Fresh') }}" class="{{ request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">Companies</a></li>
-                            </ul>
-                        </li>
-                        <li class="{{ request()->is('domains*') ? 'mm-active' : '' }}">
-                            <a class="waves-effect {{ request()->is('domains*') ? 'active' : '' }}" href="{{ url('/domains') }}">
-                                <i class="mdi mdi-domain-plus"></i><span>Domains</span>
-                            </a>
-                        </li>
-                        <li class="{{ request()->is('payments*') ? 'mm-active' : '' }}">
-                            <a class="waves-effect {{ request()->is('payments*') ? 'active' : '' }}" href="{{ url('/payments') }}">
-                                <i class="mdi mdi-wallet-outline"></i><span>Payments</span>
-                            </a>
-                        </li>
-                        @endif
-
-                        @if ($user->hasRole(['Sales-Executive', 'Team-Leader']) && !$user->hasRole('Admin') && $user->departments->department == 1)
-                        <li class="{{ request()->is('mysts/searchsts*') ? 'mm-active' : '' }}">
-                            <a href="{{ url('mysts/searchsts') }}" class="waves-effect {{ request()->is('mysts/searchsts*') ? 'active' : '' }}">
-                                <i class="mdi mdi-cloud-print-outline"></i>
-                                <span>Search STS</span>
-                            </a>
-                        </li>
-                        <li class="{{ request()->is('client/Fresh*') || request()->is('client*') || request()->is('clients*') ? 'mm-active' : '' }}">
-                            <a href="{{ url('client/Fresh') }}" class="waves-effect {{ request()->is('client/Fresh*') || request()->is('client*') || request()->is('clients*') ? 'active' : '' }}">
-                                <i class="mdi mdi-account-group-outline"></i>
-                                <span>Companies</span>
-                            </a>
-                        </li>
-
-                        <li class="{{ request()->is('reports/dsr/searchdsr*') || request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect {{ request()->is('reports/dsr/searchdsr*') || request()->is('reports/dsr/salesreports*') ? 'active' : '' }}">
-                                <i class="mdi mdi-settings-outline"></i>
-                                <span>DSR</span>
-                            </a>
-                            <ul class="sub-menu {{ request()->is('reports/dsr/searchdsr*') || request()->is('reports/dsr/salesreports*') ? 'mm-show' : '' }}" aria-expanded="false">
-                                <li class="{{ request()->is('reports/dsr/searchdsr*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/searchdsr') }}" class="{{ request()->is('reports/dsr/searchdsr*') ? 'active' : '' }}">DSR</a></li>
-                                <li class="{{ request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/salesreports') }}" class="{{ request()->is('reports/dsr/salesreports*') ? 'active' : '' }}">Sales Report</a></li>
-                            </ul>
-                        </li>
-
-
-                        @if ($user->hasRole('Team-Leader') && $user->departments->department == 1)
-                        <li class="{{ request()->is('reports/employees*') || request()->is('reports/employee*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('reports.employees') }}" class="waves-effect {{ request()->is('reports/employees*') || request()->is('reports/employee*') ? 'active' : '' }}">
-                                <i class="mdi mdi-chart-line"></i>
-                                <span>Team Report</span>
-                            </a>
-                        </li>
-                        @endif
-
-                        @if ($user->hasRole('Sales-Executive'))
-                        <li class="{{ request()->is('my-insights*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
-                                <i class="mdi mdi-chart-line"></i>
-                                <span>My Insights</span>
-                            </a>
-                        </li>
-                        @endif
-
-                        @endif
-
-
-
-                        @if($user->hasRole(['Admin', 'Project-Manager']))
-                        <li class="menu-title">Reports</li>
-                        <li class="{{ request()->is('reports/projects*') || request()->is('users*') || request()->is('reports/dsr/salesreports*') || request()->is('mysts*') || request()->is('reports/dsr/searchdsr*') ? 'mm-active' : '' }}">
-                            <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                <i class="mdi mdi-file-chart-outline"></i>
-                                <span>Reports </span>
-                            </a>
-                            <ul class="sub-menu" aria-expanded="false">
-                                @if($user->hasRole('Admin'))
-                                <li class="{{ request()->is('mysts*') ? 'mm-active' : '' }}"><a href="{{ url('mysts/searchsts') }}">STS</a></li>
-                                <li class="{{ request()->is('reports/dsr/searchdsr') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/searchdsr') }}">DSR</a></li>
-                                @endif
-
-                                <li class="{{ request()->is('reports/projects*') ? 'mm-active' : '' }}"><a href="{{ route('reports.projects') }}">Projects</a></li>
-                                <li class="{{ request()->is('users*') || request()->is('reports/employee*') ? 'mm-active' : '' }}"><a href="{{ route('reports.employees') }}">Employees Report</a></li>
-
-                                @if($user->hasRole('Admin'))
-                                <li class="{{ request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
-                                @endif
-                            </ul>
-                        </li>
-                        @endif
-
-                    </ul>
-
+                    @include('layouts.partials.sidebar')
                 </div>
                 <!-- Sidebar -->
             </div>
@@ -507,6 +375,7 @@
 
     <script src="{{ asset('js/index.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
+    <script src="{{ asset('js/sidebar.js') }}"></script>
 
     @if (\Session::has('error'))
     <script>

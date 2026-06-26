@@ -257,7 +257,7 @@ class TaskController extends Controller
 
             // Authorization: Only the Assignee or Management (TL, PM, Admin) can change status
             $isAssignee = ($task->assigned_to == $user->id);
-            $isManagement = $user->hasRole(['Team-Leader', 'Project-Manager', 'Admin']);
+            $isManagement = $user->hasRole(['Team-Leader', 'Project-Manager', 'Admin', 'Branch-Manager']);
 
             if (!$isAssignee && !$isManagement) {
                 return response()->json(['code' => 200, "success" => false, 'message' => "Unauthorized! You can only update your own tasks."], 200);

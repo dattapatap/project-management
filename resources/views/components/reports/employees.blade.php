@@ -14,9 +14,16 @@
             <p class="text-muted font-size-15 font-weight-medium">{{ $isSalesTL ? 'Strategic team sales conversions and pipeline intelligence.' : (Auth::user()->hasRole('Team-Leader') ? 'Strategic productivity tracking and team member insights.' : 'Strategic productivity tracking and departmental efficiency trends.') }}</p>
         </div>
         <div class="col-lg-6">
-            <div class="d-flex align-items-center justify-content-lg-end">
-                <div class="mr-3">
-                    <form action="{{ route('reports.employees') }}" method="GET" id="filterForm" class="d-flex">
+            <div class="d-flex align-items-center justify-content-lg-end flex-wrap gap-2">
+                <form action="{{ route('reports.employees') }}" method="GET" id="filterForm" class="d-flex flex-wrap align-items-center gap-2">
+                    <input type="hidden" name="preset" id="presetInput" value="{{ $range['preset'] ?? 'monthly' }}">
+                    <div class="btn-group btn-group-sm mr-2">
+                        <button type="button" class="btn btn-outline-primary range-preset {{ ($range['preset'] ?? '') === 'daily' ? 'active' : '' }}" data-preset="daily">Today</button>
+                        <button type="button" class="btn btn-outline-primary range-preset {{ ($range['preset'] ?? '') === 'weekly' ? 'active' : '' }}" data-preset="weekly">Week</button>
+                        <button type="button" class="btn btn-outline-primary range-preset {{ in_array($range['preset'] ?? 'monthly', ['monthly', 'yearly']) ? 'active' : '' }}" data-preset="monthly">Month</button>
+                        <button type="button" class="btn btn-outline-primary range-preset {{ ($range['preset'] ?? '') === 'custom' ? 'active' : '' }}" data-preset="custom">Custom</button>
+                    </div>
+                    <div id="yearMonthFilters" class="d-flex {{ ($range['preset'] ?? '') === 'custom' ? 'd-none' : '' }}">
                         <select name="year" id="yearSelect" class="year-select mr-2">
                             @for($y = date('Y'); $y >= date('Y')-5; $y--)
                                 <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>FY {{ $y }}</option>
@@ -27,8 +34,13 @@
                                 <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ $m }}</option>
                             @endforeach
                         </select>
-                    </form>
-                </div>
+                    </div>
+                    <div id="customRangeFields" class="d-flex align-items-center gap-2 {{ ($range['preset'] ?? '') === 'custom' ? '' : 'd-none' }}">
+                        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from', ($range['from'] ?? now())->toDateString()) }}">
+                        <span class="text-muted">to</span>
+                        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request('date_to', ($range['to'] ?? now())->toDateString()) }}">
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -127,6 +139,7 @@
                         <p class="text-muted small mb-0">{{ $isSalesTL ? 'Team sales conversions and callback tracking metrics' : (Auth::user()->hasRole('Team-Leader') ? 'Team performance and client maturity tracking metrics' : 'Role-aware efficiency tracking and task delivery logs') }}</p>
                     </div>
                     <div class="neon-toggle">
+                        <button class="btn btn-sm range-btn" data-range="daily">Today</button>
                         <button class="btn btn-sm range-btn" data-range="weekly">Weekly</button>
                         <button class="btn btn-sm range-btn active" data-range="monthly">Monthly</button>
                         <button class="btn btn-sm range-btn" data-range="yearly">Yearly</button>
@@ -164,7 +177,19 @@
 <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
 <script>
     $(document).ready(function() {
-        let currentRange = 'monthly';
+        let currentRange = $('#presetInput').val() || 'monthly';
+
+        $('.range-preset').on('click', function() {
+            $('.range-preset').removeClass('active');
+            $(this).addClass('active');
+            const preset = $(this).data('preset');
+            $('#presetInput').val(preset);
+            $('#customRangeFields').toggleClass('d-none', preset !== 'custom');
+            $('#yearMonthFilters').toggleClass('d-none', preset === 'custom');
+            if (preset !== 'custom') {
+                $('#filterForm').submit();
+            }
+        });
 
         // 🔄 Filter Change Handlers
         $('#yearSelect').on('change', function() {
@@ -182,9 +207,12 @@
             ajax: {
                 url: "{{ route('reports.employees.data') }}",
                 data: function(d) {
-                    d.range = currentRange;
+                    d.preset = $('#presetInput').val() || currentRange;
+                    d.range = d.preset;
                     d.year = "{{ $selectedYear }}";
                     d.month = "{{ $selectedMonth }}";
+                    d.date_from = $('input[name=date_from]').val();
+                    d.date_to = $('input[name=date_to]').val();
                 }
             },
             columns: [
@@ -299,6 +327,7 @@
             $('.range-btn').removeClass('active');
             $(this).addClass('active');
             currentRange = $(this).data('range');
+            $('#presetInput').val(currentRange);
             table.ajax.reload();
         });
 

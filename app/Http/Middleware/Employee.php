@@ -21,7 +21,7 @@ class Employee
             return redirect()->route('login');
         }
 
-        if (Auth::user()->hasRole(['Team-Leader', 'Sales-Executive', 'Developer', 'Designer', 'Seo-Developer' ])) {
+        if (Auth::user()->hasRole(['Team-Leader', 'Sales-Executive', 'Developer', 'Designer', 'Seo-Developer', 'CSD-Executive'])) {
             return $next($request);
         }
 

@@ -84,4 +84,14 @@ class Clients extends Model
     {
         return $this->hasMany(ClientPackages::class, 'client', 'id');
     }
+
+    public function csdAssignment(): HasMany
+    {
+        return $this->hasMany(CsdClientAssignment::class, 'client', 'id');
+    }
+
+    public function csdContacts(): HasMany
+    {
+        return $this->hasMany(CsdContactPerson::class, 'client', 'id');
+    }
 }

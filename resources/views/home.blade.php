@@ -1,171 +1,8 @@
 @extends('layouts.app')
-@section('styles')
 
-<style>
-    .pm-dashboard-custom-card {
-        border: 1.5px solid #f0f0f0 !important;
-        border-radius: 14px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    }
-
-    .pm-dashboard-custom-card:hover {
-        transform: translateY(-8px);
-        border-color: #556ee6 !important;
-        box-shadow: 0 20px 40px rgba(85, 110, 230, 0.08) !important;
-    }
-
-    .admin-kpi-card {
-        border-radius: 12px !important;
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        position: relative;
-        z-index: 1;
-    }
-
-    .admin-kpi-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .gradient-primary {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-
-    .gradient-success {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-
-    .gradient-warning {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    }
-
-    .gradient-info {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-
-    .admin-kpi-icon {
-        color: rgba(255, 255, 255, 0.8);
-        transition: transform 0.3s ease;
-    }
-
-    .admin-kpi-card:hover .admin-kpi-icon {
-        transform: scale(1.1);
-        color: #ffffff;
-    }
-
-    .trendy-card {
-        transition: all 0.3s ease;
-    }
-
-    .action-btn-trendy {
-        border-radius: 10px;
-        font-weight: 600;
-        letter-spacing: 0.3px;
-        transition: all 0.2s ease;
-    }
-
-    .action-btn-trendy:hover {
-        transform: translateY(-2px);
-    }
-
-    .trendy-table th {
-        border-top: none;
-        background-color: #f8f9fa;
-        color: #495057;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-    }
-
-    .trendy-table tbody tr {
-        transition: background-color 0.2s ease;
-    }
-
-    .trendy-table tbody tr:hover {
-        background-color: #fcfcfc;
-    }
-
-    @keyframes pulse-red {
-        0% {
-            transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.7);
-        }
-
-        70% {
-            transform: scale(1);
-            box-shadow: 0 0 0 6px rgba(244, 106, 106, 0);
-        }
-
-        100% {
-            transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0);
-        }
-    }
-
-    .pulse {
-        animation: pulse-red 2s infinite;
-    }
-
-    /* Premium Dashboard Tabs */
-    .dashboard-tabs {
-        border-bottom: none !important;
-        gap: 10px;
-        margin-bottom: 25px;
-    }
-
-    .dashboard-tabs .nav-link {
-        border: none !important;
-        border-radius: 12px !important;
-        padding: 12px 24px !important;
-        font-weight: 700 !important;
-        color: #74788d !important;
-        background: #f8f9fa !important;
-        transition: all 0.3s ease !important;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-    }
-
-    .dashboard-tabs .nav-link i {
-        font-size: 18px;
-    }
-
-    .dashboard-tabs .nav-link.active {
-        background: #556ee6 !important;
-        color: #fff !important;
-        box-shadow: 0 4px 15px rgba(85, 110, 230, 0.25) !important;
-    }
-
-    .dashboard-tabs .nav-link:hover:not(.active) {
-        background: #edf0f7 !important;
-        transform: translateY(-2px);
-    }
-
-    .tab-content-animate {
-        animation: slideUpFade 0.4s ease-out;
-    }
-
-    @keyframes slideUpFade {
-        from {
-            opacity: 0;
-            transform: translateY(15px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-</style>
-
-@endsection
 @section('content')
 
-
-<div class="container-fluid pb-5">
+<div class="container-fluid erp-page pb-5">
     <!-- start page title -->
     <div class="row">
         <div class="col-12">
@@ -212,6 +49,8 @@
         <div class="tab-pane fade {{ $activeTab == 'tab-tl-team' ? 'show active' : '' }} tab-content-animate" id="team-oversight" role="tabpanel">
             @if(optional($user->departments)->department == 1)
             @include('dashboards.tl_sales_ui')
+            @elseif(optional($user->departments)->department == 3)
+            @include('dashboards.tl_csd_ui')
             @else
             @include('dashboards.tl_od_ui')
             @endif
@@ -222,9 +61,21 @@
                 'adminData' => !empty($personalData) ? $personalData : $adminData,
                 'forceExecutiveView' => true
             ])
+            @elseif(optional($user->departments)->department == 3)
+            @include('dashboards.csd_ui', [
+                'adminData' => !empty($personalData) ? $personalData : $adminData,
+                'forceExecutiveView' => true
+            ])
             @else
             @include('dashboards.employee_od_ui')
             @endif
+        </div>
+    </div>
+    @elseif($user->isBranchManager())
+    {{-- Branch Manager — all-department oversight --}}
+    <div class="row">
+        <div class="col-12">
+            @include('dashboards.branch_manager_ui')
         </div>
     </div>
     @elseif($user->hasRole('Project-Manager'))
@@ -244,6 +95,10 @@
     @include('dashboards.sales_ui')
     @endif
 
+    @if($user->hasRole('CSD-Executive') && optional($user->departments)->department == 3)
+    @include('dashboards.csd_ui')
+    @endif
+
     @if($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant']))
     @include('dashboards.employee_od_ui')
     @endif
@@ -261,6 +116,10 @@
 @include('dashboards.admin_scripts')
 @endif
 
+@if($user->isBranchManager())
+@include('dashboards.branch_manager_scripts')
+@endif
+
 @if($user->hasRole(['Sales-Executive', 'Team-Leader']) && optional($user->departments)->department == 1)
 @include('dashboards.sales_scripts')
 @endif
@@ -273,8 +132,16 @@
 @include('dashboards.pm_scripts')
 @endif
 
-@if($user->hasRole(['Team-Leader']) && optional($user->departments)->department == 2)
+@if($user->hasRole('Team-Leader') && optional($user->departments)->department == 2)
 @include('dashboards.tl_od_scripts')
+@endif
+
+@if($user->hasRole('Team-Leader') && optional($user->departments)->department == 3)
+@include('dashboards.tl_csd_scripts')
+@endif
+
+@if($user->hasRole(['CSD-Executive', 'Team-Leader']) && optional($user->departments)->department == 3)
+@include('dashboards.csd_scripts')
 @endif
 
 {{-- Employee Scripts --}}

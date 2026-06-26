@@ -10,6 +10,7 @@ use App\Models\Clients;
 use App\Models\DepartmentProjects;
 use App\Models\User;
 use App\Notifications\ClientMatured;
+use App\Services\Commercial\ClientEngagementService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -248,6 +249,12 @@ class ClientHistoryController extends Controller
 
                     $clidocs1->save();
 
+                    app(ClientEngagementService::class)->recordInitialFromMaturity(
+                        $client,
+                        $dept,
+                        $clipack,
+                        $userid
+                    );
 
                     // Get Department Members and filter by role
                    $productManager = User::whereHas('roles', function($q){  $q->where('name', 'Project-Manager' ); })

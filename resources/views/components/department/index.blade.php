@@ -1,519 +1,25 @@
 @extends('layouts.app')
 
-@section('styles')
-<style>
-    /* Styling System Custom Tokens */
-    .dept-dashboard-wrapper {
-        font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        padding-bottom: 2rem;
-    }
-
-    .dept-header-gradient-card {
-        background: linear-gradient(135deg, #1e1e38 0%, #0f172a 100%);
-        border-radius: 18px;
-        padding: 30px;
-        color: #ffffff;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-        margin-bottom: 24px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .dept-header-gradient-card::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 350px;
-        height: 350px;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-
-    .dept-dashboard-title {
-        font-weight: 700;
-        font-size: 26px;
-        letter-spacing: -0.5px;
-        margin-bottom: 6px;
-        color: #ffffff;
-    }
-
-    .dept-dashboard-subtitle {
-        font-size: 14px;
-        color: #94a3b8;
-        max-width: 600px;
-        margin-bottom: 0;
-    }
-
-    /* Premium Stats Grid */
-    .stat-card-premium {
-        background: #ffffff;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 24px;
-    }
-
-    .stat-card-premium:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
-        border-color: rgba(99, 102, 241, 0.25);
-    }
-
-    .stat-card-premium::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: var(--card-accent, #6366f1);
-    }
-
-    .stat-icon-wrapper {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 12px;
-        background: var(--stat-bg, rgba(99, 102, 241, 0.08));
-        color: var(--stat-color, #4f46e5);
-    }
-
-    .stat-icon-wrapper i {
-        font-size: 20px;
-    }
-
-    .stat-value {
-        font-size: 24px;
-        font-weight: 700;
-        color: #0f172a;
-        line-height: 1.2;
-    }
-
-    .stat-label {
-        font-size: 13px;
-        font-weight: 500;
-        color: #64748b;
-        margin-top: 4px;
-    }
-
-    /* Action Buttons */
-    .btn-create-dept {
-        background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-        color: #ffffff !important;
-        font-weight: 600;
-        padding: 10px 22px;
-        border-radius: 12px;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.25s ease;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
-        font-size: 14px;
-    }
-
-    .btn-create-dept:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
-        filter: brightness(1.05);
-    }
-
-    /* Search Container */
-    .search-group {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-        background: #f8fafc;
-        transition: all 0.25s ease;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.01);
-    }
-
-    .search-group:focus-within {
-        border-color: #6366f1;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-        background: #ffffff;
-    }
-
-    .search-icon-addon {
-        background: transparent !important;
-        border: none !important;
-        color: #94a3b8;
-        padding-left: 16px;
-    }
-
-    .search-input {
-        border: none !important;
-        background: transparent !important;
-        font-size: 14px;
-        padding: 12px 12px 12px 4px;
-        height: 46px;
-        box-shadow: none !important;
-    }
-
-    /* Department Cards */
-    .dept-card {
-        background: #ffffff;
-        border-radius: 18px;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        margin-bottom: 24px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .dept-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
-        border-color: rgba(99, 102, 241, 0.2);
-    }
-
-    .dept-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: var(--dept-stripe, #4f46e5);
-    }
-
-    .dept-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 24px 12px;
-        border-bottom: none;
-        background: transparent;
-    }
-
-    .dept-title-link {
-        text-decoration: none !important;
-        color: #0f172a !important;
-    }
-
-    .dept-title {
-        font-weight: 700;
-        font-size: 16px;
-        letter-spacing: -0.3px;
-        margin-bottom: 0;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: color 0.2s ease;
-    }
-
-    .dept-card:hover .dept-title {
-        color: #4f46e5 !important;
-    }
-
-    .branch-badge {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        padding: 4px 8px;
-        border-radius: 6px;
-        background: rgba(99, 102, 241, 0.08);
-        color: #4f46e5;
-        border: 1px solid rgba(99, 102, 241, 0.15);
-    }
-
-    .dept-card-body {
-        padding: 8px 24px 20px;
-    }
-
-    .dept-desc {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 16px;
-        line-height: 1.5;
-        height: 38px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .dept-footer-strip {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-top: 12px;
-        border-top: 1px solid #f1f5f9;
-    }
-
-    /* Stacked Avatars */
-    .avatar-stack {
-        display: inline-flex;
-        padding: 0;
-        margin: 0;
-        list-style: none;
-    }
-
-    .avatar-stack li {
-        margin-left: -10px;
-        position: relative;
-        transition: transform 0.2s ease;
-    }
-
-    .avatar-stack li:first-child {
-        margin-left: 0;
-    }
-
-    .avatar-stack li:hover {
-        transform: translateY(-4px);
-        z-index: 5;
-    }
-
-    .avatar-stack img {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: 2px solid #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        object-fit: cover;
-    }
-
-    .avatar-stack .stack-count {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background-color: #f1f5f9;
-        color: #475569;
-        font-size: 11px;
-        font-weight: 700;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Status Badges */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.1px;
-    }
-
-    .status-active {
-        background-color: rgba(16, 185, 129, 0.08);
-        color: #059669;
-        border: 1px solid rgba(16, 185, 129, 0.15);
-    }
-
-    .status-inactive {
-        background-color: rgba(239, 68, 68, 0.08);
-        color: #dc2626;
-        border: 1px solid rgba(239, 68, 68, 0.15);
-    }
-
-    /* Actions UI */
-    .btn-card-dots {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #64748b;
-        transition: all 0.2s ease;
-        text-decoration: none !important;
-    }
-
-    .btn-card-dots:hover {
-        background: #f1f5f9;
-        color: #0f172a;
-        border-color: #cbd5e1;
-    }
-
-    /* Glassmorphic Modal */
-    .modal-content-premium {
-        border-radius: 20px !important;
-        border: 1px solid rgba(226, 232, 240, 0.8) !important;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.1) !important;
-        overflow: hidden;
-    }
-
-    .modal-header-premium {
-        background: linear-gradient(135deg, #1e1e38 0%, #0f172a 100%);
-        color: #ffffff !important;
-        border-bottom: none !important;
-        padding: 20px 28px !important;
-    }
-
-    .modal-title-premium {
-        font-weight: 700 !important;
-        font-size: 18px !important;
-        letter-spacing: -0.3px;
-        color: #ffffff !important;
-    }
-
-    .modal-close-premium {
-        color: #94a3b8 !important;
-        opacity: 0.8 !important;
-        transition: all 0.2s ease;
-        background: transparent !important;
-        border: none !important;
-        font-size: 24px;
-        line-height: 1;
-    }
-
-    .modal-close-premium:hover {
-        color: #ffffff !important;
-        transform: scale(1.1);
-    }
-
-    .modal-body-premium {
-        padding: 28px !important;
-    }
-
-    /* Form Fields */
-    .form-group-premium {
-        margin-bottom: 20px;
-    }
-
-    .form-group-premium label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #475569;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-    }
-
-    .form-group-premium label i {
-        font-size: 16px;
-        margin-right: 6px;
-        color: #94a3b8;
-    }
-
-    .text_required {
-        color: #ef4444;
-        margin-left: 3px;
-    }
-
-    .input-premium {
-        border-radius: 10px !important;
-        border: 1px solid #cbd5e1 !important;
-        padding: 10px 14px !important;
-        height: auto !important;
-        font-size: 14px !important;
-        color: #0f172a !important;
-        background-color: #ffffff !important;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.01) !important;
-    }
-
-    .input-premium:focus {
-        border-color: #6366f1 !important;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12), inset 0 1px 2px rgba(0,0,0,0) !important;
-        outline: none !important;
-    }
-
-    .input-premium::placeholder {
-        color: #94a3b8 !important;
-    }
-
-    /* Custom Submit Button */
-    .btn-submit-premium {
-        background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-        color: #ffffff !important;
-        font-weight: 600;
-        padding: 10px 24px;
-        border-radius: 10px;
-        border: none;
-        font-size: 14px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.25s ease;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-        cursor: pointer;
-    }
-
-    .btn-submit-premium:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
-    }
-
-    /* Beautiful Empty State */
-    .empty-state-card {
-        padding: 60px 20px;
-        text-align: center;
-        width: 100%;
-    }
-
-    .empty-state-icon {
-        font-size: 64px;
-        color: #94a3b8;
-        animation: floatAnimation 3s ease-in-out infinite;
-        display: inline-block;
-        margin-bottom: 20px;
-    }
-
-    @keyframes floatAnimation {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
-    }
-
-    .empty-state-btn {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: #ffffff !important;
-        font-weight: 600;
-        padding: 8px 18px;
-        border-radius: 10px;
-        border: none;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
-        transition: all 0.2s ease;
-    }
-
-    .empty-state-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
-    }
-</style>
-@endsection
-
 @section('content')
-<div class="container-fluid dept-dashboard-wrapper">
-    <!-- Header Gradient Banner -->
-    <div class="dept-header-gradient-card">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h2 class="dept-dashboard-title">Departments Workspace</h2>
-                <p class="dept-dashboard-subtitle">Configure system business units, allocate branches, manage department workflows, and team organization.</p>
-            </div>
-            <div class="col-md-4 text-md-right mt-3 mt-md-0">
-                <button type="button" class="btn-create-dept btnAddDepartment">
-                    <i class="mdi mdi-plus-circle-outline mr-2"></i>New Department
-                </button>
-            </div>
+<div class="container-fluid erp-page erp-page--admin dept-dashboard-wrapper">
+    <div class="erp-page-header">
+        <div class="erp-page-header__main">
+            <h4 class="erp-page-title">Departments</h4>
+            <p class="erp-page-subtitle">Configure business units, branches, and team organization.</p>
+        </div>
+        <div class="erp-page-header__actions">
+            <button type="button" class="btn btn-primary btn-sm btnAddDepartment">
+                <i class="mdi mdi-plus"></i> New Department
+            </button>
         </div>
     </div>
 
     <!-- Metrics Grid -->
-    <div class="row">
+    <div class="row mb-2">
         <!-- Metric 1: Total Groups -->
         <div class="col-xl-3 col-sm-6">
-            <div class="stat-card-premium" style="--card-accent: #6366f1;">
-                <div class="stat-icon-wrapper" style="--stat-bg: rgba(99, 102, 241, 0.08); --stat-color: #6366f1;">
+            <div class="stat-card-premium stat-card-premium--indigo">
+                <div class="stat-icon-wrapper">
                     <i class="mdi mdi-office-building"></i>
                 </div>
                 <div class="stat-value">{{ $departments->total() }}</div>
@@ -523,8 +29,8 @@
 
         <!-- Metric 2: Active Groups -->
         <div class="col-xl-3 col-sm-6">
-            <div class="stat-card-premium" style="--card-accent: #10b981;">
-                <div class="stat-icon-wrapper" style="--stat-bg: rgba(16, 185, 129, 0.08); --stat-color: #10b981;">
+            <div class="stat-card-premium stat-card-premium--success">
+                <div class="stat-icon-wrapper">
                     <i class="mdi mdi-checkbox-marked-circle-outline"></i>
                 </div>
                 <div class="stat-value">
@@ -536,8 +42,8 @@
 
         <!-- Metric 3: Inactive Groups -->
         <div class="col-xl-3 col-sm-6">
-            <div class="stat-card-premium" style="--card-accent: #ef4444;">
-                <div class="stat-icon-wrapper" style="--stat-bg: rgba(239, 68, 68, 0.08); --stat-color: #ef4444;">
+            <div class="stat-card-premium stat-card-premium--danger">
+                <div class="stat-icon-wrapper">
                     <i class="mdi mdi-alert-circle-outline"></i>
                 </div>
                 <div class="stat-value">
@@ -549,8 +55,8 @@
 
         <!-- Metric 4: Total Aligned Staff -->
         <div class="col-xl-3 col-sm-6">
-            <div class="stat-card-premium" style="--card-accent: #f59e0b;">
-                <div class="stat-icon-wrapper" style="--stat-bg: rgba(245, 158, 11, 0.08); --stat-color: #f59e0b;">
+            <div class="stat-card-premium stat-card-premium--warning">
+                <div class="stat-icon-wrapper">
                     <i class="mdi mdi-account-multiple"></i>
                 </div>
                 <div class="stat-value">
@@ -564,7 +70,7 @@
     <!-- List & Cards Container -->
     @if(!$departments->isEmpty())
     <!-- Search Bar -->
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="input-group search-group">
                 <span class="input-group-text search-icon-addon">
@@ -589,17 +95,23 @@
             else if (str_contains($lowerName, 'account') || str_contains($lowerName, 'finance')) $stripeColor = '#06b6d4';
         @endphp
         <div class="col-lg-4 col-md-6 dept-card-col">
-            <div class="dept-card" style="--dept-stripe: {{ $stripeColor }};">
+            <div class="dept-card dept-card-clickable"
+                 style="--dept-stripe: {{ $stripeColor }};"
+                 data-dept-url="{{ route('departments.show', $item->name) }}"
+                 data-teams-url="{{ url('departments/'.$item->name.'/teams') }}"
+                 role="button"
+                 tabindex="0"
+                 title="Open {{ $item->name }}">
                 <!-- Header -->
                 <div class="dept-card-header">
-                    <a href="{{ route('departments.show', $item->name) }}" class="dept-title-link">
+                    <div class="dept-title-link">
                         <h5 class="dept-title">
-                            {{ $item->name }} 
+                            {{ $item->name }}
                             <span class="branch-badge">{{ $item->branch->code }}</span>
                         </h5>
-                    </a>
-                    <div class="dropdown">
-                        <a href="#" class="btn-card-dots dropdown-toggle arrow-none" data-bs-toggle="dropdown" aria-expanded="false">
+                    </div>
+                    <div class="dropdown dept-card-actions">
+                        <a href="#" class="btn-card-dots dropdown-toggle arrow-none" data-toggle="dropdown" aria-expanded="false">
                             <i class="mdi mdi-dots-vertical"></i>
                         </a>
                         <div class="dropdown-menu dropdown-menu-right">
@@ -647,7 +159,10 @@
                         </div>
 
                         <!-- Active indicator -->
-                        <div>
+                        <div class="d-flex align-items-center gap-2 dept-card-actions">
+                            <a href="{{ url('departments/'.$item->name.'/teams') }}" class="btn btn-sm btn-soft-primary dept-teams-link" title="View teams">
+                                <i class="mdi mdi-account-group-outline"></i> Teams
+                            </a>
                             @if ($item->status == true)
                                 <span class="status-badge status-active">Active</span>
                             @else
@@ -681,7 +196,7 @@
                     <i class="mdi mdi-office-building"></i>
                 </div>
                 <h3 class="font-weight-bold text-dark mb-2">No Departments Registered</h3>
-                <p class="text-muted mb-4 fs-14" style="max-width: 420px; margin: 0 auto;">Setup your company divisions and assign branches to establish a clear hierarchy structure across your workspace.</p>
+                <p class="text-muted mb-4 font-size-13 erp-page-subtitle" style="max-width: 420px; margin: 0 auto;">Setup your company divisions and assign branches to establish a clear hierarchy structure across your workspace.</p>
                 <button href="javascript:void(0);" class="empty-state-btn btnAddDepartment">
                     <i class="mdi mdi-plus-circle-outline mr-2"></i>Create Department
                 </button>
@@ -762,6 +277,21 @@
 @section('scripts')
 <script>
     $(document).ready(function(){
+        // Open department on card click (exclude action controls)
+        $(document).on('click', '.dept-card-clickable', function(e) {
+            if ($(e.target).closest('.dept-card-actions, .dropdown, .dropdown-menu').length) {
+                return;
+            }
+            window.location.href = $(this).data('dept-url');
+        });
+
+        $(document).on('keydown', '.dept-card-clickable', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                window.location.href = $(this).data('dept-url');
+            }
+        });
+
         // Trigger modal on add department click
         $('.btnAddDepartment').click(function(){
             $('#frm_department')[0].reset();

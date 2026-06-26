@@ -1,0 +1,799 @@
+/* ============================================================
+   erp-theme.css — Global ERP UI (compact + department UX)
+   Loaded after app.min.css
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --erp-font-base: 15px;
+    --erp-font-sm: 13px;
+    --erp-font-xs: 12px;
+    --erp-font-lg: 16px;
+    --erp-font-xl: 18px;
+
+    --erp-radius: 8px;
+    --erp-radius-lg: 12px;
+
+    --erp-bg: #f4f6f9;
+    --erp-card-bg: #ffffff;
+    --erp-border: #e8ecf1;
+    --erp-text: #2a3042;
+    --erp-text-muted: #6c757d;
+
+    /* Department accents */
+    --erp-brand: #48A596;
+    --erp-brand-dark: #2a6b62;
+    --erp-brand-dark-glow: #1e5c54;
+    --erp-brand-text-glow: 0 0 10px rgba(72, 165, 150, 0.55), 0 0 20px rgba(72, 165, 150, 0.25);
+    --erp-brand-glow: rgba(72, 165, 150, 0.22);
+    --dept-admin: #5b6abf;
+    --dept-nsd: #556ee6;
+    --dept-od: #e67e22;
+    --dept-csd: #48A596;
+    --dept-reports: #6f42c1;
+}
+
+/* ── Global base: 15px ── */
+html {
+    font-size: var(--erp-font-base);
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--erp-text);
+    background-color: var(--erp-bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Bootstrap / theme font-size utilities — aligned to 15px base */
+.font-size-10 { font-size: 11px !important; }
+.font-size-11 { font-size: 12px !important; }
+.font-size-12 { font-size: var(--erp-font-sm) !important; }
+.font-size-13 { font-size: 13px !important; }
+.font-size-14 { font-size: 14px !important; }
+.font-size-15 { font-size: var(--erp-font-base) !important; }
+.font-size-16 { font-size: var(--erp-font-lg) !important; }
+.font-size-18 { font-size: var(--erp-font-xl) !important; }
+.font-size-20 { font-size: 1.25rem !important; }
+.font-size-22 { font-size: 1.35rem !important; }
+.font-size-24 { font-size: 1.5rem !important; }
+
+h1, .h1 { font-size: 1.65rem; }
+h2, .h2 { font-size: 1.4rem; }
+h3, .h3 { font-size: 1.2rem; }
+h4, .h4 { font-size: 1.05rem; }
+h5, .h5 { font-size: 0.95rem; }
+h6, .h6 { font-size: 0.85rem; }
+
+/* ── Layout & spacing ── */
+.page-content {
+    padding: 0 16px 20px;
+}
+
+.page-title-box {
+    padding: 12px 0 8px;
+}
+
+.page-title-box h4,
+.page-title-box .font-size-18 {
+    font-size: var(--erp-font-lg) !important;
+    font-weight: 600;
+    color: var(--erp-text);
+}
+
+.breadcrumb {
+    font-size: var(--erp-font-sm);
+    margin-bottom: 0;
+}
+
+/* ── Cards ── */
+.card {
+    border: 1px solid var(--erp-border);
+    border-radius: var(--erp-radius-lg);
+    box-shadow: 0 1px 3px rgba(42, 48, 66, 0.04);
+    margin-bottom: 16px;
+}
+
+.card-body {
+    padding: 1rem 1.1rem;
+}
+
+.card-title {
+    font-size: var(--erp-font-lg);
+    font-weight: 600;
+}
+
+.card-title.mb-3,
+.card-title.mb-4 {
+    font-size: var(--erp-font-base) !important;
+    margin-bottom: 0.75rem !important;
+}
+
+/* ── Buttons ── */
+.btn {
+    font-size: var(--erp-font-sm);
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+}
+
+.btn-sm {
+    font-size: var(--erp-font-xs);
+    padding: 0.28rem 0.6rem;
+}
+
+.btn-md {
+    font-size: var(--erp-font-sm);
+    padding: 0.32rem 0.7rem;
+    line-height: 1.4;
+}
+
+.btn-lg {
+    font-size: var(--erp-font-base);
+    padding: 0.4rem 0.9rem;
+}
+
+/* ── Page headings (compact across all pages) ── */
+.header-title,
+.erp-dash-title {
+    font-size: var(--erp-font-lg) !important;
+    font-weight: 600 !important;
+    color: var(--erp-text);
+    letter-spacing: -0.01em;
+    margin-bottom: 0;
+}
+
+.page-title-box h4,
+.erp-page-title,
+.text-premium-dark {
+    font-size: var(--erp-font-lg) !important;
+    font-weight: 600 !important;
+}
+
+h2.user-dashboard-title,
+h2.dept-dashboard-title {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+}
+
+.user-dashboard-subtitle,
+.dept-dashboard-subtitle {
+    font-size: var(--erp-font-sm) !important;
+}
+
+h3.mb-0, .card h3 {
+    font-size: 1.15rem;
+}
+
+/* Dashboard / KPI icons & values — smaller */
+.display-4 {
+    font-size: 1.65rem !important;
+    line-height: 1.2;
+}
+
+.admin-kpi-card .card-body {
+    padding: 0.75rem 0.85rem !important;
+}
+
+.admin-kpi-card h3,
+.admin-kpi-card .mt-2 {
+    font-size: 1.2rem !important;
+    margin-top: 0.35rem !important;
+}
+
+.admin-kpi-card h5,
+.admin-kpi-card h6 {
+    font-size: var(--erp-font-xs) !important;
+    font-weight: 500;
+}
+
+.admin-kpi-card .admin-kpi-icon {
+    margin-bottom: 0.35rem !important;
+}
+
+.pm-dashboard-custom-card .card-body {
+    padding: 0.75rem 1rem !important;
+}
+
+.pm-dashboard-custom-card h3 {
+    font-size: 1.15rem !important;
+}
+
+.pm-dashboard-custom-card h6 {
+    font-size: var(--erp-font-xs) !important;
+}
+
+/* Alerts & badges */
+.alert {
+    font-size: var(--erp-font-sm);
+    padding: 0.55rem 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 0.28em 0.5em;
+}
+
+.badge-soft-primary,
+.badge.badge-soft-primary {
+    font-size: var(--erp-font-xs);
+    padding: 0.35rem 0.6rem;
+}
+
+/* Modal compact */
+.modal-header {
+    padding: 0.65rem 1rem;
+}
+
+.modal-body {
+    padding: 0.85rem 1rem;
+}
+
+.modal-footer {
+    padding: 0.55rem 1rem;
+}
+
+.close {
+    font-size: 1.25rem;
+}
+
+/* Action button groups */
+.btn-group .btn {
+    padding: 0.3rem 0.65rem;
+}
+
+/* Create / submit buttons used on list pages */
+.btn-create-member,
+.btn-create-dept,
+.erp-btn-primary {
+    font-size: var(--erp-font-sm) !important;
+    padding: 0.4rem 0.9rem !important;
+}
+
+/* Stat cards on list pages */
+.stat-value {
+    font-size: 1.2rem !important;
+}
+
+.stat-label {
+    font-size: var(--erp-font-sm) !important;
+}
+
+.stat-card-premium {
+    padding: 0.85rem 1rem !important;
+    margin-bottom: 0.85rem !important;
+}
+
+.stat-icon-wrapper {
+    width: 36px !important;
+    height: 36px !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.stat-icon-wrapper i {
+    font-size: 1rem !important;
+}
+
+/* Hero banners — compact */
+.user-header-gradient-card,
+.dept-header-gradient-card,
+.erp-hero {
+    padding: 1rem 1.25rem !important;
+    margin-bottom: 1rem !important;
+    border-radius: var(--erp-radius-lg) !important;
+}
+
+/* Title cards */
+.title-card-glass .card-body {
+    padding: 0.75rem 1rem !important;
+}
+
+.title-card-glass h3 {
+    font-size: var(--erp-font-lg) !important;
+    margin-bottom: 0.2rem !important;
+}
+
+/* Repo / table cards less padding */
+.repo-card .card-body.p-4 {
+    padding: 1rem !important;
+}
+
+/* ── Forms ── */
+.form-control,
+.custom-select,
+select.form-control {
+    font-size: var(--erp-font-base);
+    border-radius: 6px;
+    border-color: var(--erp-border);
+    min-height: calc(1.5em + 0.6rem + 2px);
+    padding: 0.35rem 0.65rem;
+}
+
+.form-group label,
+label {
+    font-size: var(--erp-font-sm);
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: var(--erp-text);
+}
+
+/* ── Tables & DataTables ── */
+.table {
+    font-size: var(--erp-font-base);
+    margin-bottom: 0;
+}
+
+.table thead th {
+    font-size: var(--erp-font-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--erp-text-muted);
+    border-bottom-width: 1px;
+    padding: 0.55rem 0.65rem;
+    vertical-align: middle;
+}
+
+.table td {
+    padding: 0.5rem 0.65rem;
+    vertical-align: middle;
+}
+
+table.dataTable {
+    font-size: var(--erp-font-sm);
+}
+
+/* ── Badges ── */
+.badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 0.3em 0.55em;
+}
+
+/* ── Modals ── */
+.modal-title {
+    font-size: var(--erp-font-lg);
+    font-weight: 600;
+}
+
+.modal-body {
+    font-size: var(--erp-font-sm);
+}
+
+/* ── Header / topbar ── */
+#page-topbar {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.navbar-header .header-item {
+    font-size: var(--erp-font-sm);
+}
+
+/* ── Sidebar: compact + department sections ── */
+.vertical-menu {
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body[data-sidebar="dark"] .vertical-menu {
+    background: #2a353d !important;
+}
+
+#sidebar-menu {
+    padding: 8px 0 24px;
+}
+
+/* Brighter default menu links */
+body[data-sidebar="dark"] #sidebar-menu ul li a,
+body[data-sidebar="dark"] #sidebar-menu ul li a i {
+    color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body[data-sidebar="dark"] #sidebar-menu ul li ul.sub-menu li a {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+body[data-sidebar="dark"] #sidebar-menu .menu-title,
+body[data-sidebar="dark"] .menu-title-dept .dept-label {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+#sidebar-menu ul li a {
+    font-size: var(--erp-font-sm);
+    padding: 9px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+    border-radius: 0 6px 6px 0;
+    margin-right: 8px;
+}
+
+/* Indent menu links under section headings */
+#sidebar-menu li.dept-item > a,
+#sidebar-menu li.dept-item--main > a {
+    padding-left: 26px;
+    margin-left: 14px;
+}
+
+#sidebar-menu ul.sub-menu {
+    padding-left: 6px;
+}
+
+#sidebar-menu ul li a i {
+    font-size: 17px;
+    min-width: 20px;
+    opacity: 1;
+}
+
+#sidebar-menu ul li ul.sub-menu li a {
+    font-size: var(--erp-font-xs);
+    padding: 7px 18px 7px 54px;
+    margin-left: 14px;
+    margin-right: 8px;
+    border-radius: 0 6px 6px 0;
+}
+
+/* Hover + Active — white background + dark teal glowing text */
+body[data-sidebar="dark"] #sidebar-menu ul li a:hover,
+body[data-sidebar="dark"] #sidebar-menu ul li a.active,
+body[data-sidebar="dark"] #sidebar-menu ul.sub-menu li a:hover,
+body[data-sidebar="dark"] #sidebar-menu ul.sub-menu li.mm-active > a,
+body[data-sidebar="dark"] #sidebar-menu ul.sub-menu li a.active {
+    color: var(--erp-brand-dark-glow) !important;
+    background: #ffffff !important;
+    box-shadow: inset 3px 0 0 var(--erp-brand), 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+    font-weight: 600;
+    text-shadow: var(--erp-brand-text-glow);
+}
+
+body[data-sidebar="dark"] #sidebar-menu ul li a:hover i,
+body[data-sidebar="dark"] #sidebar-menu a.active i,
+body[data-sidebar="dark"] #sidebar-menu ul.sub-menu li a:hover i,
+body[data-sidebar="dark"] #sidebar-menu ul.sub-menu li.mm-active > a i,
+body[data-sidebar="dark"] #sidebar-menu ul.sub-menu li a.active i {
+    color: var(--erp-brand-dark) !important;
+    text-shadow: var(--erp-brand-text-glow);
+    filter: drop-shadow(0 0 4px rgba(72, 165, 150, 0.45));
+}
+
+/* Open parent (submenu expanded, not hovered) — subtle teal accent */
+body[data-sidebar="dark"] #sidebar-menu li.mm-active > a.has-arrow:not(:hover) {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: inset 3px 0 0 var(--erp-brand) !important;
+    text-shadow: none;
+    font-weight: 500;
+}
+
+body[data-sidebar="dark"] #sidebar-menu li.mm-active > a.has-arrow:not(:hover) i {
+    color: var(--erp-brand) !important;
+    text-shadow: none;
+    filter: none;
+}
+
+body[data-sidebar="dark"] .mm-active .active,
+body[data-sidebar="dark"] .mm-active .active i {
+    color: var(--erp-brand-dark-glow) !important;
+    text-shadow: var(--erp-brand-text-glow);
+}
+
+/* Unified hover + active — all department items */
+#sidebar-menu li.dept-item > a:hover,
+#sidebar-menu li.dept-item > a.active,
+#sidebar-menu li.dept-item--main > a:hover,
+#sidebar-menu li.dept-item--main > a.active,
+#sidebar-menu ul.sub-menu li a:hover,
+#sidebar-menu ul.sub-menu li.mm-active > a,
+#sidebar-menu ul.sub-menu li a.active {
+    box-shadow: inset 3px 0 0 var(--erp-brand), 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+    background: #ffffff !important;
+    color: var(--erp-brand-dark-glow) !important;
+    font-weight: 600;
+    text-shadow: var(--erp-brand-text-glow);
+}
+
+#sidebar-menu li.dept-item > a:hover i,
+#sidebar-menu li.dept-item > a.active i,
+#sidebar-menu li.dept-item--main > a:hover i,
+#sidebar-menu li.dept-item--main > a.active i,
+#sidebar-menu ul.sub-menu li a:hover i,
+#sidebar-menu ul.sub-menu li.mm-active > a i,
+#sidebar-menu ul.sub-menu li a.active i {
+    color: var(--erp-brand-dark) !important;
+    text-shadow: var(--erp-brand-text-glow);
+    filter: drop-shadow(0 0 4px rgba(72, 165, 150, 0.45));
+}
+
+/* Section titles — department headers (larger + differentiated) */
+#sidebar-menu .menu-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0;
+    margin-top: 0;
+    color: rgba(255, 255, 255, 0.45);
+    pointer-events: none;
+}
+
+#sidebar-menu .menu-title:first-child {
+    margin-top: 0;
+}
+
+.menu-title-dept {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px 10px 12px !important;
+    margin: 8px 8px 6px 0;
+    border-radius: 0 8px 8px 0;
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    min-height: 38px;
+}
+
+.dept-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 46px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.dept-badge--main { background: rgba(255,255,255,0.18); color: #fff; }
+.dept-badge--admin { background: var(--dept-admin); color: #fff; }
+.dept-badge--nsd { background: var(--dept-nsd); color: #fff; }
+.dept-badge--od { background: var(--dept-od); color: #fff; }
+.dept-badge--csd { background: var(--dept-csd); color: #fff; }
+.dept-badge--reports { background: var(--dept-reports); color: #fff; }
+
+.menu-title-dept .dept-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+}
+
+/* Per-department section accent */
+.menu-title-dept--main {
+    border-left-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.menu-title-dept--admin {
+    border-left-color: var(--dept-admin);
+    background: rgba(91, 106, 191, 0.14);
+}
+
+.menu-title-dept--od {
+    border-left-color: var(--dept-od);
+    background: rgba(230, 126, 34, 0.12);
+}
+
+.menu-title-dept--nsd {
+    border-left-color: var(--dept-nsd);
+    background: rgba(85, 110, 230, 0.12);
+}
+
+.menu-title-dept--csd {
+    border-left-color: var(--dept-csd);
+    background: rgba(72, 165, 150, 0.14);
+}
+
+.menu-title-dept--reports {
+    border-left-color: var(--dept-reports);
+    background: rgba(111, 66, 193, 0.14);
+}
+
+/* Visual separator between department blocks */
+#sidebar-menu li.menu-title-dept:not(:first-child) {
+    margin-top: 10px;
+    padding-top: 10px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Department items — hover uses same white + teal glow (see rules above) */
+#sidebar-menu li.dept-item > a:hover {
+    background: #ffffff;
+}
+
+/* Scroll padding so active item is not flush against edges */
+#sidebar-menu {
+    scroll-margin-block: 24px;
+}
+
+#sidebar-menu li.mm-active,
+#sidebar-menu a.active {
+    scroll-margin-block: 40px;
+}
+
+/* Department section blocks — legacy overrides removed; brand active above */
+
+/* Dashboard KPI cards — slightly compact */
+.admin-kpi-card .card-body {
+    padding: 0.85rem;
+}
+
+.admin-kpi-card h5 {
+    font-size: var(--erp-font-xs) !important;
+}
+
+.admin-kpi-card h3 {
+    font-size: 1.2rem !important;
+}
+
+.admin-kpi-card .display-4 {
+    font-size: 1.65rem !important;
+}
+
+.pm-dashboard-custom-card,
+.trendy-card {
+    border-radius: var(--erp-radius-lg) !important;
+}
+
+.header-title {
+    font-size: var(--erp-font-lg) !important;
+}
+
+/* Dashboard tabs */
+.dashboard-tabs .nav-link {
+    font-size: var(--erp-font-sm) !important;
+    padding: 8px 16px !important;
+}
+
+/* Select2 */
+.select2-container .select2-selection--single {
+    height: calc(1.5em + 0.6rem + 2px) !important;
+    font-size: var(--erp-font-sm);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: calc(1.5em + 0.35rem) !important;
+    font-size: var(--erp-font-sm);
+}
+
+/* Alerts / dropdowns */
+.dropdown-menu {
+    font-size: var(--erp-font-sm);
+    border-radius: var(--erp-radius);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.dropdown-item {
+    font-size: var(--erp-font-sm);
+    padding: 0.4rem 1rem;
+}
+
+/* Page dept accent strip (optional body class) */
+body[data-dept="1"] .page-title-box h4 { border-left: 3px solid var(--dept-nsd); padding-left: 10px; }
+body[data-dept="2"] .page-title-box h4 { border-left: 3px solid var(--dept-od); padding-left: 10px; }
+body[data-dept="3"] .page-title-box h4 { border-left: 3px solid var(--dept-csd); padding-left: 10px; }
+
+/* CSD module pages */
+body.csd-module .page-title-box h4 { border-left: 3px solid var(--dept-csd); padding-left: 10px; }
+body.nsd-module .page-title-box h4 { border-left: 3px solid var(--dept-nsd); padding-left: 10px; }
+body.od-module .page-title-box h4 { border-left: 3px solid var(--dept-od); padding-left: 10px; }
+
+/* Compact notifications */
+.notifications .media-body h6 {
+    font-size: var(--erp-font-sm);
+}
+
+.notifications .font-size-12 {
+    font-size: var(--erp-font-xs) !important;
+}
+
+/* Nav tabs / pills */
+.nav-tabs .nav-link,
+.nav-pills .nav-link {
+    font-size: var(--erp-font-sm);
+    padding: 0.4rem 0.85rem;
+}
+
+/* Pagination */
+.pagination .page-link {
+    font-size: var(--erp-font-sm);
+    padding: 0.35rem 0.65rem;
+}
+
+/* Content area — page header strip */
+.page-title-box {
+    border-bottom: 1px solid var(--erp-border);
+    margin-bottom: 12px;
+}
+
+/* Footer */
+.footer {
+    font-size: var(--erp-font-xs);
+    padding: 12px 16px;
+}
+
+/* Scrollbar sidebar */
+.vertical-menu [data-simplebar] {
+    scrollbar-width: thin;
+}
+
+/* ── Collapsed sidebar (minisize) — icon contrast on active/hover ── */
+.vertical-collpsed #sidebar-menu ul li a {
+    justify-content: center;
+    padding: 12px 0 !important;
+    min-height: 44px;
+    margin-right: 0;
+    margin-left: 0 !important;
+    border-radius: 8px;
+}
+
+.vertical-collpsed #sidebar-menu ul li a i {
+    margin: 0 !important;
+    font-size: 1.2rem !important;
+    min-width: auto;
+}
+
+.vertical-collpsed #sidebar-menu ul.sub-menu {
+    padding-left: 0 !important;
+}
+
+.vertical-collpsed #sidebar-menu ul li a span {
+    display: none !important;
+}
+
+.vertical-collpsed #sidebar-menu ul li a:hover,
+.vertical-collpsed #sidebar-menu ul li a.active,
+.vertical-collpsed #sidebar-menu ul li.mm-active > a.has-arrow.active,
+.vertical-collpsed #sidebar-menu ul li.dept-item > a.active {
+    background: #ffffff !important;
+    color: var(--erp-brand-dark-glow) !important;
+    box-shadow: inset 3px 0 0 var(--erp-brand), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.vertical-collpsed #sidebar-menu ul li a:hover i,
+.vertical-collpsed #sidebar-menu ul li a.active i,
+.vertical-collpsed #sidebar-menu ul li.mm-active > a.has-arrow.active i,
+.vertical-collpsed #sidebar-menu ul li.dept-item > a.active i {
+    color: var(--erp-brand-dark) !important;
+    text-shadow: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+body[data-sidebar="dark"].vertical-collpsed #sidebar-menu ul li a:not(:hover):not(.active) i {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+body[data-sidebar="dark"].vertical-collpsed #sidebar-menu li.mm-active > a.has-arrow:not(:hover):not(.active) {
+    background: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: inset 3px 0 0 var(--erp-brand) !important;
+}
+
+body[data-sidebar="dark"].vertical-collpsed #sidebar-menu li.mm-active > a.has-arrow:not(:hover):not(.active) i {
+    color: var(--erp-brand) !important;
+}
+
+body[data-sidebar="dark"].vertical-collpsed .vertical-menu #sidebar-menu > ul > li:hover > a {
+    background: #ffffff !important;
+    color: var(--erp-brand-dark-glow) !important;
+    width: calc(190px + 70px);
+}
+
+body[data-sidebar="dark"].vertical-collpsed .vertical-menu #sidebar-menu > ul > li:hover > a i {
+    color: var(--erp-brand-dark) !important;
+}
+
+body[data-sidebar="dark"].vertical-collpsed .vertical-menu #sidebar-menu > ul ul {
+    background-color: #2a353d !important;
+}
+
+@media (max-width: 991px) {
+    html { font-size: 14px; }
+}

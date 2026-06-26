@@ -1,147 +1,26 @@
 {{-- Regular Employee (OD) Dashboard UI - Premium Version --}}
-<style>
-    .emp-stat-card {
-        background: #ffffff;
-        border-radius: 16px;
-        border: 1.5px solid #f0f0f0;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        position: relative;
-        overflow: hidden;
-    }
 
-    .emp-stat-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 40px rgba(85, 110, 230, 0.08) !important;
-        border-color: #556ee6;
-    }
-
-    .emp-stat-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-        opacity: 0;
-        transition: opacity 0.4s ease;
-    }
-
-    .emp-stat-card:hover::before {
-        opacity: 1;
-    }
-
-    .stat-icon-box {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 15px;
-        transition: all 0.4s ease;
-    }
-
-    .emp-stat-card:hover .stat-icon-box {
-        transform: scale(1.1) rotate(5deg);
-    }
-
-    .bg-soft-indigo {
-        background: #e0e7ff;
-        color: #4338ca;
-    }
-
-    .bg-soft-emerald {
-        background: #d1fae5;
-        color: #047857;
-    }
-
-    .bg-soft-amber {
-        background: #fef3c7;
-        color: #b45309;
-    }
-
-    .bg-soft-rose {
-        background: #ffe4e6;
-        color: #be123c;
-    }
-
-    .project-card-mini {
-        border-radius: 12px;
-        border: 1.5px solid #f1f1f1;
-        background: #fafafa;
-        padding: 15px;
-        transition: all 0.3s ease;
-    }
-
-    .project-card-mini:hover {
-        background: #ffffff;
-        border-color: #556ee6;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
-    }
-
-    @keyframes pulse-urgency {
-        0% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.4);
-        }
-
-        70% {
-            transform: scale(1.05);
-            box-shadow: 0 0 0 6px rgba(244, 106, 106, 0);
-        }
-
-        100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0);
-        }
-    }
-
-    @keyframes pulse-new {
-        0% {
-            box-shadow: 0 0 0 0 rgba(0, 183, 255, 0.4);
-        }
-
-        70% {
-            box-shadow: 0 0 0 6px rgba(0, 183, 255, 0);
-        }
-
-        100% {
-            box-shadow: 0 0 0 0 rgba(0, 183, 255, 0);
-        }
-    }
-
-    .urgent-pulse {
-        animation: pulse-urgency 1.5s infinite;
-    }
-
-    .new-task-glow {
-        animation: pulse-new 2s infinite;
-        border-left: 3px solid #00b7ff !important;
-    }
-</style>
-
-<div class="row mb-4 align-items-center">
+<div class="row erp-dash-hero-row">
     <div class="col-sm-6">
         <div class="d-flex align-items-center">
             <div class="avatar-sm mr-3">
-                <span class="avatar-title rounded-circle bg-white shadow-sm text-primary border" style="font-size: 24px;">
+                <span class="avatar-title rounded-circle bg-white shadow-sm text-primary border">
                     🎯
                 </span>
             </div>
             <div>
-                <h4 class="header-title mb-0" style="font-weight: 800; color: #1a1a1a; letter-spacing: -0.8px; font-size: 1.6rem;">My <span class="text-primary">Ecosystem</span></h4>
+                <h4 class="header-title erp-dash-title mb-0">My <span class="text-primary">Ecosystem</span></h4>
                 <p class="text-muted mb-0 font-size-12 font-weight-medium">Performance analytics for {{ $adminData['selected_year'] }}</p>
             </div>
         </div>
     </div>
     <div class="col-sm-6">
         <div class="float-sm-right d-flex align-items-center mt-3 mt-sm-0">
-            <div class="mr-4 px-3 py-2 bg-white rounded shadow-sm border border-light">
-                <p class="text-muted mb-0 font-size-10 text-uppercase letter-spacing-1 font-weight-bold">Select Perspective</p>
+            <div class="mr-4 erp-dash-year-box">
+                <p class="erp-dash-year-box__label">Select Perspective</p>
                 <div class="d-flex align-items-center">
-                    <i class="mdi mdi-calendar-range text-primary mr-2 font-size-16"></i>
-                    <select class="form-control form-control-sm border-0 shadow-none p-0 font-size-15" id="employee_dashboard_year_filter" style="font-weight: 800; color: #343a40; background: transparent; cursor: pointer; height: auto; width: 80px;">
+                    <i class="mdi mdi-calendar-range text-primary mr-2"></i>
+                    <select class="form-control form-control-sm erp-dash-year-select" id="employee_dashboard_year_filter">
                         @foreach($adminData['available_years'] as $yr)
                         <option value="{{ $yr }}" {{ $adminData['selected_year'] == $yr ? 'selected' : '' }}>{{ $yr }}</option>
                         @endforeach
@@ -156,12 +35,12 @@
 <!-- ⚡ Feature 2: Daily Pulse Banner -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card bg-primary border-0 shadow-lg" style="border-radius: 20px; background: linear-gradient(135deg, #556ee6 0%, #3452e1 100%);">
-            <div class="card-body p-4">
+        <div class="card erp-pulse-banner shadow-sm">
+            <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <div class="d-flex align-items-center">
-                            <div class="display-4 mr-3" style="font-size: 2.5rem;">⚡</div>
+                            <div class="display-4 mr-3">⚡</div>
                             <div>
                                 <h3 class="text-white font-weight-bold mb-1">Your Daily Pulse</h3>
                                 <p class="text-white-50 mb-0 font-weight-medium">
@@ -187,14 +66,16 @@
     <div class="col-md-3">
         <a href="{{ url('/projects') }}" class="text-decoration-none">
             <div class="card emp-stat-card border-0 shadow-none">
-                <div class="card-body p-4">
+                <div class="card-body p-3">
                     <div class="stat-icon-box bg-soft-indigo">
                         <i class="mdi mdi-rocket-launch-outline font-size-24"></i>
                     </div>
                     <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Total Projects</p>
-                    <h2 class="mb-0 font-weight-bold" style="color: #1a1a1a;">{{ $adminData['projects_assigned_count'] }}</h2>
-                    <div class="mt-2">
-                        <span class="badge badge-soft-success font-size-10">{{ $adminData['completed_projects_count'] }} Completed</span>
+                    <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['projects_assigned_count'] }}</h2>
+                    <div class="mt-2 d-flex flex-wrap gap-1">
+                        <span class="badge badge-soft-warning font-size-10 mr-1 mb-1">{{ $adminData['projects_not_started_count'] ?? 0 }} Not Started</span>
+                        <span class="badge badge-soft-info font-size-10 mr-1 mb-1">{{ $adminData['projects_in_progress_count'] ?? 0 }} In Progress</span>
+                        <span class="badge badge-soft-success font-size-10 mb-1">{{ $adminData['completed_projects_count'] }} Completed</span>
                     </div>
                 </div>
             </div>
@@ -203,12 +84,12 @@
     <div class="col-md-3">
         <a href="{{ url('/projects') }}?status=Completed" class="text-decoration-none">
             <div class="card emp-stat-card border-0 shadow-none">
-                <div class="card-body p-4">
+                <div class="card-body p-3">
                     <div class="stat-icon-box bg-soft-emerald">
                         <i class="mdi mdi-check-all font-size-24"></i>
                     </div>
                     <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Tasks Completed</p>
-                    <h2 class="mb-0 font-weight-bold" style="color: #1a1a1a;">{{ $adminData['completed_tasks_count'] }}</h2>
+                    <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['completed_tasks_count'] }}</h2>
                     <div class="mt-2">
                         <span class="text-muted font-size-11">Total Assigned: {{ $adminData['total_tasks_assigned'] }}</span>
                     </div>
@@ -219,12 +100,12 @@
     <div class="col-md-3">
         <a href="{{ url('/projects') }}?status=Pending" class="text-decoration-none">
             <div class="card emp-stat-card border-0 shadow-none">
-                <div class="card-body p-4">
+                <div class="card-body p-3">
                     <div class="stat-icon-box bg-soft-amber">
                         <i class="mdi mdi-timer-sand font-size-24"></i>
                     </div>
                     <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Pending Work</p>
-                    <h2 class="mb-0 font-weight-bold" style="color: #1a1a1a;">{{ $adminData['pending_tasks_count'] }}</h2>
+                    <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['pending_tasks_count'] }}</h2>
                     <div class="mt-2">
                         <span class="badge badge-soft-warning font-size-10">{{ $adminData['active_tasks_count'] }} In Progress</span>
                     </div>
@@ -239,7 +120,7 @@
                     <i class="mdi mdi-clock-fast font-size-24"></i>
                 </div>
                 <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Work Capacity</p>
-                <h2 class="mb-0 font-weight-bold" style="color: #1a1a1a;">{{ $adminData['total_hours'] }}h</h2>
+                <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['total_hours'] }}h</h2>
                 <div class="mt-2">
                     <span class="text-muted font-size-11">Avg Speed: {{ $adminData['avg_task_duration'] }}h/task</span>
                 </div>

@@ -24,9 +24,8 @@ class RestrictToSales
         $user = Auth::user();
         $departmentId = $user->departments->department ?? null;
 
-        // Allow Admin, Sales-Executive, and Sales Team-Leaders (department == 1)
-        if ($user->hasRole('Admin') || 
-            $user->hasRole('Sales-Executive') || 
+        // Allow Admin, Branch-Manager, Sales-Executive, and Sales Team-Leaders (department == 1)
+        if ($user->hasRole(['Admin', 'Branch-Manager', 'Sales-Executive']) ||
             ($user->hasRole('Team-Leader') && $departmentId == 1)) {
             return $next($request);
         }

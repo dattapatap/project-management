@@ -1,7 +1,7 @@
 {{-- Admin Dashboard UI --}}
 <div class="row mb-3">
     <div class="col-12 d-flex justify-content-between align-items-center">
-        <h4 class="header-title mb-0">System Overview</h4>
+        <h4 class="header-title erp-dash-title mb-0">System Overview</h4>
     </div>
 </div>
 
@@ -11,7 +11,7 @@
     <div class="col-lg-8">
         <div class="row">
             <div class="col-sm-6 col-xl-3">
-                <div class="card admin-kpi-card gradient-primary text-white text-center shadow-sm" style="border-radius: 12px; cursor: pointer;" onclick="window.location.href='{{ route('users.index') }}'">
+                <div class="card admin-kpi-card gradient-primary text-white text-center shadow-sm erp-kpi-clickable" onclick="window.location.href='{{ route('users.index') }}'">
                     <div class="card-body">
                         <i class="dripicons-user-group display-4 mb-2 admin-kpi-icon"></i>
                         <h5 class="text-white font-size-14">Employees</h5>
@@ -20,7 +20,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-xl-3">
-                <div class="card admin-kpi-card gradient-info text-white text-center shadow-sm" style="border-radius: 12px; cursor: pointer;" onclick="window.location.href='{{ route('departments.index') }}'">
+                <div class="card admin-kpi-card gradient-info text-white text-center shadow-sm erp-kpi-clickable" onclick="window.location.href='{{ route('departments.index') }}'">
                     <div class="card-body">
                         <i class="dripicons-store display-4 mb-2 admin-kpi-icon"></i>
                         <h5 class="text-white font-size-14">Departments</h5>
@@ -29,7 +29,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-xl-3">
-                <div class="card admin-kpi-card gradient-warning text-white text-center shadow-sm" style="border-radius: 12px; cursor: pointer;" onclick="window.location.href='{{ url('projects') }}'">
+                <div class="card admin-kpi-card gradient-warning text-white text-center erp-kpi-clickable" onclick="window.location.href='{{ url('projects') }}'">
                     <div class="card-body">
                         <i class="dripicons-folder-open display-4 mb-2 admin-kpi-icon"></i>
                         <h5 class="text-white font-size-14">Projects</h5>
@@ -38,7 +38,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-xl-3">
-                <div class="card admin-kpi-card gradient-success text-white text-center shadow-sm" style="border-radius: 12px; cursor: pointer;" onclick="window.location.href='{{ route('clients.index') }}'">
+                <div class="card admin-kpi-card gradient-success text-white text-center erp-kpi-clickable" onclick="window.location.href='{{ route('clients.index') }}'">
                     <div class="card-body">
                         <i class="dripicons-graph-line display-4 mb-2 admin-kpi-icon"></i>
                         <h5 class="text-white font-size-14">Sales</h5>

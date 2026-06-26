@@ -479,8 +479,7 @@
             $.ajax({
 
                 type: 'POST',
-                url: '{{ route('
-                client.updateDsr ') }}',
+                url: '{{ route("client.updateDsr") }}',
                 data: formData,
                 cache: false,
                 contentType: false,

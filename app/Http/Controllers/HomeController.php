@@ -47,9 +47,19 @@ class HomeController extends Controller
         $selectedYear = $request->get('year', date('Y'));
         $departmentId = $user->departments->department ?? null;
 
+        // Branch Manager — cross-department branch oversight dashboard
+        if ($user->isBranchManager()) {
+            return app(BranchManagerDashboardController::class)->index($request);
+        }
+
         // 🔀 Route Sales Department requests to SalesDashboardController
         if ($user->hasRole('Sales-Executive') || ($user->hasRole('Team-Leader') && $departmentId == 1)) {
             return app(\App\Http\Controllers\SalesDashboardController::class)->index($request);
+        }
+
+        // 🔀 Route CSD Department requests
+        if ($user->hasRole('CSD-Executive') || ($user->hasRole('Team-Leader') && $departmentId == 3)) {
+            return app(\App\Http\Controllers\Csd\CsdDashboardController::class)->index($request);
         }
 
         // 🔀 Modular Routing for Dashboard Role-Based Data Loading
@@ -433,6 +443,8 @@ class HomeController extends Controller
         });
         $adminData['projects_assigned_count'] = (clone $projectsQuery)->count();
         $adminData['completed_projects_count'] = (clone $projectsQuery)->where('status', 'Completed')->count();
+        $adminData['projects_not_started_count'] = (clone $projectsQuery)->where('status', 'ToDo')->count();
+        $adminData['projects_in_progress_count'] = (clone $projectsQuery)->where('status', 'InProgress')->count();
 
         // Hours & Performance (Year-wise)
         $logsQuery = TaskLog::where('userid', $user->id)->whereYear('created_at', $year);

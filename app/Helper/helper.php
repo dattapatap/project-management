@@ -3,7 +3,6 @@
 
 // Sales Executive
 
-use App\Models\ClientDomains;
 use App\Models\Clients;
 use App\Models\DepartmentProjects;
 use App\Models\Task;
@@ -14,6 +13,15 @@ function getTotalSales($user, $role){
 
     if($role == 'Admin')
        $sales =  DB::table('clients')->where('status', 'Matured')->count();
+    elseif($role == 'Branch-Manager') {
+        $branchScope = app(\App\Services\BranchScopeService::class);
+        $salesUserIds = $branchScope->getBranchSalesUserIds($user);
+        $sales = DB::table('clients')->where('status', 'Matured')
+            ->where(function ($q) use ($salesUserIds) {
+                $q->whereIn('ref_user', $salesUserIds)
+                    ->orWhereIn('tele_ref_user', $salesUserIds);
+            })->count();
+    }
     elseif($role == 'Sales-Executive')
         $sales =  DB::table('clients')->where('ref_user', $user->id)->where('status', 'Matured')->count();
     elseif($role == 'Team-Leader')
@@ -39,11 +47,9 @@ function getTbrosOfToday($user){
 }
 
 function expiredDomains(){
-    $expired = ClientDomains::with('clients')
-            ->where('expiry_dt', '<=', Carbon::today() )
-            ->where('renewed', false)->count();
-
-    return $expired;
+    return \App\Models\CsdRenewal::whereIn('status', ['due', 'upcoming'])
+        ->whereDate('due_date', '<=', Carbon::today())
+        ->count();
 }
 
 
@@ -143,6 +149,72 @@ function tasks($category, $user, $year = null)
 function isAdminOrTeamLeader($user) {
     if (!$user) return false;
     return $user->hasRole(['Admin', 'Team-Leader']);
+}
+
+/**
+ * Map URL segment (slug or legacy value) to internal client list category.
+ */
+function normalize_client_category(?string $segment): string
+{
+    if ($segment === null || $segment === '') {
+        return 'Fresh';
+    }
+
+    $slug = strtolower(rawurldecode($segment));
+    $slug = preg_replace('/[\s_]+/', '-', $slug);
+
+    return match ($slug) {
+        'fresh' => 'Fresh',
+        'matured' => 'Matured',
+        'not-interested', 'notinterested' => 'Not Interested',
+        'followup', 'folloup', 'follow-up' => 'followup',
+        default => $segment,
+    };
+}
+
+/**
+ * Canonical URL slug for a client list category.
+ */
+function client_category_slug(string $category): string
+{
+    return match (normalize_client_category($category)) {
+        'Fresh' => 'fresh',
+        'Matured' => 'matured',
+        'Not Interested' => 'not-interested',
+        'followup' => 'followup',
+        default => \Illuminate\Support\Str::slug($category),
+    };
+}
+
+function client_list_url(string $category = 'Fresh'): string
+{
+    return route('clients.category', client_category_slug($category));
+}
+
+function is_client_list_route(): bool
+{
+    if (!request()->is('client/*')) {
+        return false;
+    }
+
+    $segment = strtolower((string) request()->segment(2));
+    $reserved = ['history', 'docs', 'payment', 'ajax-create', 'createprojecct'];
+
+    return $segment !== '' && !in_array($segment, $reserved, true);
+}
+
+function current_client_category_slug(): ?string
+{
+    if (!is_client_list_route()) {
+        return null;
+    }
+
+    return client_category_slug(normalize_client_category(request()->segment(2)));
+}
+
+function client_category_active(string $slug): bool
+{
+    return current_client_category_slug() === $slug;
 }
 
 ?>

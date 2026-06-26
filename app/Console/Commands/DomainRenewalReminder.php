@@ -17,6 +17,7 @@ class DomainRenewalReminder extends Command
     {
         $checkDays = [15, 7, 3, 1, 0];
 
+
         foreach ($checkDays as $days) {
             $targetDate = Carbon::today()->addDays($days)->toDateString();
 

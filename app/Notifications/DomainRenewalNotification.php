@@ -35,7 +35,7 @@ class DomainRenewalNotification extends Notification implements ShouldBroadcastN
             'header' => "Domain Renewal Alert",
             'category' => "Domain",
             'data' => $message,
-            'link' => env('APP_URL') . "/domains",
+            'link' => url('/csd/renewals'),
         ];
     }
 
@@ -50,7 +50,7 @@ class DomainRenewalNotification extends Notification implements ShouldBroadcastN
             'header' => "Domain Renewal Alert",
             'category' => "Domain",
             'data' => $message,
-            'link' => env('APP_URL') . "/domains",
+            'link' => url('/csd/renewals'),
         ];
         return new BroadcastMessage(["notifications" => $notification]);
     }

@@ -9,18 +9,33 @@
             <p class="text-muted font-size-15 font-weight-medium">{{ Auth::id() == $employee->id ? 'Track your professional growth and performance metrics.' : 'Deep-dive intelligence for ' . $employee->name . '.' }}</p>
         </div>
         <div class="col-lg-5 text-center">
-            <form action="{{ url()->current() }}" method="GET" id="filterForm" class="d-flex justify-content-center">
-                <select name="year" id="yearSelect" class="year-select mr-2">
-                    @for($y = date('Y'); $y >= date('Y')-5; $y--)
-                    <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>FY {{ $y }}</option>
-                    @endfor
-                </select>
-                <select name="month" id="monthSelect" class="year-select">
-                    @foreach($months as $m)
-                    <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ $m }}</option>
-                    @endforeach
-                </select>
+            <form action="{{ url()->current() }}" method="GET" id="filterForm" class="d-flex flex-wrap justify-content-center align-items-center gap-2">
+                <input type="hidden" name="preset" id="presetInput" value="{{ $range['preset'] }}">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ $range['preset'] === 'daily' ? 'active' : '' }}" data-preset="daily">Today</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ $range['preset'] === 'weekly' ? 'active' : '' }}" data-preset="weekly">Week</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ in_array($range['preset'], ['monthly', 'yearly']) ? 'active' : '' }}" data-preset="monthly">Month</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ $range['preset'] === 'custom' ? 'active' : '' }}" data-preset="custom">Custom</button>
+                </div>
+                <div id="yearMonthFilters" class="d-flex {{ $range['preset'] === 'custom' ? 'd-none' : '' }}">
+                    <select name="year" id="yearSelect" class="year-select mr-2">
+                        @for($y = date('Y'); $y >= date('Y')-5; $y--)
+                        <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>FY {{ $y }}</option>
+                        @endfor
+                    </select>
+                    <select name="month" id="monthSelect" class="year-select">
+                        @foreach($months as $m)
+                        <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ $m }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div id="customRangeFields" class="d-flex align-items-center {{ $range['preset'] === 'custom' ? '' : 'd-none' }}">
+                    <input type="date" name="date_from" id="dateFromInput" class="form-control form-control-sm mr-1" value="{{ request('date_from', $range['from']->toDateString()) }}">
+                    <input type="date" name="date_to" id="dateToInput" class="form-control form-control-sm mr-1" value="{{ request('date_to', $range['to']->toDateString()) }}">
+                    <button type="submit" class="btn btn-primary btn-sm" id="applyCustomRange">Apply</button>
+                </div>
             </form>
+            <small class="text-muted d-block mt-2">{{ $range['label'] }}</small>
         </div>
         <div class="col-lg-3 text-right">
             @if(Auth::id() != $employee->id)
@@ -105,6 +120,11 @@
                                 <span class="font-weight-bold text-dark">Logged in {{ $employee->last_login_at ? $employee->last_login_at->diffForHumans() : 'Never' }}</span>
                             </div>
                         </div>
+                        <div class="mt-4 p-3 bg-white rounded-lg border border-light text-center">
+                            <small class="text-muted d-block text-uppercase font-weight-bold mb-1" style="font-size: 9px; letter-spacing: 1px;">Performance Score</small>
+                            <h2 class="font-weight-bold mb-0 {{ $performanceScore >= 70 ? 'text-success' : ($performanceScore >= 40 ? 'text-warning' : 'text-danger') }}">{{ $performanceScore }}<small class="text-muted">/100</small></h2>
+                            <small class="text-muted text-uppercase">{{ strtoupper($deptType) }} · {{ $selectedMonth == 'All' ? $selectedYear : $selectedMonth . ' ' . $selectedYear }}</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -137,6 +157,28 @@
                         <div class="mt-2 small font-weight-bold text-success-50"><i class="mdi mdi-shield-check"></i> Sales conversions</div>
                     </div>
                 </div>
+                @elseif($isCsd)
+                <div class="col-md-4 mb-4">
+                    <div class="modern-card p-4 h-100 mesh-gradient-primary">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Active Clients</h6>
+                        <h2 class="font-weight-bold text-primary mb-0">{{ $stats['active_clients'] }}</h2>
+                        <div class="mt-2 small text-muted"><i class="mdi mdi-account-heart"></i> Under your care</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="modern-card p-4 h-100 bg-white shadow-sm border border-light">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Communications</h6>
+                        <h2 class="font-weight-bold text-info mb-0">{{ $stats['communications'] }}</h2>
+                        <div class="mt-2 small text-muted"><i class="mdi mdi-message-text"></i> Client touchpoints</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="modern-card p-4 h-100 mesh-gradient-success">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Opportunities Won</h6>
+                        <h2 class="font-weight-bold text-success mb-0">{{ $stats['opportunities_won'] }}</h2>
+                        <div class="mt-2 small font-weight-bold text-success-50"><i class="mdi mdi-trending-up"></i> Upsell / cross-sell</div>
+                    </div>
+                </div>
                 @else
                 <div class="col-md-4 mb-4">
                     <div class="modern-card p-4 h-100 mesh-gradient-primary">
@@ -162,8 +204,8 @@
                 @endif
             </div>
 
-            @if(!$isSales)
-            <!-- Summary Row 2 -->
+            @if($isOd)
+            <!-- Summary Row 2 (OD) -->
             <div class="row">
                 <div class="col-md-3 mb-4">
                     <div class="modern-card p-4 h-100 bg-white border border-light text-center">
@@ -190,6 +232,33 @@
                     </div>
                 </div>
             </div>
+            @elseif($isCsd)
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Tickets Resolved</h6>
+                        <h4 class="font-weight-bold text-success mb-0">{{ $stats['tickets_resolved'] }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Collections Paid</h6>
+                        <h4 class="font-weight-bold text-primary mb-0">{{ $stats['collections_paid'] }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">CR Completed</h6>
+                        <h4 class="font-weight-bold text-dark mb-0">{{ $stats['change_requests_completed'] }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
+                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">At-Risk Clients</h6>
+                        <h4 class="font-weight-bold text-danger mb-0">{{ $stats['at_risk_clients'] }}</h4>
+                    </div>
+                </div>
+            </div>
             @endif
 
             <!-- 📈 Multi-Track Trend (Tasks vs Clients) -->
@@ -200,6 +269,9 @@
                         @if($isSales)
                         <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Assigned Leads</small></div>
                         <div class="d-flex align-items-center"><span class="badge-dot bg-success mr-1"></span> <small class="font-weight-bold">Matured Clients</small></div>
+                        @elseif($isCsd)
+                        <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Communications</small></div>
+                        <div class="d-flex align-items-center"><span class="badge-dot bg-success mr-1"></span> <small class="font-weight-bold">Opportunities Won</small></div>
                         @else
                         <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Tasks</small></div>
                         <div class="d-flex align-items-center"><span class="badge-dot bg-warning mr-1"></span> <small class="font-weight-bold">Input Hours</small></div>
@@ -211,7 +283,115 @@
         </div>
     </div>
 
-    @if(!$isSales)
+    @if($isOd)
+    <!-- 📋 Operations Work Detail -->
+    <div class="row mt-4">
+        <div class="col-lg-5 mb-4">
+            <div class="modern-card p-4 h-100">
+                <h5 class="font-weight-bold text-dark mb-3">Period Summary</h5>
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <small class="text-muted d-block text-uppercase">Tasks Completed</small>
+                            <h3 class="font-weight-bold text-success mb-0">{{ $odSummary['completed_tasks'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <small class="text-muted d-block text-uppercase">Total Hours</small>
+                            <h3 class="font-weight-bold text-primary mb-0">{{ $odSummary['total_hours'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded">
+                            <small class="text-muted d-block text-uppercase">Days Worked</small>
+                            <h3 class="font-weight-bold text-dark mb-0">{{ $odSummary['days_worked'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded">
+                            <small class="text-muted d-block text-uppercase">Avg Hrs / Day</small>
+                            <h3 class="font-weight-bold text-warning mb-0">{{ $odSummary['avg_hours_per_day'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7 mb-4">
+            <div class="modern-card p-4 h-100">
+                <h5 class="font-weight-bold text-dark mb-3">Hours per Task</h5>
+                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table class="table table-sm modern-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Project</th>
+                                <th>Status</th>
+                                <th class="text-right">Hours</th>
+                                <th class="text-right">Logs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($odTaskBreakdown as $taskRow)
+                            <tr>
+                                <td class="font-weight-bold">{{ Str::limit($taskRow->task_title, 35) }}</td>
+                                <td><small class="text-muted">{{ Str::limit($taskRow->project_name, 25) }}</small></td>
+                                <td><span class="badge badge-soft-secondary">{{ $taskRow->status }}</span></td>
+                                <td class="text-right font-weight-bold text-primary">{{ $taskRow->total_hours }} hrs</td>
+                                <td class="text-right">{{ $taskRow->log_count }}</td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="text-center text-muted py-4">No task logs in this period.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="modern-card p-4">
+                <h5 class="font-weight-bold text-dark mb-3">Daily Breakdown</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm modern-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th class="text-center">Completed Tasks</th>
+                                <th class="text-center">Log Entries</th>
+                                <th class="text-right">Hours</th>
+                                <th>Tasks Worked (hours)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($odDailyBreakdown as $day)
+                            <tr>
+                                <td class="font-weight-bold">{{ $day->label }}</td>
+                                <td class="text-center">{{ $day->completed_tasks }}</td>
+                                <td class="text-center">{{ $day->log_entries }}</td>
+                                <td class="text-right font-weight-bold text-primary">{{ $day->total_hours }} hrs</td>
+                                <td>
+                                    @if($day->tasks->isEmpty())
+                                    <span class="text-muted">—</span>
+                                    @else
+                                    @foreach($day->tasks as $t)
+                                    <span class="badge badge-soft-info mr-1 mb-1">{{ Str::limit($t->task_title, 20) }} · {{ $t->hours }}h</span>
+                                    @endforeach
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="text-center text-muted py-4">No daily activity in this period.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ☀️ Morning to Evening Activity (Daily Work Rhythm) -->
     <div class="row mt-4">
         <div class="col-12">
@@ -219,20 +399,20 @@
                 <div class="d-flex align-items-center justify-content-between mb-5">
                     <div>
                         <h4 class="font-weight-bold text-dark mb-1">Daily Work Rhythm</h4>
-                        <p class="text-muted small mb-0">{{ $selectedMonth == 'All' ? 'Last 30 Days Activity' : 'Activity for ' . $selectedMonth . ' ' . $selectedYear }}</p>
+                        <p class="text-muted small mb-0">{{ $range['label'] }}</p>
                     </div>
                     <div class="text-right">
-                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_task_delivery_time'] }} Hrs / Task</span>
+                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $odSummary['avg_hours_per_day'] ?? 0 }} Hrs / Day</span>
                     </div>
                 </div>
 
                 <div class="daily-rhythm-timeline">
-                    @foreach($dailyLogs as $date => $dayLogs)
+                    @forelse($dailyLogs as $date => $dayLogs)
                     <div class="day-group mb-5">
                         <div class="d-flex align-items-center mb-4">
                             <h5 class="font-weight-bold text-primary mb-0 mr-3">{{ $date }}</h5>
                             <hr class="flex-grow-1 border-light">
-                            <span class="ml-3 badge badge-soft-secondary">{{ round($dayLogs->sum('time_spend')/60, 1) }} Working Hours</span>
+                            <span class="ml-3 badge badge-soft-secondary">{{ round($dayLogs->sum('time_spend'), 2) }} Working Hours</span>
                         </div>
 
                         <div class="timeline-items ml-4 border-left border-light pl-4">
@@ -246,7 +426,7 @@
                                         <p class="text-muted small mb-0">{{ $log->log_description }}</p>
                                     </div>
                                     <div class="text-right">
-                                        <span class="badge badge-soft-info rounded-pill px-3">{{ $log->time_spend }}m Logged</span>
+                                        <span class="badge badge-soft-info rounded-pill px-3">{{ $log->time_spend }} hrs</span>
                                         <div class="small text-muted mt-1">{{ $log->task->project->clients->name ?? ($log->task->project->project_name ?? 'Internal') }}</div>
                                     </div>
                                 </div>
@@ -254,7 +434,9 @@
                             @endforeach
                         </div>
                     </div>
-                    @endforeach
+                    @empty
+                    <p class="text-muted text-center py-4">No log entries in this period.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -308,6 +490,37 @@
                         </tbody>
                     </table>
                 </div>
+                @elseif($isCsd)
+                <h5 class="font-weight-bold text-dark mb-5">Recent Client Communications</h5>
+                <div class="table-responsive px-1" style="max-height: 480px; overflow-y: auto;">
+                    <table class="table modern-table mb-0" style="border: none !important;">
+                        <thead>
+                            <tr style="background: transparent !important; border: none !important; position: sticky; top: 0; background-color: #ffffff; z-index: 10;">
+                                <th style="text-align: left; padding-top: 0;">Timestamp</th>
+                                <th style="text-align: left; padding-top: 0;">Client</th>
+                                <th style="text-align: left; padding-top: 0;">Channel / Subject</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentCsdComms as $comm)
+                            <tr>
+                                <td class="text-left"><span class="badge badge-soft-secondary">{{ $comm->created_at->format('d M, H:i') }}</span></td>
+                                <td class="text-left"><span class="font-weight-bold text-dark">{{ $comm->client->name ?? 'N/A' }}</span></td>
+                                <td class="text-left">
+                                    <span class="badge badge-soft-info mb-1">{{ ucfirst($comm->type ?? 'note') }}</span>
+                                    <p class="text-muted small mb-0">{{ Str::limit($comm->subject ?? $comm->remarks, 75) }}</p>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="3" class="text-center py-5">
+                                    <p class="text-muted mb-0">No communications logged for the selected period.</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
                 @else
                 <h5 class="font-weight-bold text-dark mb-5">Recent Activity Logs</h5>
                 <div class="table-responsive">
@@ -327,7 +540,7 @@
                                     <span class="font-weight-bold text-dark d-block">{{ $log->task->title ?? 'Activity' }}</span>
                                     <small class="text-muted">{{ Str::limit($log->log_description, 45) }}</small>
                                 </td>
-                                <td><span class="creator-identity">{{ $log->time_spend }}m</span></td>
+                                <td><span class="creator-identity">{{ $log->time_spend }} hrs</span></td>
                             </tr>
                             @empty
                             <tr>
@@ -366,6 +579,21 @@
                     <p class="text-muted text-center py-4">No recent matured clients found.</p>
                     @endforelse
                 </div>
+                @elseif($isCsd)
+                <h6 class="font-weight-bold text-dark mb-4"><i class="mdi mdi-trending-up text-success mr-2"></i> Won Opportunities</h6>
+                <div class="recent-list">
+                    @forelse($recentWonOpps as $opp)
+                    <div class="d-flex align-items-center mb-3 p-3 bg-light rounded-lg border border-light">
+                        <div class="flex-grow-1">
+                            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">{{ Str::limit($opp->title, 30) }}</span>
+                            <small class="text-muted">{{ $opp->clients?->name ?? 'Client' }} · {{ $opp->updated_at->format('d M, Y') }}</small>
+                        </div>
+                        <span class="badge badge-success">Won</span>
+                    </div>
+                    @empty
+                    <p class="text-muted text-center py-4">No won opportunities yet.</p>
+                    @endforelse
+                </div>
                 @else
                 <h6 class="font-weight-bold text-dark mb-4"><i class="mdi mdi-clipboard-text-clock text-primary mr-2"></i> Recent Task Assignments</h6>
                 <div class="recent-list">
@@ -388,7 +616,8 @@
         </div>
     </div>
 
-    <!-- 🛡️ System Access & Activity Logs -->
+    @if(Auth::id() != $employee->id)
+    <!-- 🛡️ System Access & Activity Logs (manager view only) -->
     <div class="row mt-4">
         <div class="col-12">
             <div class="modern-card p-5 bg-white shadow-sm border-0">
@@ -464,6 +693,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 @endsection
 
@@ -471,6 +701,18 @@
 <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
 <script>
     $(document).ready(function() {
+        $('.range-preset').on('click', function() {
+            $('.range-preset').removeClass('active');
+            $(this).addClass('active');
+            const preset = $(this).data('preset');
+            $('#presetInput').val(preset);
+            $('#customRangeFields').toggleClass('d-none', preset !== 'custom');
+            $('#yearMonthFilters').toggleClass('d-none', preset === 'custom');
+            if (preset !== 'custom') {
+                $('#filterForm').submit();
+            }
+        });
+
         // 🔄 Filter Change Handlers
         $('#yearSelect').on('change', function() {
             $('#monthSelect').val('All');
@@ -479,6 +721,18 @@
 
         $('#monthSelect').on('change', function() {
             $('#filterForm').submit();
+        });
+
+        $('#applyCustomRange').on('click', function(e) {
+            e.preventDefault();
+            $('#presetInput').val('custom');
+            $('#filterForm').submit();
+        });
+
+        $('#dateFromInput, #dateToInput').on('change', function() {
+            if ($('#presetInput').val() === 'custom') {
+                $('#filterForm').submit();
+            }
         });
 
         // Dual-Track Trend Chart for Individual
@@ -492,6 +746,15 @@
                 {
                     name: 'Matured Clients',
                     data: [@foreach($monthlyTrend as $m) {{ $m->matured }}, @endforeach]
+                }
+                @elseif($isCsd)
+                {
+                    name: 'Communications',
+                    data: [@foreach($monthlyTrend as $m) {{ $m->communications }}, @endforeach]
+                },
+                {
+                    name: 'Opportunities Won',
+                    data: [@foreach($monthlyTrend as $m) {{ $m->opportunities_won }}, @endforeach]
                 }
                 @else
                 {
@@ -515,7 +778,7 @@
                 curve: 'smooth',
                 width: 4
             },
-            colors: ['#6366f1', @if($isSales)
+            colors: ['#6366f1', @if($isSales || $isCsd)
                 '#34c38f'
                 @else '#f1b44c'
                 @endif

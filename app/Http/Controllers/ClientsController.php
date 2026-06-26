@@ -35,7 +35,7 @@ class ClientsController extends Controller
 
     public function index(Request $request, ClientServices $clientService)
     {
-        $category = $request->category;
+        $category = normalize_client_category($request->category);
         $data = $clientService->clients($category, $this->user);
 
         if (!$request->ajax()) {
@@ -64,7 +64,7 @@ class ClientsController extends Controller
                     if ($client->status == 'Matured') {
                         $btns .= '<a class="dropdown-item createNewProject" client="' . $client->id . '" clientnm="' . $client->name . '" href="javascript:void(0)">Add Projects</a>'
                             .  '<a class="dropdown-item" href="' . route('client.detail', [$clientEncodedId, 'payment']) . '" >Add Payment</a>'
-                            .  '<a class="dropdown-item createNewDomain" client="' . $client->id . '" clientnm="' . $client->name . '" href="javascript:void(0)">Add Domain</a>'
+                            .  '<a class="dropdown-item" href="' . route('csd.renewals.index', ['client' => $client->id]) . '">Add Renewal</a>'
                             .  '<a class="dropdown-item" href="' . route('client.detail', [$clientEncodedId, 'docs']) . '">Add Documents</a>';
                     }
                 }
@@ -178,7 +178,7 @@ class ClientsController extends Controller
             ]);
 
             DB::commit();
-            return redirect()->route('clients.category', 'Fresh')->with('success', 'Client Added successfully');
+            return redirect()->route('clients.category', client_category_slug('Fresh'))->with('success', 'Client Added successfully');
         } catch (Exception $ex) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Something went wrong: ' . $ex->getMessage())->withInput();
@@ -495,7 +495,7 @@ class ClientsController extends Controller
                 ->with('bulk_errors', $errorsList);
         }
 
-        return redirect()->route('clients.category', 'Fresh')->with('success', $message);
+        return redirect()->route('clients.category', client_category_slug('Fresh'))->with('success', $message);
     }
 
     public function show(Clients $client)

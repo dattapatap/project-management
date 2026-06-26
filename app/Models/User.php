@@ -80,4 +80,29 @@ class User extends Authenticatable
     {
         return $this->hasOne(TeamMembers::class, 'user', 'id');
     }
+
+    public function csdAssignments()
+    {
+        return $this->hasMany(CsdClientAssignment::class, 'assigned_to', 'id');
+    }
+
+    public function isGlobalAdmin(): bool
+    {
+        return $this->hasRole('Admin');
+    }
+
+    public function isBranchManager(): bool
+    {
+        return $this->hasRole('Branch-Manager');
+    }
+
+    public function hasBranchWideAccess(): bool
+    {
+        return $this->hasRole(['Admin', 'Branch-Manager']);
+    }
+
+    public function branchId(): ?int
+    {
+        return app(\App\Services\BranchScopeService::class)->getBranchId($this);
+    }
 }

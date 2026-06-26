@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\ClientDocsController;
-use App\Http\Controllers\ClientDomainsController;
 use App\Http\Controllers\ClientHistoryController;
 use App\Http\Controllers\ClientPaymentsController;
 use App\Http\Controllers\ClientsController;
@@ -17,8 +16,18 @@ use App\Http\Controllers\ProjectSubCategoryController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Csd\CsdAmcController;
+use App\Http\Controllers\Csd\CsdChangeRequestController;
+use App\Http\Controllers\Csd\CsdClientController;
+use App\Http\Controllers\Csd\CsdCollectionController;
+use App\Http\Controllers\Csd\CsdCommunicationController;
+use App\Http\Controllers\Csd\CsdOpportunityController;
+use App\Http\Controllers\Csd\CsdRenewalController;
+use App\Http\Controllers\Csd\CsdSupportController;
+use App\Http\Controllers\Csd\CsdTeamReportController;
 use App\Http\Controllers\Reports\AdvancedReportController;
 use App\Http\Controllers\Reports\EmployeeReportController;
+use App\Http\Controllers\Reports\OperationsReportController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -94,6 +103,13 @@ Route::group(['middleware' => ['auth', 'restrict.sales']], function () {
     Route::post('client/ajax-create', [ClientsController::class, 'ajaxStore'])->name('client.ajax-create');
     Route::get('clients/{id}/edit', [ClientsController::class, 'edit']);
     Route::get('clients/{id}/{urlname}', [ClientsController::class, 'showClient'])->name('client.detail');
+
+    Route::redirect('client/Fresh', 'client/fresh');
+    Route::redirect('client/Matured', 'client/matured');
+    Route::redirect('client/Folloup', 'client/followup');
+    Route::redirect('client/Followup', 'client/followup');
+    Route::redirect('client/Not Interested', 'client/not-interested');
+
     Route::get('client/{category}', [ClientsController::class, 'clientsbycategory'])->name('clients.category');
     Route::resource('clients', ClientsController::class);
 
@@ -161,6 +177,69 @@ Route::group(['middleware' => ['auth', 'restrict.wms']], function () {
     Route::get('/payments/getpayments-by-package', [ClientPaymentsController::class, 'getPaymentsByPackage']);
 });
 
+// 🔒 CSD / Customer Service Department Protected Routes
+Route::group(['prefix' => 'csd', 'middleware' => ['auth', 'restrict.csd'], 'as' => 'csd.'], function () {
+    Route::get('/clients', [CsdClientController::class, 'index'])->name('clients.index');
+    Route::get('/clients/data', [CsdClientController::class, 'data'])->name('clients.data');
+    Route::get('/clients/active', [CsdClientController::class, 'activeClients'])->name('clients.active');
+    Route::post('/clients', [CsdClientController::class, 'store'])->name('clients.store');
+    Route::put('/clients/{assignment}', [CsdClientController::class, 'update'])->name('clients.update');
+    Route::get('/clients/{assignment}', [CsdClientController::class, 'show'])->name('clients.show');
+    Route::post('/contacts', [CsdClientController::class, 'storeContact'])->name('contacts.store');
+
+    Route::get('/collections', [CsdCollectionController::class, 'index'])->name('collections.index');
+    Route::get('/collections/data', [CsdCollectionController::class, 'data'])->name('collections.data');
+    Route::post('/collections', [CsdCollectionController::class, 'store'])->name('collections.store');
+    Route::put('/collections/{collection}', [CsdCollectionController::class, 'update'])->name('collections.update');
+    Route::get('/collections/{collection}', [CsdCollectionController::class, 'show'])->name('collections.show');
+
+    Route::get('/change-requests', [CsdChangeRequestController::class, 'index'])->name('change-requests.index');
+    Route::get('/change-requests/data', [CsdChangeRequestController::class, 'data'])->name('change-requests.data');
+    Route::post('/change-requests', [CsdChangeRequestController::class, 'store'])->name('change-requests.store');
+    Route::put('/change-requests/{changeRequest}', [CsdChangeRequestController::class, 'update'])->name('change-requests.update');
+    Route::get('/change-requests/{changeRequest}', [CsdChangeRequestController::class, 'show'])->name('change-requests.show');
+    Route::post('/change-requests/{changeRequest}/transfer-to-od', [CsdChangeRequestController::class, 'transferToOd'])->name('change-requests.transfer');
+
+    Route::get('/support', [CsdSupportController::class, 'index'])->name('support.index');
+    Route::get('/support/data', [CsdSupportController::class, 'data'])->name('support.data');
+    Route::post('/support', [CsdSupportController::class, 'store'])->name('support.store');
+    Route::put('/support/{ticket}', [CsdSupportController::class, 'update'])->name('support.update');
+    Route::get('/support/{ticket}', [CsdSupportController::class, 'show'])->name('support.show');
+
+    Route::get('/amc', [CsdAmcController::class, 'index'])->name('amc.index');
+    Route::get('/amc/create', [CsdAmcController::class, 'create'])->name('amc.create');
+    Route::get('/amc/data', [CsdAmcController::class, 'data'])->name('amc.data');
+    Route::post('/amc', [CsdAmcController::class, 'store'])->name('amc.store');
+    Route::get('/amc/{amc}/edit', [CsdAmcController::class, 'edit'])->name('amc.edit');
+    Route::get('/amc/{amc}/document', [CsdAmcController::class, 'document'])->name('amc.document');
+    Route::put('/amc/{amc}', [CsdAmcController::class, 'update'])->name('amc.update');
+    Route::get('/amc/{amc}', [CsdAmcController::class, 'show'])->name('amc.show');
+
+    Route::get('/communications', [CsdCommunicationController::class, 'index'])->name('communications.index');
+    Route::get('/communications/data', [CsdCommunicationController::class, 'data'])->name('communications.data');
+    Route::post('/communications', [CsdCommunicationController::class, 'store'])->name('communications.store');
+    Route::get('/communications/{communication}', [CsdCommunicationController::class, 'show'])->name('communications.show');
+    Route::put('/communications/{communication}', [CsdCommunicationController::class, 'update'])->name('communications.update');
+
+    Route::get('/renewals', [CsdRenewalController::class, 'index'])->name('renewals.index');
+    Route::get('/renewals/data', [CsdRenewalController::class, 'data'])->name('renewals.data');
+    Route::get('/renewals/amc-options', [CsdRenewalController::class, 'amcOptions'])->name('renewals.amc-options');
+    Route::post('/renewals/sync', [CsdRenewalController::class, 'sync'])->name('renewals.sync');
+    Route::post('/renewals', [CsdRenewalController::class, 'store'])->name('renewals.store');
+    Route::post('/renewals/{renewal}/mark-renewed', [CsdRenewalController::class, 'markRenewed'])->name('renewals.mark-renewed');
+    Route::post('/renewals/{renewal}/mark-lapsed', [CsdRenewalController::class, 'markLapsed'])->name('renewals.mark-lapsed');
+    Route::put('/renewals/{renewal}', [CsdRenewalController::class, 'update'])->name('renewals.update');
+    Route::get('/renewals/{renewal}', [CsdRenewalController::class, 'show'])->name('renewals.show');
+
+    Route::get('/opportunities', [CsdOpportunityController::class, 'index'])->name('opportunities.index');
+    Route::get('/opportunities/data', [CsdOpportunityController::class, 'data'])->name('opportunities.data');
+    Route::post('/opportunities', [CsdOpportunityController::class, 'store'])->name('opportunities.store');
+    Route::put('/opportunities/{opportunity}', [CsdOpportunityController::class, 'update'])->name('opportunities.update');
+    Route::get('/opportunities/{opportunity}', [CsdOpportunityController::class, 'show'])->name('opportunities.show');
+
+    Route::get('/reports/team', [CsdTeamReportController::class, 'index'])->name('reports.team');
+});
+
 // 🌐 Shared Authenticated Routes
 Route::group(['middleware' => ['auth']], function () {
     Route::get('/documents/download/{id}', [\App\Http\Controllers\DocumentController::class, 'download'])->name('documents.download');
@@ -169,11 +248,23 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/reports/employees', [EmployeeReportController::class, 'index'])->name('reports.employees');
     Route::get('/reports/employees/data', [EmployeeReportController::class, 'data'])->name('reports.employees.data');
     Route::get('/reports/employee/{id}', [EmployeeReportController::class, 'detail'])->name('reports.employee.detail');
+    Route::get('/reports/operations', [OperationsReportController::class, 'index'])->name('reports.operations');
+    Route::get('/reports/operations/data', [OperationsReportController::class, 'data'])->name('reports.operations.data');
     Route::get('/my-insights', [EmployeeReportController::class, 'myInsights'])->name('my-insights');
+
+    // Commercial engagements (upsell / cross-sell tracking)
+    Route::prefix('commercial')->name('commercial.')->group(function () {
+        Route::get('/engagements', [\App\Http\Controllers\Commercial\ClientEngagementController::class, 'index'])->name('engagements.index');
+        Route::get('/engagements/data', [\App\Http\Controllers\Commercial\ClientEngagementController::class, 'data'])->name('engagements.data');
+        Route::get('/engagements/client/{clientId}/timeline', [\App\Http\Controllers\Commercial\ClientEngagementController::class, 'clientTimeline'])->name('engagements.client-timeline');
+        Route::get('/engagements/{engagement}', [\App\Http\Controllers\Commercial\ClientEngagementController::class, 'show'])->name('engagements.show');
+        Route::post('/engagements/{engagement}/start-commercial', [\App\Http\Controllers\Commercial\ClientEngagementController::class, 'startCommercial'])->name('engagements.start-commercial');
+        Route::post('/engagements/{engagement}/close-commercial', [\App\Http\Controllers\Commercial\ClientEngagementController::class, 'closeCommercial'])->name('engagements.close-commercial');
+    });
 });
 
 
-Route::group(['middleware' => ['role:Admin']], function () {
+Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
 
     // Users
     Route::get('/users/status/{user_id}', [UserController::class, 'changestatus'])->name('users.changeStatus');
@@ -193,10 +284,7 @@ Route::group(['middleware' => ['role:Admin']], function () {
     Route::get('/teams/teammembers', [TeamsController::class, 'teammembers']);
     Route::resource('/teams', TeamsController::class);
 
-    // Clients Domains
-    Route::post('/clientdomain/store', [ClientDomainsController::class, 'store']);
-    Route::post('/clientdomain/renew', [ClientDomainsController::class, 'renew']);
-    Route::get('/clientdomain/edit', [ClientDomainsController::class, 'edit']);
-    Route::get('/domains', [ClientDomainsController::class, 'index']);
-    Route::get('/domains/getalldomains', [ClientDomainsController::class, 'getalldomains']);
+    // Legacy domains URL → CSD Renewals
+    Route::redirect('/domains', '/csd/renewals');
+    Route::redirect('/domains/getalldomains', '/csd/renewals');
 });

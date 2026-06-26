@@ -161,7 +161,7 @@ class ReportController extends Controller
                 $clients = $eloquent->filterStatus($category, 'STS')->paginate(50)->appends(request()->query());
             }
 
-            if ($user->hasRole('Admin')) {
+            if ($user->isGlobalAdmin()) {
                 $eloquent = Clients::whereHas('history', function ($query) use ($frms, $todt, $category) {
                     $query->where('category',  'STS');
                     $query->filterStatus($category, 'STS');
@@ -174,10 +174,32 @@ class ReportController extends Controller
                     }])
                     ->with('referral:id,name');
                 $clients = $eloquent->filterStatus($category, 'STS')->paginate(50)->appends(request()->query());
+            } elseif ($user->isBranchManager()) {
+                $allmem = app(\App\Services\BranchScopeService::class)->getBranchSalesUserIds($user);
+
+                $eloquent = Clients::whereHas('history', function ($query) use ($allmem, $frms, $todt, $category) {
+                    $query->whereIn('created', $allmem);
+                    $query->where('category', 'STS');
+                    $query->filterStatus($category, 'STS');
+                    $query->whereBetween('created_at', [$frms, $todt]);
+                })
+                    ->with(['history' => function ($query) use ($allmem, $frms, $todt, $category) {
+                        $query->whereIn('created', $allmem);
+                        $query->where('category', 'STS');
+                        $query->filterStatus($category, 'STS');
+                        $query->whereBetween('created_at', [$frms, $todt]);
+                    }])
+                    ->with('referral:id,name')
+                    ->where(function ($query) use ($allmem) {
+                        $query->whereIn('ref_user', $allmem)
+                            ->orWhereIn('tele_ref_user', $allmem);
+                    });
+
+                $clients = $eloquent->filterStatus($category, 'STS')->paginate(50)->appends(request()->query());
             }
         } else {
             $employeeId = $request->employee;
-            if ($user->hasRole('Team-Leader') || $user->hasRole('Admin')) {
+            if ($user->hasRole('Team-Leader') || $user->isGlobalAdmin() || $user->isBranchManager()) {
                 $eloquent = Clients::whereHas('history', function ($query) use ($employeeId,  $frms, $todt, $category) {
                     $query->where('created',  $employeeId);
                     $query->where('category',  'STS');
@@ -266,7 +288,7 @@ class ReportController extends Controller
                 $clients = $eloquent->filterStatus($category, 'DSR')->paginate(50)->appends(request()->query());
             }
 
-            if ($user->hasRole('Admin')) {
+            if ($user->isGlobalAdmin()) {
                 $eloquent = Clients::whereHas('history', function ($query) use ($frms, $todt, $category) {
                     $query->where('category',  'DSR');
                     $query->filterStatus($category, 'DSR');
@@ -280,10 +302,32 @@ class ReportController extends Controller
                     ->with('telereferral:id,name', 'referral:id,name');
 
                 $clients = $eloquent->filterStatus($category, 'DSR')->paginate(50)->appends(request()->query());
+            } elseif ($user->isBranchManager()) {
+                $allmem = app(\App\Services\BranchScopeService::class)->getBranchSalesUserIds($user);
+
+                $eloquent = Clients::whereHas('history', function ($query) use ($allmem, $frms, $todt, $category) {
+                    $query->whereIn('created', $allmem);
+                    $query->where('category', 'DSR');
+                    $query->filterStatus($category, 'DSR');
+                    $query->whereBetween('created_at', [$frms, $todt]);
+                })
+                    ->with(['history' => function ($query) use ($allmem, $frms, $todt, $category) {
+                        $query->whereIn('created', $allmem);
+                        $query->where('category', 'DSR');
+                        $query->filterStatus($category, 'DSR');
+                        $query->whereBetween('created_at', [$frms, $todt]);
+                    }])
+                    ->with('telereferral:id,name', 'referral:id,name')
+                    ->where(function ($query) use ($allmem) {
+                        $query->whereIn('ref_user', $allmem)
+                            ->orWhereIn('tele_ref_user', $allmem);
+                    });
+
+                $clients = $eloquent->filterStatus($category, 'DSR')->paginate(50)->appends(request()->query());
             }
         } else {
             $employeeId = $request->employee;
-            if ($user->hasRole('Team-Leader') || $user->hasRole('Admin')) {
+            if ($user->hasRole('Team-Leader') || $user->isGlobalAdmin() || $user->isBranchManager()) {
                 $eloquent = Clients::whereHas('history', function ($query) use ($employeeId,  $frms, $todt, $category) {
                     $query->where('created',  $employeeId);
                     $query->where('category',  'DSR');

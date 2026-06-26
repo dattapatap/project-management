@@ -1,108 +1,13 @@
 @extends('layouts.app')
 
-@section('styles')
-<style>
-    /* Premium KPI Cards */
-    .project-kpi-card {
-        border: none;
-        border-radius: 20px !important;
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
-    }
-
-    .project-kpi-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .project-kpi-icon-box {
-        width: 56px;
-        height: 56px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 15px;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(5px);
-    }
-
-    .gradient-danger {
-        background: linear-gradient(135deg, #f46a6a 0%, #ff8e8e 100%);
-    }
-
-    .gradient-warning {
-        background: linear-gradient(135deg, #f1b44c 0%, #ffcc80 100%);
-    }
-
-    .gradient-success {
-        background: linear-gradient(135deg, #34c38f 0%, #63e2b7 100%);
-    }
-
-    .kpi-label {
-        color: rgba(255, 255, 255, 0.85);
-        font-weight: 500;
-        font-size: 14px;
-    }
-
-    .kpi-value {
-        color: #ffffff;
-        font-weight: 700;
-        font-size: 28px;
-    }
-
-    /* Header Section */
-    .project-header-section {
-        background: #ffffff;
-        padding: 25px;
-        border-radius: 20px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-        margin-bottom: 30px;
-        border: 1px solid #f0f0f0;
-    }
-
-    .search-input-trendy {
-        border-radius: 12px !important;
-        border: 1.5px solid #f0f0f0 !important;
-        padding-left: 15px !important;
-        height: 45px !important;
-        transition: all 0.3s ease;
-    }
-
-    .search-input-trendy:focus {
-        border-color: #556ee6 !important;
-        box-shadow: 0 0 0 3px rgba(85, 110, 230, 0.1) !important;
-    }
-
-    /* Project Card Status Borders */
-    .status-border-todo {
-        border-left: 5px solid #f46a6a !important;
-    }
-
-    .status-border-inprogress {
-        border-left: 5px solid #50a5f1 !important;
-    }
-
-    .status-border-completed {
-        border-left: 5px solid #34c38f !important;
-    }
-
-    .status-border-default {
-        border-left: 5px solid #556ee6 !important;
-    }
-</style>
-@endsection
-
 @section('content')
 
-
-<div class="container-fluid">
-    <!-- start page title -->
+<div class="container-fluid erp-page erp-page--od">
 
 
     @if(isset($stats))
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-6 col-md-4 col-lg">
             <a href="{{ url('projects/search?search=Near+Deadline') }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-danger">
                     <div class="card-body">
@@ -119,34 +24,68 @@
                 </div>
             </a>
         </div>
-        <div class="col-md-4">
-            <a href="{{ url('projects/search?search=InProgress') }}" class="text-decoration-none">
+        <div class="col-6 col-md-4 col-lg">
+            <a href="{{ url('projects?status=ToDo') }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-warning">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="kpi-label mb-1">Pending Projects</p>
-                                <h4 class="kpi-value mb-0">{{ $stats['pending'] }}</h4>
+                                <p class="kpi-label mb-1">Not Started</p>
+                                <h4 class="kpi-value mb-0">{{ $stats['not_started'] }}</h4>
                             </div>
                             <div class="project-kpi-icon-box">
-                                <i class="mdi mdi-clock-fast text-white font-size-24"></i>
+                                <i class="mdi mdi-playlist-plus text-white font-size-24"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </a>
         </div>
-        <div class="col-md-4">
+        <div class="col-6 col-md-4 col-lg">
+            <a href="{{ url('projects?status=InProgress') }}" class="text-decoration-none">
+                <div class="card project-kpi-card gradient-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="kpi-label mb-1">In Progress</p>
+                                <h4 class="kpi-value mb-0">{{ $stats['in_progress'] }}</h4>
+                            </div>
+                            <div class="project-kpi-icon-box">
+                                <i class="mdi mdi-progress-clock text-white font-size-24"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-lg">
             <a href="{{ url('projects/search?search=Completed') }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-success">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="kpi-label mb-1">Completed Projects</p>
+                                <p class="kpi-label mb-1">Completed</p>
                                 <h4 class="kpi-value mb-0">{{ $stats['completed'] }}</h4>
                             </div>
                             <div class="project-kpi-icon-box">
                                 <i class="mdi mdi-check-decagram text-white font-size-24"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-lg">
+            <a href="{{ url('projects') }}" class="text-decoration-none">
+                <div class="card project-kpi-card gradient-primary">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="kpi-label mb-1">Total Projects</p>
+                                <h4 class="kpi-value mb-0">{{ $stats['total'] }}</h4>
+                            </div>
+                            <div class="project-kpi-icon-box">
+                                <i class="mdi mdi-folder-multiple-outline text-white font-size-24"></i>
                             </div>
                         </div>
                     </div>
@@ -159,8 +98,8 @@
     <div class="project-header-section">
         <div class="row align-items-center">
             <div class="col-md-4">
-                <h4 class="mb-0 font-weight-bold text-dark">Explore Projects</h4>
-                <p class="text-muted mb-0 small">Manage and track your active workflows</p>
+                <h4 class="erp-page-title mb-0">Explore Projects</h4>
+                <p class="text-muted mb-0 font-size-12">Manage and track active workflows</p>
             </div>
             <div class="col-md-4">
                 <form class="m-0" method="GET" action="{{ url('projects/search') }}">
@@ -168,7 +107,7 @@
                         <input type="text" id="filter" class="form-control search-input-trendy" name="search"
                             placeholder="Search by project or client..." @if(isset($search)) value="{{ $search }}" @endif>
                         <div class="input-group-append">
-                            <button type="submit" class="btn btn-primary px-4" style="border-radius: 0 12px 12px 0;">
+                            <button type="submit" class="btn btn-primary px-4 erp-btn-search">
                                 <i class="mdi mdi-magnify mr-1"></i> Search
                             </button>
                         </div>
@@ -177,10 +116,10 @@
             </div>
             <div class="col-md-4 text-right">
                 <div class="btn-group mr-3">
-                    <button type="button" id="btn-grid-view" class="btn btn-outline-primary btn-md active"><i class="mdi mdi-view-grid mr-1"></i> Grid</button>
-                    <button type="button" id="btn-list-view" class="btn btn-outline-primary btn-md"><i class="mdi mdi-view-list mr-1"></i> List</button>
+                    <button type="button" id="btn-grid-view" class="btn btn-outline-primary btn-sm active"><i class="mdi mdi-view-grid mr-1"></i> Grid</button>
+                    <button type="button" id="btn-list-view" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-view-list mr-1"></i> List</button>
                 </div>
-                <a href="{{ url('projects/create') }}" class="btn btn-primary btn-md px-4 shadow-sm" style="border-radius: 12px;">
+                <a href="{{ url('projects/create') }}" class="btn btn-primary btn-sm">
                     <i class="mdi mdi-plus-circle mr-1"></i> Create Project
                 </a>
             </div>
@@ -197,11 +136,15 @@
         if ($item->status != 'Completed' && $item->end_date) {
         $daysLeft = \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($item->end_date), false);
         if ($daysLeft <= 7) $isNearDeadline=true;
-            }
-            @endphp
+        }
+        $statusKey = strtolower(trim($item->status));
+        $statusBorderClass = 'erp-status-border-default';
+        if ($statusKey == 'todo') $statusBorderClass = 'erp-status-border-todo';
+        elseif ($statusKey == 'inprogress') $statusBorderClass = 'erp-status-border-inprogress';
+        elseif ($statusKey == 'completed') $statusBorderClass = 'erp-status-border-completed';
+        @endphp
             <div class="col-3">
-            <div class="card project-card @if($isNearDeadline) shadow-lg @endif"
-                style="border-left: 5px solid @if(strtolower(trim($item->status)) == 'todo') #f46a6a @elseif(strtolower(trim($item->status)) == 'inprogress') #50a5f1 @elseif(strtolower(trim($item->status)) == 'completed') #34c38f @else #556ee6 @endif !important; @if($isNearDeadline) background: #fff5f5; border: 1px solid #f46a6a !important; border-left: 5px solid #f46a6a !important; @endif">
+            <div class="card project-card erp-project-card {{ $statusBorderClass }} @if($isNearDeadline) erp-project-card--urgent shadow-lg @endif">
                 <div class="card-body">
                     <div class="department">
                         <div class="project-card-header">
@@ -219,8 +162,7 @@
                                 </span>
                             </a>
                             <div class="btn-group float-right">
-                                <a href="#" class="dropdown-toggle arrow-none" data-bs-toggle="dropdown"
-                                    aria-expanded="false" style="font-size: 21px;">
+                                <a href="#" class="dropdown-toggle arrow-none erp-dropdown-toggle" data-bs-toggle="dropdown"
                                     <i class="mdi mdi-dots-vertical"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-start">

@@ -1,0 +1,589 @@
+/* sales-dashboard.css — NSD sales dashboards (extracted from blade inline styles) */
+/* Compact overrides applied at end */
+/* from sales_ui.blade.php */
+/* Premium Design Elements */
+    .sales-dashboard-container {
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+
+    .sales-dashboard-container i.bx,
+    .sales-dashboard-container .bx {
+        font-family: 'boxicons' !important;
+    }
+
+    .sales-dashboard-container i.mdi,
+    .sales-dashboard-container .mdi {
+        font-family: 'Material Design Icons' !important;
+    }
+
+    .sales-card-glass {
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(230, 230, 240, 0.7);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .sales-card-glass:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 35px rgba(100, 110, 220, 0.08);
+        border-color: rgba(180, 190, 240, 0.6);
+    }
+
+    /* Elegant AI Core Highlight Card */
+    .ai-highlight-border {
+        position: relative;
+        border: 1px solid rgba(127, 0, 255, 0.15) !important;
+        background: linear-gradient(to bottom, #ffffff, #fdfbff) !important;
+    }
+
+    .ai-highlight-border::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, #7F00FF 0%, #E100FF 100%);
+    }
+
+    .gradient-purple-blue {
+        background: linear-gradient(135deg, #7F00FF 0%, #E100FF 100%);
+    }
+
+    .gradient-orange-red {
+        background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%);
+    }
+
+    .gradient-green-teal {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .gradient-sky-blue {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    }
+
+    .gradient-ai-magic {
+        background: linear-gradient(135deg, #7F00FF 0%, #00DFFE 100%);
+    }
+
+    .metric-badge-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3rem;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .metric-badge-icon i {
+        color: #ffffff !important;
+        font-size: 1.5rem !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .text-premium-muted {
+        color: #74788d;
+        font-weight: 500;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .text-premium-dark {
+        color: #343a40;
+        font-weight: 700;
+    }
+
+    .badge-premium {
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-premium-danger {
+        background-color: rgba(234, 84, 85, 0.12);
+        color: #ea5455;
+    }
+
+    .badge-premium-warning {
+        background-color: rgba(255, 159, 67, 0.12);
+        color: #ff9f43;
+    }
+
+    .badge-premium-success {
+        background-color: rgba(40, 199, 111, 0.12);
+        color: #28c76f;
+    }
+
+    .badge-premium-info {
+        background-color: rgba(0, 207, 232, 0.12);
+        color: #00cfe8;
+    }
+
+    .badge-premium-ai {
+        background-color: rgba(127, 0, 255, 0.1);
+        color: #7F00FF;
+        border: 1px dashed rgba(127, 0, 255, 0.25);
+    }
+
+    /* Color-coded 1px borders, matching text colors, and premium hover scaling/glow animations */
+    .sales-metric-card-green,
+    .sales-metric-card-purple,
+    .sales-metric-card-red,
+    .sales-metric-card-blue {
+        min-height: 132px;
+    }
+
+    .sales-metric-card-green {
+        background: #ffffff;
+        border: 1px solid rgba(17, 153, 142, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .sales-metric-card-green:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(17, 153, 142, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(17, 153, 142, 0.12) !important;
+    }
+
+    .sales-metric-card-green .card-header-text {
+        color: #11998e !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .sales-metric-card-green .card-value-text {
+        color: #11998e !important;
+        font-weight: 700;
+    }
+
+    .sales-metric-card-purple {
+        background: #ffffff;
+        border: 1px solid rgba(127, 0, 255, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .sales-metric-card-purple:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(127, 0, 255, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(127, 0, 255, 0.12) !important;
+    }
+
+    .sales-metric-card-purple .card-header-text {
+        color: #7F00FF !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .sales-metric-card-purple .card-value-text {
+        color: #7F00FF !important;
+        font-weight: 700;
+    }
+
+    .sales-metric-card-red {
+        background: #ffffff;
+        border: 1px solid rgba(255, 65, 108, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .sales-metric-card-red:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(255, 65, 108, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(255, 65, 108, 0.12) !important;
+    }
+
+    .sales-metric-card-red .card-header-text {
+        color: #FF416C !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .sales-metric-card-red .card-value-text {
+        color: #FF416C !important;
+        font-weight: 700;
+    }
+
+    .sales-metric-card-blue {
+        background: #ffffff;
+        border: 1px solid rgba(0, 223, 254, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .sales-metric-card-blue:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(0, 136, 204, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(0, 223, 254, 0.12) !important;
+    }
+
+    .sales-metric-card-blue .card-header-text {
+        color: #0088cc !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .sales-metric-card-blue .card-value-text {
+        color: #0088cc !important;
+        font-weight: 700;
+    }
+
+    /* Heatmap / Oversight CSS */
+    .oversight-row {
+        transition: all 0.2s ease;
+    }
+
+    .oversight-row:hover {
+        background-color: rgba(115, 103, 240, 0.04) !important;
+    }
+
+    /* Pulse effects */
+    .pulse-glow-red {
+        box-shadow: 0 0 0 0 rgba(234, 84, 85, 0.4);
+        animation: pulseRed 2s infinite;
+    }
+
+    @keyframes pulseRed {
+        0% {
+            transform: scale(0.98);
+            box-shadow: 0 0 0 0 rgba(234, 84, 85, 0.4);
+        }
+
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(234, 84, 85, 0);
+        }
+
+        100% {
+            transform: scale(0.98);
+            box-shadow: 0 0 0 0 rgba(234, 84, 85, 0);
+        }
+    }
+
+    .pulse-glow-ai {
+        animation: pulseAI 2s infinite;
+    }
+
+    @keyframes pulseAI {
+        0% {
+            box-shadow: 0 0 0 0 rgba(127, 0, 255, 0.3);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(127, 0, 255, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(127, 0, 255, 0);
+        }
+    }
+
+    /* Custom Scrollbar */
+    .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+        background: rgba(115, 103, 240, 0.15);
+        border-radius: 10px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: rgba(115, 103, 240, 0.3);
+    }
+
+    /* AI Lead Pipeline Item Styling */
+    .ai-pipeline-item {
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ai-pipeline-item:hover {
+        border-color: rgba(127, 0, 255, 0.3);
+        box-shadow: 0 10px 25px rgba(127, 0, 255, 0.05);
+    }
+
+    .ai-gauge-badge {
+        font-weight: 700;
+        font-size: 13px;
+        padding: 5px 12px;
+        border-radius: 30px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .sales-metric-card-link {
+        display: block;
+        text-decoration: none !important;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+
+    .sales-metric-card-link:hover {
+        text-decoration: none !important;
+    }
+
+    .hover-primary-color:hover {
+        color: #7F00FF !important;
+    }
+
+/* from tl_sales_ui.blade.php */
+/* Premium Visual Design Elements */
+    .sales-tl-container {
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+
+    @keyframes card-entrance {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-entrance {
+        animation: card-entrance 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    }
+
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+
+    .tl-card-glass {
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(230, 230, 240, 0.7);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .tl-card-glass:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(100, 110, 220, 0.08);
+        border-color: rgba(180, 190, 240, 0.6);
+    }
+
+    .tl-metric-card-green, .tl-metric-card-purple, .tl-metric-card-red, .tl-metric-card-blue {
+        min-height: 132px;
+        cursor: pointer;
+    }
+
+    .tl-metric-card-green {
+        background: #ffffff;
+        border: 1px solid rgba(17, 153, 142, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tl-metric-card-green:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(17, 153, 142, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(17, 153, 142, 0.12) !important;
+    }
+    .tl-metric-card-green .card-header-text {
+        color: #11998e !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .tl-metric-card-green .card-value-text {
+        color: #11998e !important;
+        font-weight: 700;
+    }
+
+    .tl-metric-card-purple {
+        background: #ffffff;
+        border: 1px solid rgba(127, 0, 255, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tl-metric-card-purple:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(127, 0, 255, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(127, 0, 255, 0.12) !important;
+    }
+    .tl-metric-card-purple .card-header-text {
+        color: #7F00FF !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .tl-metric-card-purple .card-value-text {
+        color: #7F00FF !important;
+        font-weight: 700;
+    }
+
+    .tl-metric-card-red {
+        background: #ffffff;
+        border: 1px solid rgba(255, 65, 108, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tl-metric-card-red:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(255, 65, 108, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(255, 65, 108, 0.12) !important;
+    }
+    .tl-metric-card-red .card-header-text {
+        color: #FF416C !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .tl-metric-card-red .card-value-text {
+        color: #FF416C !important;
+        font-weight: 700;
+    }
+
+    .tl-metric-card-blue {
+        background: #ffffff;
+        border: 1px solid rgba(0, 223, 254, 0.2) !important;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tl-metric-card-blue:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba(0, 223, 254, 0.6) !important;
+        box-shadow: 0 15px 30px rgba(0, 223, 254, 0.12) !important;
+    }
+    .tl-metric-card-blue .card-header-text {
+        color: #00B4DB !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .tl-metric-card-blue .card-value-text {
+        color: #00B4DB !important;
+        font-weight: 700;
+    }
+
+    .tl-metric-badge-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    .tl-metric-badge-icon i {
+        color: #ffffff !important;
+        font-size: 1.5rem !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Pulse Dots */
+    .active-dot-green {
+        width: 8px;
+        height: 8px;
+        background-color: #34c38f;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+        box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.4);
+        animation: pulse-active-green 2s infinite;
+    }
+
+    @keyframes pulse-active-green {
+        0% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(52, 195, 143, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0); }
+    }
+
+    /* Overload blinking crimson warning */
+    @keyframes pulse-overload {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.4); }
+        70% { transform: scale(1.03); box-shadow: 0 0 0 6px rgba(244, 106, 106, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0); }
+    }
+
+    .overload-warning {
+        animation: pulse-overload 1.5s infinite;
+        border: 1px solid rgba(244, 106, 106, 0.4) !important;
+    }
+
+    .flame-shake {
+        display: inline-block;
+        animation: shake-flame 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes shake-flame {
+        0% { transform: rotate(-5deg); }
+        100% { transform: rotate(5deg) scale(1.1); }
+    }
+
+    /* Name links */
+    .client-name-link {
+        color: #343a40;
+        font-weight: 700;
+        text-decoration: none;
+        transition: color 0.25s ease;
+    }
+    .client-name-link:hover {
+        color: #7F00FF;
+        text-decoration: none;
+    }
+/* Compact typography overrides */
+.sales-dashboard-container .header-title,
+.sales-dashboard-container h2,
+.sales-dashboard-container h3 {
+    font-size: var(--erp-font-lg) !important;
+    font-weight: 600 !important;
+}
+.sales-dashboard-container .metric-badge-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+}
+.sales-dashboard-container .sales-card-glass {
+    border-radius: var(--erp-radius-lg);
+}
+.sales-dashboard-container .btn {
+    font-size: var(--erp-font-sm);
+    padding: 0.3rem 0.65rem;
+}

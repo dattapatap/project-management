@@ -73,6 +73,7 @@ class Kernel extends HttpKernel
         'employee' => \App\Http\Middleware\Employee::class,
         'restrict.sales' => \App\Http\Middleware\RestrictToSales::class,
         'restrict.wms' => \App\Http\Middleware\RestrictToWms::class,
+        'restrict.csd' => \App\Http\Middleware\RestrictToCsd::class,
     ];
 }
 

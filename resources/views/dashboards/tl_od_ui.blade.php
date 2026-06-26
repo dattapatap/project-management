@@ -1,66 +1,14 @@
 {{-- Team Leader OD Dashboard UI --}}
-<style>
-    @keyframes pulse-urgency {
-        0% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.4);
-        }
-
-        70% {
-            transform: scale(1.05);
-            box-shadow: 0 0 0 6px rgba(244, 106, 106, 0);
-        }
-
-        100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(244, 106, 106, 0);
-        }
-    }
-
-    @keyframes pulse-active {
-        0% {
-            box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.4);
-        }
-
-        70% {
-            box-shadow: 0 0 0 6px rgba(52, 195, 143, 0);
-        }
-
-        100% {
-            box-shadow: 0 0 0 0 rgba(52, 195, 143, 0);
-        }
-    }
-
-    .urgent-pulse {
-        animation: pulse-urgency 1.5s infinite;
-    }
-
-    .active-now-dot {
-        width: 8px;
-        height: 8px;
-        background-color: #34c38f;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 5px;
-        animation: pulse-active 2s infinite;
-    }
-
-    .glass-kpi {
-        background: rgba(255, 255, 255, 0.7) !important;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    }
-</style>
-<div class="row mb-4 align-items-center">
+<div class="row erp-dash-hero-row">
     <div class="col-sm-6">
         <div class="d-flex align-items-center">
             <div class="avatar-sm mr-3">
-                <span class="avatar-title rounded-circle bg-primary bg-gradient-primary shadow-lg" style="background: linear-gradient(135deg, #50a5f1 0%, #3b5de7 100%);">
-                    <i class="mdi mdi-shield-crown font-size-22 text-white"></i>
+                <span class="avatar-title rounded-circle bg-primary bg-gradient-primary shadow-sm">
+                    <i class="mdi mdi-shield-crown text-white"></i>
                 </span>
             </div>
             <div>
-                <h4 class="header-title mb-0" style="font-weight: 800; color: #1a1a1a; letter-spacing: -0.8px; font-size: 1.4rem;">Active Operations <span class="text-primary">Command</span></h4>
+                <h4 class="header-title erp-dash-title mb-0">Active Operations <span class="text-primary">Command</span></h4>
                 <div class="d-flex align-items-center mt-1">
                     <span class="badge badge-soft-success font-size-10 mr-2"><i class="mdi mdi-circle font-size-8 mr-1"></i>LIVE STATUS</span>
                     <p class="text-muted mb-0 font-size-11 font-weight-medium">Team performance monitoring system</p>
@@ -70,11 +18,11 @@
     </div>
     <div class="col-sm-6">
         <div class="float-sm-right d-flex align-items-center mt-3 mt-sm-0">
-            <div class="mr-4 px-3 py-2 bg-white rounded shadow-sm border" style="border-left: 4px solid #50a5f1 !important;">
-                <p class="text-muted mb-0 font-size-10 text-uppercase letter-spacing-1 font-weight-bold">Operational Year</p>
+            <div class="mr-4 erp-dash-year-box">
+                <p class="erp-dash-year-box__label">Operational Year</p>
                 <div class="d-flex align-items-center">
-                    <i class="mdi mdi-calendar-range text-primary mr-2 font-size-16"></i>
-                    <select class="form-control form-control-sm border-0 shadow-none p-0 font-size-15" id="tl_dashboard_year_filter" style="font-weight: 800; color: #343a40; background: transparent; cursor: pointer; height: auto; width: 80px;">
+                    <i class="mdi mdi-calendar-range text-primary mr-2"></i>
+                    <select class="form-control form-control-sm erp-dash-year-select" id="tl_dashboard_year_filter">
                         @foreach($adminData['available_years'] as $yr)
                         <option value="{{ $yr }}" {{ $adminData['selected_year'] == $yr ? 'selected' : '' }}>{{ $yr }}</option>
                         @endforeach

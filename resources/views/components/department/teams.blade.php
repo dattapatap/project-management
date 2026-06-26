@@ -543,21 +543,27 @@
                         <div class="row teams-grid-row">
                             @forelse ($teams as $item)
                             <div class="col-lg-4 col-md-6 team-card-col">
-                                <div class="team-card" style="--team-stripe: #4f46e5;">
+                                <div class="team-card team-card-clickable"
+                                     style="--team-stripe: #4f46e5;"
+                                     data-team-id="{{ $item->id }}"
+                                     data-department-id="{{ $department->id }}"
+                                     role="button"
+                                     tabindex="0"
+                                     title="Manage {{ $item->name }}">
                                     <!-- Card Header -->
                                     <div class="team-card-header">
                                         <h5 class="team-title">
                                             {{ $item->name }}
                                             <span class="team-members-badge">{{ $item->teammembers->count() }} Members</span>
                                         </h5>
-                                        <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center gap-2 team-card-actions">
                                             <!-- Manage Team Members (Sortable list) -->
                                             <a href="javascript:void(0);" team_id="{{ $item->id }}" departmentid="{{ $department->id }}" class="btn-circle-action btnAddMembers mr-1" data-toggle="tooltip" title="Manage Team Members">
                                                 <i class="mdi mdi-plus-outline"></i>
                                             </a>
                                             <!-- Options menu -->
                                             <div class="dropdown">
-                                                <a href="#" class="btn-circle-action dropdown-toggle arrow-none" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <a href="#" class="btn-circle-action dropdown-toggle arrow-none" data-toggle="dropdown" aria-expanded="false">
                                                     <i class="mdi mdi-dots-vertical"></i>
                                                 </a>
                                                 <div class="dropdown-menu dropdown-menu-right">
@@ -746,6 +752,21 @@
     $(document).ready(function() {
         // Trigger Tooltips
         $('[data-toggle="tooltip"]').tooltip();
+
+        // Open team members modal on card click
+        $(document).on('click', '.team-card-clickable', function(e) {
+            if ($(e.target).closest('.team-card-actions, .dropdown, .dropdown-menu').length) {
+                return;
+            }
+            $(this).find('.btnAddMembers').first().trigger('click');
+        });
+
+        $(document).on('keydown', '.team-card-clickable', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                $(this).find('.btnAddMembers').first().trigger('click');
+            }
+        });
 
         // Trigger New Team Modal
         $('.btnAddTeam').click(function(){

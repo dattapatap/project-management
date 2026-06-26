@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Clients;
 use App\Models\TeamMembers;
+use App\Services\BranchScopeService;
 use Carbon\Carbon;
 use DataTables;
 use Illuminate\Http\Request;
@@ -46,6 +47,31 @@ class DashboardController extends Controller
             $allmem =  DB::table('department_members')->where('parent_leader', $user->id)->pluck('user')->toArray();
             array_push($allmem, $user->id);
             $allmemStr = implode(',', array_map('intval', $allmem));
+
+            $sales  = DB::select(
+                'SELECT DATE_FORMAT(date, "%b") AS month, IFNULL( COUNT(DISTINCT ch.client), 0) as total
+                            FROM (
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 1 MONTH AS date UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 2 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 3 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 4 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 5 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 6 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 7 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 8 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 9 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 10 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 11 MONTH UNION ALL
+                                SELECT LAST_DAY(CURRENT_DATE) + INTERVAL 1 DAY - INTERVAL 12 MONTH
+                            ) AS dates
+                            LEFT JOIN client_histories as ch
+                            ON (ch.created_at >= date AND ch.created_at < date + INTERVAL 1 MONTH AND ch.status="Matured" AND ch.created IN (' . $allmemStr . '))
+                            GROUP BY date'
+            );
+        } else if ($user->isBranchManager()) {
+            $branchScope = app(BranchScopeService::class);
+            $salesUserIds = $branchScope->getBranchSalesUserIds($user);
+            $allmemStr = !empty($salesUserIds) ? implode(',', array_map('intval', $salesUserIds)) : '0';
 
             $sales  = DB::select(
                 'SELECT DATE_FORMAT(date, "%b") AS month, IFNULL( COUNT(DISTINCT ch.client), 0) as total

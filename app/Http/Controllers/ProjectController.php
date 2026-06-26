@@ -11,6 +11,8 @@ use App\Models\Teams;
 use App\Models\User;
 use App\Models\UserActivity;
 use App\Services\ProjectNotificationService;
+use App\Services\Csd\CsdHandoffService;
+use App\Services\Od\ProjectService;
 use App\Notifications\ProjectAssigned;
 use App\Notifications\ProjectUpdate;
 use Auth;
@@ -33,6 +35,11 @@ class ProjectController extends Controller
 
         // Handle regular OD employees (Developer, Designer, etc.)
         if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant'])) {
+            $scopedQuery = DepartmentProjects::whereHas('tasks', function ($q) use ($user) {
+                $q->where('assigned_to', $user->id);
+            });
+            $stats = $this->computeProjectStats($scopedQuery);
+
             $query->whereHas('tasks', function ($q) use ($user, $request) {
                 $q->where('assigned_to', $user->id);
                 if ($request->has('status')) {
@@ -43,37 +50,24 @@ class ProjectController extends Controller
                     }
                 }
             });
+            if ($request->has('status') && in_array($request->status, ['ToDo', 'InProgress', 'Completed'], true)) {
+                $query->where('status', $request->status);
+            }
             $projects = $query->latest()->paginate(50);
-            return view('components.projects.employee_index', compact('projects'));
+            return view('components.projects.employee_index', compact('projects', 'stats'));
         }
 
+        $scopedQuery = DepartmentProjects::query();
         if ($user->hasRole('Team-Leader')) {
-            $teamMember = TeamMembers::where('user', $user->id)->where('status', true)->first();
-            $teamId = $teamMember ? $teamMember->team : null;
-
-            $query->where(function ($q) use ($user, $teamId) {
-                // Show projects directly assigned to this TL
-                $q->where('assigned_to', $user->id)
-                    // OR projects assigned to their team that are either assigned to them or unassigned
-                    ->orWhereHas('project_team', function ($sq) use ($teamId) {
-                        $sq->where('teamid', $teamId);
-                    });
-            });
+            $scopedQuery = $this->applyTeamLeaderProjectScope($scopedQuery, $user);
+            $query = $this->applyTeamLeaderProjectScope($query, $user);
         }
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        // Aggregate Stats for Admin/Manager (Optimized single query)
-        $nearDeadlineDate = Carbon::now()->addDays(7);
-
-        $stats = DepartmentProjects::selectRaw("
-            count(*) as total,
-            count(case when status != 'Completed' and end_date <= ? then 1 end) as near_deadline,
-            count(case when status != 'Completed' then 1 end) as pending,
-            count(case when status = 'Completed' then 1 end) as completed
-        ", [$nearDeadlineDate])->first()->toArray();
+        $stats = $this->computeProjectStats($scopedQuery);
 
         $projects = $query->latest()->paginate(50);
 
@@ -102,17 +96,37 @@ class ProjectController extends Controller
             });
         }
 
-        $now = Carbon::now();
-        $nearDeadlineDate = Carbon::now()->addDays(7);
-        $stats = DepartmentProjects::selectRaw("
-            count(*) as total,
-            count(case when status != 'Completed' and end_date <= ? then 1 end) as near_deadline,
-            count(case when status != 'Completed' then 1 end) as pending,
-            count(case when status = 'Completed' then 1 end) as completed
-        ", [$nearDeadlineDate])->first()->toArray();
+        $stats = $this->computeProjectStats(DepartmentProjects::query());
 
         $projects = $query->latest()->paginate(50);
         return view('components.projects.index', compact('projects', 'stats'))->with('search', $filter);
+    }
+
+    private function applyTeamLeaderProjectScope($query, $user)
+    {
+        $teamMember = TeamMembers::where('user', $user->id)->where('status', true)->first();
+        $teamId = $teamMember ? $teamMember->team : null;
+
+        return $query->where(function ($q) use ($user, $teamId) {
+            $q->where('assigned_to', $user->id)
+                ->orWhereHas('project_team', function ($sq) use ($teamId) {
+                    $sq->where('teamid', $teamId);
+                });
+        });
+    }
+
+    private function computeProjectStats($query)
+    {
+        $nearDeadlineDate = Carbon::now()->addDays(7);
+
+        return (clone $query)->selectRaw("
+            count(*) as total,
+            count(case when status != 'Completed' and end_date <= ? then 1 end) as near_deadline,
+            count(case when status = 'ToDo' then 1 end) as not_started,
+            count(case when status = 'InProgress' then 1 end) as in_progress,
+            count(case when status != 'Completed' then 1 end) as pending,
+            count(case when status = 'Completed' then 1 end) as completed
+        ", [$nearDeadlineDate])->first()->toArray();
     }
 
     public function create()
@@ -285,9 +299,9 @@ class ProjectController extends Controller
         }
     }
 
-    public function status(Request $request)
+    public function status(Request $request, ProjectService $projectService)
     {
-        $actStartDt = 'nullable'; // Made nullable to support UI where field is hidden
+        $actStartDt = 'nullable';
 
         $rules = array(
             'status'         => 'required|string',
@@ -296,55 +310,31 @@ class ProjectController extends Controller
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return Response::json(array('status' => 400, 'errors' => $validator->getMessageBag()->toArray()), 400);
-        } else {
-            $user = Auth::user();
-            $project  = DepartmentProjects::find($request->projectid);
-            if (!$project)
-                return response()->json(['code' => 200, "success" => false, 'message' => "Project not found, please try again!"], 200);
+        }
 
-            if ($request->status == 'Completed') {
-                if ($project->status == 'Completed') {
-                    return response()->json(['code' => 200, "success" => false, 'message' => "Project is already completed!"], 200);
-                }
+        $user = Auth::user();
+        $project = DepartmentProjects::find($request->projectid);
+        if (!$project) {
+            return response()->json(['code' => 200, 'success' => false, 'message' => 'Project not found, please try again!'], 200);
+        }
 
-                $incompleteTasks = $project->tasks()->where('status', '!=', 'Completed')->count();
-                if ($incompleteTasks > 0) {
-                    return response()->json(['code' => 200, "success" => false, 'message' => "Cannot complete project. There are $incompleteTasks incomplete task(s)."], 200);
-                }
-            }
+        try {
+            $result = $projectService->updateStatus(
+                $project,
+                $user,
+                $request->status,
+                $request->act_start_date
+            );
 
-            try {
+            return response()->json([
+                'code' => 200,
+                'success' => $result['success'],
+                'message' => $result['message'],
+            ], 200);
+        } catch (Exception $ex) {
+            Log::error('Project Status Error: ' . $ex->getMessage() . ' @ Line - ' . $ex->getLine());
 
-                if ($request->status === 'Completed') {
-                    $project->status = $request->status;
-                    $project->act_end_date  = Carbon::now()->format('Y-m-d H:i');
-                } else if ($request->status === 'InProgress') {
-                    $project->status = $request->status;
-                    if ($request->filled('act_start_date')) {
-                        $project->act_start_date = Carbon::createFromFormat('d/m/Y h:i A', $request->act_start_date)->format('Y-m-d H:i:s');
-                    } elseif (!$project->act_start_date) {
-                        $project->act_start_date = Carbon::now()->format('Y-m-d H:i:s');
-                    }
-                }
-                $project->save();
-
-                UserActivity::log('Project Status Changed', "Changed status of project '{$project->project_name}' to '{$project->status}'");
-
-                $comment = 'Project status updated as ' . $project->status . ' by ' . $user->name;
-                DepartmentProjectHistoryController::store($project, $comment, $user->id);
-
-                ProjectNotificationService::notifyProject($project, [
-                    'category' => 'Project',
-                    'header'   => 'Project Status Updated',
-                    'body'     => "Project '{$project->project_name}' is now {$project->status}",
-                    'link'     => url('/') . "/projects/" . base64_encode($project->id) . "/history"
-                ]);
-
-                return response()->json(['code' => 200, "success" => true, 'message' => "Project Status Updated"], 200);
-            } catch (Exception $ex) {
-                Log::error("Task Updation Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());
-                return response()->json(['code' => 200, "success" => false, 'message' => "Project status updated, please try again!"], 200);
-            }
+            return response()->json(['code' => 200, 'success' => false, 'message' => 'Project status update failed, please try again!'], 200);
         }
     }
 

@@ -7,28 +7,12 @@
 
 @section('content')
 
-<div class="container-fluid">
-    <!-- start page title -->
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box d-flex align-items-center justify-content-between">
-                <h4 class="mb-0 font-size-18">Payments</h4>
-
-                <div class="page-title-right">
-                    <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ url('/') }}">{{ env('APP_NAME')}}</a></li>
-                        <li class="breadcrumb-item active">Payments</li>
-                    </ol>
-                </div>
-
-            </div>
-        </div>
-    </div>
-    <!-- end page title -->
+<div class="container-fluid erp-page erp-page--admin erp-list-page">
+    @include('layouts.partials.erp-page-header', ['title' => 'Payments'])
 
     <div class="row">
         <div class="col-lg-12">
-            <div class="card">
+            <div class="card erp-table-card">
                 <div class="card-body">
 
                     <div class="col-12">

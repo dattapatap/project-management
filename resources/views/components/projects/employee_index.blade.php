@@ -74,6 +74,49 @@
         </div>
     </div>
 
+    @if(isset($stats))
+    <div class="row mb-4">
+        <div class="col-6 col-md-3">
+            <a href="{{ url('projects?status=ToDo') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #f1b44c !important;">
+                    <div class="card-body py-3">
+                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Not Started</p>
+                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['not_started'] }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{{ url('projects?status=InProgress') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #50a5f1 !important;">
+                    <div class="card-body py-3">
+                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">In Progress</p>
+                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['in_progress'] }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #34c38f !important;">
+                <div class="card-body py-3">
+                    <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Completed</p>
+                    <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['completed'] }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{{ url('projects') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #556ee6 !important;">
+                    <div class="card-body py-3">
+                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Total Projects</p>
+                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['total'] }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    @endif
+
     @if(request('view') == 'list')
     <div class="row">
         <div class="col-12">

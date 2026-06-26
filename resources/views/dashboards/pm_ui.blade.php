@@ -1,45 +1,18 @@
 {{-- Project Manager UI --}}
-<style>
-    @keyframes pulse-urgency {
-        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0.4); }
-        70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(244, 106, 106, 0); }
-        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 106, 106, 0); }
-    }
-    
-    @keyframes pulse-active {
-        0% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.4); }
-        70% { box-shadow: 0 0 0 6px rgba(52, 195, 143, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0); }
-    }
-
-    .urgent-pulse {
-        animation: pulse-urgency 1.5s infinite;
-    }
-    
-    .active-now-dot {
-        width: 8px;
-        height: 8px;
-        background-color: #34c38f;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 5px;
-        animation: pulse-active 2s infinite;
-    }
-</style>
-<div class="row mb-3">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <h4 class="header-title mb-0">Project Command Center</h4>
-        <div class="d-flex">
-            <a href="{{ url('projects') }}" class="btn btn-sm btn-primary action-btn-trendy mr-2"><i class="mdi mdi-plus mr-1"></i> New Project</a>
-            <a href="{{ url('client/Matured') }}" class="btn btn-sm btn-soft-info action-btn-trendy"><i class="mdi mdi-account-multiple mr-1"></i> Clients</a>
+<div class="row erp-dash-header">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h4 class="header-title erp-dash-title mb-0">Project Command Center</h4>
+        <div class="d-flex gap-2">
+            <a href="{{ url('projects') }}" class="btn btn-sm btn-primary action-btn-trendy"><i class="mdi mdi-plus mr-1"></i> New Project</a>
+            <a href="{{ client_list_url('Matured') }}" class="btn btn-sm btn-soft-info action-btn-trendy"><i class="mdi mdi-account-multiple mr-1"></i> Clients</a>
         </div>
     </div>
 </div>
 
 <!-- PM KPI Row -->
 <div class="row">
-    <div class="col-md-3">
-        <div class="card pm-dashboard-custom-card admin-kpi-card gradient-primary text-white text-center shadow-sm" onclick="window.location.href='{{ url('projects') }}'" style="cursor: pointer;">
+    <div class="col-6 col-md-4 col-lg">
+        <div class="card pm-dashboard-custom-card admin-kpi-card gradient-primary text-white text-center shadow-sm erp-kpi-clickable" onclick="window.location.href='{{ url('projects') }}'">
             <div class="card-body">
                 <i class="mdi mdi-folder-multiple-outline display-4 mb-2 admin-kpi-icon"></i>
                 <h5 class="text-white font-size-14">Total Projects</h5>
@@ -47,30 +20,39 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-4 col-lg">
+        <div class="card pm-dashboard-custom-card admin-kpi-card gradient-warning text-white text-center shadow-sm erp-kpi-clickable" onclick="window.location.href='{{ url('projects?status=ToDo') }}'">
+            <div class="card-body">
+                <i class="mdi mdi-playlist-plus display-4 mb-2 admin-kpi-icon"></i>
+                <h5 class="text-white font-size-14">Not Started</h5>
+                <h3 class="mt-2 text-white">{{ $adminData['pm_proj_todo'] }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+        <div class="card pm-dashboard-custom-card admin-kpi-card gradient-info text-white text-center shadow-sm erp-kpi-clickable" onclick="window.location.href='{{ url('projects?status=InProgress') }}'">
+            <div class="card-body">
+                <i class="mdi mdi-progress-clock display-4 mb-2 admin-kpi-icon"></i>
+                <h5 class="text-white font-size-14">In Progress</h5>
+                <h3 class="mt-2 text-white">{{ $adminData['pm_proj_in_progress'] }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+        <div class="card pm-dashboard-custom-card admin-kpi-card gradient-success text-white text-center shadow-sm erp-kpi-clickable" onclick="window.location.href='{{ url('projects/search?search=Completed') }}'">
+            <div class="card-body">
+                <i class="mdi mdi-check-decagram display-4 mb-2 admin-kpi-icon"></i>
+                <h5 class="text-white font-size-14">Completed</h5>
+                <h3 class="mt-2 text-white">{{ $adminData['pm_proj_completed'] }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
         <div class="card pm-dashboard-custom-card admin-kpi-card gradient-info text-white text-center shadow-sm">
             <div class="card-body">
                 <i class="mdi mdi-format-list-checks display-4 mb-2 admin-kpi-icon"></i>
                 <h5 class="text-white font-size-14">Total Tasks</h5>
                 <h3 class="mt-2 text-white">{{ $adminData['pm_total_tasks'] }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card pm-dashboard-custom-card admin-kpi-card gradient-warning text-white text-center shadow-sm">
-            <div class="card-body">
-                <i class="mdi mdi-progress-clock display-4 mb-2 admin-kpi-icon"></i>
-                <h5 class="text-white font-size-14">InProgress Projects</h5>
-                <h3 class="mt-2 text-white">{{ $adminData['pm_proj_in_progress'] }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card pm-dashboard-custom-card admin-kpi-card gradient-success text-white text-center shadow-sm">
-            <div class="card-body">
-                <i class="mdi mdi-check-decagram display-4 mb-2 admin-kpi-icon"></i>
-                <h5 class="text-white font-size-14">Completed Projects</h5>
-                <h3 class="mt-2 text-white">{{ $adminData['pm_proj_completed'] }}</h3>
             </div>
         </div>
     </div>
@@ -85,7 +67,7 @@
                     <h4 class="card-title mb-0">Urgent Project Deadlines (Next 7 Days)</h4>
                     <span class="badge badge-soft-danger pulse">Action Required</span>
                 </div>
-                <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                <div class="table-responsive erp-scroll-panel">
                     <table class="table table-centered trendy-table mb-0">
                         <thead>
                             <tr>
@@ -160,7 +142,7 @@
                     <h4 class="card-title mb-0">Active Performance Tracking</h4>
                     <a href="{{ url('projects') }}" class="btn btn-sm btn-soft-primary action-btn-trendy">View All</a>
                 </div>
-                <div class="row" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                <div class="row erp-scroll-panel--tall">
                     @forelse($adminData['active_tasks'] as $aTask)
                     <div class="col-12 mb-3">
                         <div class="card shadow-none border mb-0 p-3" style="border-radius: 12px;">
@@ -282,7 +264,7 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                <div class="table-responsive erp-scroll-panel">
                     <table class="table table-centered table-nowrap mb-0 trendy-table">
                         <thead class="thead-light">
                             <tr class="small text-uppercase">

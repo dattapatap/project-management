@@ -21,8 +21,10 @@ class Admin
             return redirect()->route('login');
         }
 
-        if (Auth::user()->hasRole('Admin')) {
+        if (Auth::user()->hasRole(['Admin', 'Branch-Manager'])) {
             return $next($request);
         }
+
+        abort(403, 'Unauthorized.');
     }
 }

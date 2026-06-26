@@ -32,6 +32,6 @@ class EmptyNotifications extends Command
         $now = Carbon::now();
         DB::table('notifications')
             ->where('created_at', '<', $now->subDays(15))
-             ->delete();
+            ->delete();
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
@@ -16,9 +17,19 @@ class DepartmentController extends Controller
 
     public function index()
     {
-        $branches = Branches::where('status', true)->get();
+        $user = Auth::user();
 
-        $departments = Department::with('branch', 'users.userdetail:name,id,profile')->where('deleted_at', null)->paginate(50);
+        $branchesQuery = Branches::where('status', true);
+        $departmentsQuery = Department::with('branch', 'users.userdetail:name,id,profile')->where('deleted_at', null);
+
+        if ($user->isBranchManager() && $user->branchId()) {
+            $branchesQuery->where('id', $user->branchId());
+            $departmentsQuery->where('branchid', $user->branchId());
+        }
+
+        $branches = $branchesQuery->get();
+        $departments = $departmentsQuery->paginate(50);
+
         return view('components.department.index', compact('departments', 'branches'))->with('filter', '');
     }
 

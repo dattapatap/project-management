@@ -26,8 +26,14 @@ class UserController extends Controller
 
     public function index()
     {
-        $users = User::with(['emp', 'departments.dept', 'roles'])->where('deleted_at', null)
-            ->where('id', '!=', '1')->orderBy('id', 'desc')->paginate(25);
+        $query = User::with(['emp', 'departments.dept', 'roles'])
+            ->where('deleted_at', null)
+            ->where('id', '!=', '1')
+            ->orderBy('id', 'desc');
+
+        $users = app(\App\Services\BranchScopeService::class)
+            ->applyBranchUserScope($query, Auth::user())
+            ->paginate(25);
 
         return view('components.users.index', compact('users'));
     }
@@ -35,8 +41,22 @@ class UserController extends Controller
 
     public function create()
     {
-        $derpartments =  Department::with('branch')->where('status', true)->orderBy('id', 'asc')->get();
-        $roles        =  Role::where('name', '!=', 'Admin')->where('status', true)->orderBy('id', 'asc')->get();
+        $actor = Auth::user();
+        $derpartments = Department::with('branch')->where('status', true)->orderBy('id', 'asc');
+
+        if ($actor->isBranchManager() && $actor->branchId()) {
+            $derpartments->where('branchid', $actor->branchId());
+        }
+
+        $derpartments = $derpartments->get();
+
+        $roles = Role::where('name', '!=', 'Admin')->where('status', true)->orderBy('id', 'asc');
+
+        if ($actor->isBranchManager()) {
+            $roles->whereNotIn('name', ['Admin']);
+        }
+
+        $roles = $roles->get();
 
         return view('components.users.create', compact('derpartments', 'roles'));
     }
@@ -59,6 +79,7 @@ class UserController extends Controller
             $user->save();
 
             $role = \Spatie\Permission\Models\Role::findById((int) $request->post('role'));
+            $this->assertValidRoleAssignment($role->name);
             $user->assignRole($role);
 
             $emp            = new Employees();
@@ -102,10 +123,26 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        $this->assertCanManageUser($user);
 
+        $actor = Auth::user();
         $users = $user;
-        $departments =  Department::with('branch')->where('status', true)->orderBy('id', 'asc')->get();
-        $roles        =  Role::where('name', '!=', 'Admin')->where('status', true)->orderBy('id', 'asc')->get();
+
+        $departments = Department::with('branch')->where('status', true)->orderBy('id', 'asc');
+
+        if ($actor->isBranchManager() && $actor->branchId()) {
+            $departments->where('branchid', $actor->branchId());
+        }
+
+        $departments = $departments->get();
+
+        $roles = Role::where('name', '!=', 'Admin')->where('status', true)->orderBy('id', 'asc');
+
+        if ($actor->isBranchManager()) {
+            $roles->whereNotIn('name', ['Admin']);
+        }
+
+        $roles = $roles->get();
 
         return view('components.users.edit', compact('users', 'roles', 'departments'));
     }
@@ -113,6 +150,8 @@ class UserController extends Controller
 
     public function update(UserUpdateRequest $request, User $user)
     {
+        $this->assertCanManageUser($user);
+
         try {
 
             DB::beginTransaction();
@@ -126,6 +165,7 @@ class UserController extends Controller
             $user->save();
 
             $role = \Spatie\Permission\Models\Role::findById((int) $request->post('role'));
+            $this->assertValidRoleAssignment($role->name);
             $user->syncRoles($role);
 
             $emp            = Employees::where('user', $user->id)->first();
@@ -160,6 +200,8 @@ class UserController extends Controller
 
     public function destroy(Request $request, User $user)
     {
+        $this->assertCanManageUser($user);
+
         $user->status = "Inactive";
         $user->save();
         $user->delete();
@@ -170,6 +212,7 @@ class UserController extends Controller
     {
         $user = User::where('id', $user_id)->first();
         if ($user) {
+            $this->assertCanManageUser($user);
             if ($user->status == 'Active') {
                 $user->status = 'Inactive';
                 $user->save();
@@ -209,6 +252,16 @@ class UserController extends Controller
                     $q->whereIn('name', ['Sales-Executive', 'Team-Leader']);
                 })
                 ->whereIn('id', $allmem)->get()->toArray();
+        } elseif ($loggedUser->isBranchManager()) {
+            $branchScope = app(\App\Services\BranchScopeService::class);
+            $salesIds = $branchScope->getBranchSalesUserIds($loggedUser);
+
+            $users = User::select('id', 'name')->where('status', 'Active')
+                ->where('id', '!=', $client->ref_user)
+                ->whereHas('roles', function ($q) {
+                    $q->whereIn('name', ['Sales-Executive', 'Team-Leader', 'Branch-Manager']);
+                })
+                ->whereIn('id', $salesIds)->get()->toArray();
         } else {
             $users = User::select('id', 'name')->where('status', 'Active')
                 ->where('id', '!=', $client->ref_user)
@@ -221,5 +274,39 @@ class UserController extends Controller
             return response()->json(['status' => true, 'data' => $users]);
         else
             return response()->json(['status' => false, 'data' => $users]);
+    }
+
+    private function assertValidRoleAssignment(string $roleName): void
+    {
+        $actor = Auth::user();
+
+        if ($actor->isBranchManager() && $roleName === 'Admin') {
+            throw new Exception('Branch Managers cannot assign the Admin role.');
+        }
+    }
+
+    private function assertCanManageUser(User $target): void
+    {
+        $actor = Auth::user();
+
+        if ($actor->isGlobalAdmin()) {
+            return;
+        }
+
+        if ($actor->isBranchManager()) {
+            if ($target->hasRole('Admin')) {
+                abort(403, 'Branch Managers cannot manage Admin users.');
+            }
+
+            $allowedIds = app(\App\Services\BranchScopeService::class)->getBranchUserIds($actor);
+
+            if (!in_array($target->id, $allowedIds, true)) {
+                abort(403, 'Unauthorized.');
+            }
+
+            return;
+        }
+
+        abort(403, 'Unauthorized.');
     }
 }
