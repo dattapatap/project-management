@@ -5,6 +5,7 @@
     @include('layouts.partials.erp-page-header', [
         'title' => $engagement->engagement_no,
         'subtitle' => $engagement->clients?->name . ' — ' . ucfirst(str_replace('_', ' ', $engagement->engagement_type)),
+        'actions' => '<a href="' . route('commercial.engagements.index') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>',
     ])
 
     <div class="row">

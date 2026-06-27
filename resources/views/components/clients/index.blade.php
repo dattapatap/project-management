@@ -5,6 +5,7 @@
     @include('layouts.partials.erp-page-header', [
         'title' => 'Companies Directory',
         'subtitle' => 'Leads, follow-ups, and conversion pipeline.',
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>'
     ])
     <!-- Main Repository Section -->
     <div class="row">

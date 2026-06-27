@@ -395,4 +395,52 @@
             </div>
         </div>
     </div>
+
+    <!-- Row 5: Sales Target & Leaderboard -->
+    @if(isset($adminData['leaderboard']) && count($adminData['leaderboard']) > 0)
+    <div class="row mb-5 animate-entrance delay-5">
+        <div class="col-12">
+            <div class="card tl-card-glass border-0">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <h5 class="font-size-15 mb-0 text-dark font-weight-bold">
+                        <i class="mdi mdi-trophy-variant-outline mr-2 text-warning"></i> Monthly Sales Leaderboard
+                    </h5>
+                    <a href="{{ route('sales.targets.index') }}" class="btn btn-soft-primary btn-sm rounded-pill px-3">
+                        Manage Targets
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach(array_slice($adminData['leaderboard'], 0, 3) as $index => $rep)
+                            @php
+                                $rank = $index + 1;
+                                $color = $rank == 1 ? 'text-warning' : ($rank == 2 ? 'text-secondary' : 'text-orange');
+                                $crown = $rank == 1 ? '<i class="mdi mdi-crown font-size-22"></i>' : '<i class="mdi mdi-medal font-size-20"></i>';
+                            @endphp
+                            <div class="col-md-4">
+                                <div class="p-3 mb-3 rounded border text-center" style="background: rgba(255, 255, 255, 0.05); position: relative;">
+                                    <div style="position: absolute; top: 10px; right: 15px;" class="{{ $color }}">
+                                        {!! $crown !!}
+                                    </div>
+                                    <h2 class="font-weight-bold text-dark mb-1">{{ $rank }}</h2>
+                                    <h6 class="font-weight-bold text-dark">{{ $rep['name'] }}</h6>
+                                    <div class="text-success font-weight-bold font-size-14 my-2">₹{{ number_format($rep['revenue']) }}</div>
+                                    <div class="font-size-12 text-muted">
+                                        {{ $rep['conversions'] }} Conversions · {{ $rep['meetings'] }} Meetings
+                                    </div>
+                                    @if($rep['target'] > 0)
+                                        <div class="progress progress-sm mt-3" style="height: 6px;">
+                                            <div class="progress-bar bg-success" style="width: {{ $rep['progress_percent'] }}%"></div>
+                                        </div>
+                                        <small class="text-muted mt-1 d-block">{{ $rep['progress_percent'] }}% of Target</small>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>

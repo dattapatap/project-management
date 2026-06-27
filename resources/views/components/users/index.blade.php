@@ -8,6 +8,9 @@
             <p class="erp-page-subtitle">Manage roles, departments, logins, and credentials for workspace members.</p>
         </div>
         <div class="erp-page-header__actions">
+            <a href="{{ url('/') }}" class="btn btn-outline-primary btn-sm mr-2">
+                <i class="mdi mdi-arrow-left"></i> Back
+            </a>
             <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
                 <i class="mdi mdi-plus"></i> New Member
             </a>
@@ -15,7 +18,7 @@
     </div>
 
     <!-- Interactive Stats Strip -->
-    <div class="row">
+    <div class="row mb-3">
         <!-- Card 1: Total Team -->
         <div class="col-xl-3 col-sm-6">
             <div class="stat-card-premium stat-card-premium--indigo">
@@ -101,15 +104,15 @@
                         <tbody>
                             @forelse ($users as $items)
                             @php
-                                $roleName = $items->roles->pluck('name')->first() ?? 'No Role';
-                                $roleClass = 'role-default';
-                                if (str_contains(strtolower($roleName), 'admin')) $roleClass = 'role-admin';
-                                else if (str_contains(strtolower($roleName), 'leader')) $roleClass = 'role-leader';
-                                else if (str_contains(strtolower($roleName), 'sales')) $roleClass = 'role-sales';
-                                else if (str_contains(strtolower($roleName), 'developer')) $roleClass = 'role-developer';
-                                else if (str_contains(strtolower($roleName), 'designer')) $roleClass = 'role-designer';
-                                else if (str_contains(strtolower($roleName), 'seo')) $roleClass = 'role-seo';
-                                else if (str_contains(strtolower($roleName), 'accountant')) $roleClass = 'role-accountant';
+                            $roleName = $items->roles->pluck('name')->first() ?? 'No Role';
+                            $roleClass = 'role-default';
+                            if (str_contains(strtolower($roleName), 'admin')) $roleClass = 'role-admin';
+                            else if (str_contains(strtolower($roleName), 'leader')) $roleClass = 'role-leader';
+                            else if (str_contains(strtolower($roleName), 'sales')) $roleClass = 'role-sales';
+                            else if (str_contains(strtolower($roleName), 'developer')) $roleClass = 'role-developer';
+                            else if (str_contains(strtolower($roleName), 'designer')) $roleClass = 'role-designer';
+                            else if (str_contains(strtolower($roleName), 'seo')) $roleClass = 'role-seo';
+                            else if (str_contains(strtolower($roleName), 'accountant')) $roleClass = 'role-accountant';
                             @endphp
                             <tr class="user-row">
                                 <td>{{ $users->firstItem() + $loop->index }}</td>
@@ -201,16 +204,16 @@
         // High-Speed Instant Interactive Search Filter
         $('#userSearchInput').on('keyup', function() {
             let value = $(this).val().toLowerCase().trim();
-            
+
             $('#userListingTable tbody tr.user-row').filter(function() {
                 let text = $(this).text().toLowerCase();
                 $(this).toggle(text.indexOf(value) > -1);
             });
-            
+
             // Handle display if no matches are found
             let visibleRows = $('#userListingTable tbody tr.user-row:visible').length;
             let noMatchRow = $('#noMatchRow');
-            
+
             if (visibleRows === 0 && $('#userListingTable tbody').children().length > 0) {
                 if (noMatchRow.length === 0) {
                     $('#userListingTable tbody').append(`

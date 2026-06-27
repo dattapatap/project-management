@@ -428,6 +428,22 @@
                                         </span>
                                     @enderror
                                 </div>
+
+                                <!-- Field: Status -->
+                                <div class="form-group form-group-premium">
+                                    <label for="status">
+                                        <i class="mdi mdi-checkbox-marked-circle-outline"></i>User Status <span class="text_required">*</span>
+                                    </label>
+                                    <select class="form-control select-premium" name="status" id="status" required>
+                                        <option value="Active" @if(old('status', $users->status) == 'Active') selected @endif>Active</option>
+                                        <option value="Inactive" @if(old('status', $users->status) == 'Inactive') selected @endif>Inactive</option>
+                                    </select>
+                                    @error('status')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
 

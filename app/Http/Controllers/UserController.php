@@ -161,6 +161,7 @@ class UserController extends Controller
             $user->mobile  = $request->post('mobile');
             $user->code  = strtoupper($request->post('code'));
             $user->designation = ucfirst($request->post('designation'));
+            $user->status = $request->post('status') ?? 'Active';
 
             $user->save();
 
@@ -175,6 +176,7 @@ class UserController extends Controller
             $emp->joining_dt = $request->post('joining_date');
             $emp->mem_code  = strtoupper($request->post('code'));
             $emp->designation = ucfirst($request->post('designation'));
+            $emp->status    = $request->post('status') ?? 'Active';
 
             $emp->updated_by = Auth::user()->id;
 

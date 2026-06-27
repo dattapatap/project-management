@@ -66,6 +66,7 @@
         'subtitle' => $isTeam
             ? 'Team-wide performance for ' . $period
             : 'Performance for ' . ($selectedUser->name ?? 'Executive') . ' — ' . $period,
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>',
     ])
 
     {{-- Filters --}}

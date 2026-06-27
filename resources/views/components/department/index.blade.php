@@ -8,6 +8,9 @@
             <p class="erp-page-subtitle">Configure business units, branches, and team organization.</p>
         </div>
         <div class="erp-page-header__actions">
+            <a href="{{ url('/') }}" class="btn btn-outline-primary btn-sm mr-2">
+                <i class="mdi mdi-arrow-left"></i> Back
+            </a>
             <button type="button" class="btn btn-primary btn-sm btnAddDepartment">
                 <i class="mdi mdi-plus"></i> New Department
             </button>

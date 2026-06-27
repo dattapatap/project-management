@@ -191,3 +191,8 @@ body {
     border-color: var(--primary);
     box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
+
+/* Table Cell Alignment Overrides */
+.modern-table .text-left { text-align: left !important; }
+.modern-table .text-center { text-align: center !important; }
+.modern-table .text-right { text-align: right !important; }

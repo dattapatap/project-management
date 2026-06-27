@@ -39,11 +39,20 @@
         </div>
         <div class="col-lg-3 text-right">
             @if(Auth::id() != $employee->id)
+            <a href="{{ route('reports.employee.pdf', array_merge(['id' => base64_encode($employee->id)], request()->all())) }}" class="btn btn-primary btn-rounded px-4 mr-2 font-weight-bold">
+                <i class="mdi mdi-download mr-1"></i> Download PDF
+            </a>
             <a href="{{ route('reports.employees') }}" class="btn btn-outline-primary btn-rounded px-4 font-weight-bold">
                 <i class="mdi mdi-arrow-left mr-1"></i> Back
             </a>
             @else
             <div class="d-flex justify-content-end align-items-center">
+                <a href="{{ route('reports.employee.pdf', array_merge(['id' => base64_encode($employee->id)], request()->all())) }}" class="btn btn-primary btn-rounded px-4 mr-3 font-weight-bold">
+                    <i class="mdi mdi-download mr-1"></i> Download PDF
+                </a>
+                <a href="{{ url('/') }}" class="btn btn-outline-primary btn-rounded px-4 mr-3 font-weight-bold">
+                    <i class="mdi mdi-arrow-left mr-1"></i> Back
+                </a>
                 <div class="px-3 py-2 bg-white rounded shadow-sm border border-light text-center mr-3">
                     <p class="text-muted font-weight-bold mb-0 text-uppercase font-size-10">Last Task Log</p>
                     <span class="font-weight-bold text-primary">{{ $logs->first() ? $logs->first()->created_at->diffForHumans() : 'No Logs' }}</span>
@@ -58,74 +67,25 @@
     </div>
 
     <div class="row">
-        <!-- 🎭 Professional Identity Card -->
         <div class="col-xl-4">
-            <div class="modern-card p-0 mb-4 h-100 shadow-lg">
-                <div class="mesh-gradient-primary p-5 text-center" style="border-radius: 24px 24px 0 0;">
-                    <img src="{{ Avatar::create($employee->name)->toBase64() }}" class="rounded-circle avatar-lg border border-white border-4 shadow-lg mb-3" style="width: 100px; height: 100px;">
-                    <h3 class="font-weight-bold text-dark mb-1">{{ $employee->name }}</h3>
-                    <div class="d-flex justify-content-center mt-2">
-                        @foreach($employee->roles as $role)
-                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill mx-1" style="font-weight: 700;">{{ $role->name }}</span>
-                        @endforeach
+            <!-- 📂 Current Active Deliverables / Leads -->
+            <div class="modern-card p-4 mb-4 bg-white shadow-sm border border-light" style="border-radius: 24px;">
+                <h6 class="font-weight-bold text-dark mb-3">
+                    <i class="mdi mdi-folder-clock-outline text-primary mr-2"></i> 
+                    @if($isSales) Active Working Leads @elseif($isCsd) Active Care Assignments @else Current Active Projects @endif
+                </h6>
+                <div class="active-deliverables-list" style="max-height: 250px; overflow-y: auto;">
+                    @forelse($currentProjects as $p)
+                    <div class="d-flex align-items-center mb-3 p-3 bg-light rounded-lg border border-light">
+                        <div class="flex-grow-1">
+                            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">{{ $p->name }}</span>
+                            <small class="text-muted">{{ $p->status }}</small>
+                        </div>
+                        <span class="badge badge-soft-info px-2 py-1 rounded-pill" style="font-size: 10px;">Active</span>
                     </div>
-                </div>
-                <div class="card-body p-4">
-                    <div class="p-4 bg-light rounded-xl mb-4 border border-light">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="kpi-icon-box bg-soft-primary text-primary mr-3" style="width: 40px; height: 40px; font-size: 18px;">
-                                <i class="mdi mdi-briefcase-variant-outline"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 9px; letter-spacing: 1px;">Designation & Dept</small>
-                                <span class="font-weight-bold text-dark">{{ $employee->emp->designation ?? 'Team Member' }}</span>
-                                <small class="text-muted d-block">{{ $employee->departments->dept->name ?? 'OD Department' }}</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="kpi-icon-box bg-soft-info text-info mr-3" style="width: 40px; height: 40px; font-size: 18px;">
-                                <i class="mdi mdi-calendar-check"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 9px; letter-spacing: 1px;">Joining & DOB</small>
-                                <span class="font-weight-bold text-dark">{{ $employee->emp->joining_dt ? Carbon\Carbon::parse($employee->emp->joining_dt)->format('d M, Y') : 'N/A' }}</span>
-                                <small class="text-muted d-block">Born: {{ $employee->emp->dob ? Carbon\Carbon::parse($employee->emp->dob)->format('d M, Y') : 'N/A' }}</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="kpi-icon-box bg-soft-success text-success mr-3" style="width: 40px; height: 40px; font-size: 18px;">
-                                <i class="mdi mdi-email-outline"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 9px; letter-spacing: 1px;">Contact Details</small>
-                                <span class="font-weight-bold text-dark">{{ $employee->email }}</span>
-                                <small class="text-muted d-block">{{ $employee->emp->alt_number ?? 'No Contact' }}</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="kpi-icon-box bg-soft-warning text-warning mr-3" style="width: 40px; height: 40px; font-size: 18px;">
-                                <i class="mdi mdi-identifier"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 9px; letter-spacing: 1px;">Employee Code</small>
-                                <span class="font-weight-bold text-dark">#{{ $employee->emp->mem_code ?? 'EMP-'.$employee->id }}</span>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center mb-0 border-top pt-3">
-                            <div class="kpi-icon-box bg-soft-secondary text-secondary mr-3" style="width: 40px; height: 40px; font-size: 18px;">
-                                <i class="mdi mdi-clock-check-outline"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 9px; letter-spacing: 1px;">System Access</small>
-                                <span class="font-weight-bold text-dark">Logged in {{ $employee->last_login_at ? $employee->last_login_at->diffForHumans() : 'Never' }}</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 p-3 bg-white rounded-lg border border-light text-center">
-                            <small class="text-muted d-block text-uppercase font-weight-bold mb-1" style="font-size: 9px; letter-spacing: 1px;">Performance Score</small>
-                            <h2 class="font-weight-bold mb-0 {{ $performanceScore >= 70 ? 'text-success' : ($performanceScore >= 40 ? 'text-warning' : 'text-danger') }}">{{ $performanceScore }}<small class="text-muted">/100</small></h2>
-                            <small class="text-muted text-uppercase">{{ strtoupper($deptType) }} · {{ $selectedMonth == 'All' ? $selectedYear : $selectedMonth . ' ' . $selectedYear }}</small>
-                        </div>
-                    </div>
+                    @empty
+                    <p class="text-muted text-center py-4 small">No active items in progress.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -350,35 +310,55 @@
         </div>
     </div>
 
+    @endif
+
     <div class="row">
         <div class="col-12 mb-4">
-            <div class="modern-card p-4">
+            <div class="modern-card p-4 text-left">
                 <h5 class="font-weight-bold text-dark mb-3">Daily Breakdown</h5>
                 <div class="table-responsive">
-                    <table class="table table-sm modern-table mb-0">
+                    <table id="daily-breakdown-table" class="table table-sm modern-table mb-0">
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th class="text-center">Completed Tasks</th>
-                                <th class="text-center">Log Entries</th>
-                                <th class="text-right">Hours</th>
-                                <th>Tasks Worked (hours)</th>
+                                <th class="text-left">Date</th>
+                                <th class="text-center">@if($isSales) Matured Convs @elseif($isCsd) Tickets Resolved @else Completed Tasks @endif</th>
+                                <th class="text-center">@if($isSales) Callbacks Logged @elseif($isCsd) Communications @else Log Entries @endif</th>
+                                <th class="text-right">@if($isSales) Estimated Effort @elseif($isCsd) Calculated Effort @else Total Hours @endif</th>
+                                <th class="text-left">@if($isSales || $isCsd) Client Activities @else Tasks Worked (hours) @endif</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($odDailyBreakdown as $day)
+                            @php
+                                if (\Carbon\Carbon::parse($day->date)->isSunday()) {
+                                    continue;
+                                }
+                            @endphp
                             <tr>
-                                <td class="font-weight-bold">{{ $day->label }}</td>
+                                <td class="font-weight-bold text-left">{{ $day->label }}</td>
                                 <td class="text-center">{{ $day->completed_tasks }}</td>
                                 <td class="text-center">{{ $day->log_entries }}</td>
-                                <td class="text-right font-weight-bold text-primary">{{ $day->total_hours }} hrs</td>
-                                <td>
+                                <td class="text-right font-weight-bold text-primary">
+                                    @if($isSales || $isCsd)
+                                    {{ $day->total_hours }} pts
+                                    @else
+                                    {{ $day->total_hours }} hrs
+                                    @endif
+                                </td>
+                                <td class="text-left">
                                     @if($day->tasks->isEmpty())
                                     <span class="text-muted">—</span>
                                     @else
-                                    @foreach($day->tasks as $t)
-                                    <span class="badge badge-soft-info mr-1 mb-1">{{ Str::limit($t->task_title, 20) }} · {{ $t->hours }}h</span>
-                                    @endforeach
+                                    <div class="d-flex flex-wrap justify-content-start">
+                                        @foreach($day->tasks as $t)
+                                        <span class="badge badge-soft-info mr-1 mb-1" title="{{ $t->task_title }}" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            {{ Str::limit($t->task_title, 25) }}
+                                            @if($isOd)
+                                            · {{ $t->hours }}h
+                                            @endif
+                                        </span>
+                                        @endforeach
+                                    </div>
                                     @endif
                                 </td>
                             </tr>
@@ -394,7 +374,7 @@
 
     <!-- ☀️ Morning to Evening Activity (Daily Work Rhythm) -->
     <div class="row mt-4">
-        <div class="col-12">
+        <div class="col-12 text-left">
             <div class="modern-card p-5">
                 <div class="d-flex align-items-center justify-content-between mb-5">
                     <div>
@@ -402,46 +382,82 @@
                         <p class="text-muted small mb-0">{{ $range['label'] }}</p>
                     </div>
                     <div class="text-right">
-                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $odSummary['avg_hours_per_day'] ?? 0 }} Hrs / Day</span>
+                        @if($isOd)
+                            <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $odSummary['avg_hours_per_day'] ?? 0 }} Hrs / Day</span>
+                        @elseif($isSales)
+                            <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_callbacks_per_day'] ?? 0 }} Callbacks / Day</span>
+                        @elseif($isCsd)
+                            <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_comms_per_day'] ?? 0 }} Comms / Day</span>
+                        @endif
                     </div>
                 </div>
 
-                <div class="daily-rhythm-timeline">
-                    @forelse($dailyLogs as $date => $dayLogs)
-                    <div class="day-group mb-5">
-                        <div class="d-flex align-items-center mb-4">
-                            <h5 class="font-weight-bold text-primary mb-0 mr-3">{{ $date }}</h5>
-                            <hr class="flex-grow-1 border-light">
-                            <span class="ml-3 badge badge-soft-secondary">{{ round($dayLogs->sum('time_spend'), 2) }} Working Hours</span>
-                        </div>
+                <div class="daily-rhythm-timeline-wrapper" style="max-height: 550px; overflow-y: auto; padding-right: 15px; border-radius: 12px;">
+                    <div class="daily-rhythm-timeline">
+                        @forelse($dailyLogs as $date => $dayLogs)
+                        <div class="day-group mb-5 rhythm-day-item">
+                            <div class="d-flex align-items-center mb-4">
+                                <h5 class="font-weight-bold text-primary mb-0 mr-3">{{ $date }}</h5>
+                                <hr class="flex-grow-1 border-light">
+                                <span class="ml-3 badge badge-soft-secondary">
+                                    @if($isOd)
+                                        {{ round($dayLogs->sum('time_spend'), 2) }} Working Hours
+                                    @elseif($isSales)
+                                        {{ $dayLogs->count() }} Callbacks logged
+                                    @elseif($isCsd)
+                                        {{ $dayLogs->count() }} Actions logged
+                                    @endif
+                                </span>
+                            </div>
 
-                        <div class="timeline-items ml-4 border-left border-light pl-4">
-                            @foreach($dayLogs->sortBy('created_at') as $log)
-                            <div class="timeline-item position-relative mb-4">
-                                <div class="timeline-dot position-absolute" style="left: -29px; top: 5px; width: 10px; height: 10px; background: #6366f1; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 2px #e2e8f0;"></div>
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <span class="font-size-13 text-muted font-weight-bold">{{ Carbon\Carbon::parse($log->created_at)->format('h:i A') }}</span>
-                                        <h6 class="font-weight-bold text-dark mt-1 mb-1">{{ $log->task->title ?? 'Untitled Task' }}</h6>
-                                        <p class="text-muted small mb-0">{{ $log->log_description }}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="badge badge-soft-info rounded-pill px-3">{{ $log->time_spend }} hrs</span>
-                                        <div class="small text-muted mt-1">{{ $log->task->project->clients->name ?? ($log->task->project->project_name ?? 'Internal') }}</div>
+                            <div class="timeline-items ml-4 border-left border-light pl-4">
+                                @foreach($dayLogs->sortBy('created_at') as $log)
+                                <div class="timeline-item position-relative mb-4">
+                                    <div class="timeline-dot position-absolute" style="left: -29px; top: 5px; width: 10px; height: 10px; background: #6366f1; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 2px #e2e8f0;"></div>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <span class="font-size-13 text-muted font-weight-bold">{{ Carbon\Carbon::parse($log->created_at)->format('h:i A') }}</span>
+                                            @if($isOd)
+                                                <h6 class="font-weight-bold text-dark mt-1 mb-1">{{ $log->task->title ?? 'Untitled Task' }}</h6>
+                                                <p class="text-muted small mb-0">{{ $log->log_description }}</p>
+                                            @elseif($isSales)
+                                                <h6 class="font-weight-bold text-dark mt-1 mb-1">Callback Status: <span class="badge badge-soft-info">{{ $log->status }}</span></h6>
+                                                <p class="text-muted small mb-0">{{ $log->remarks }}</p>
+                                            @elseif($isCsd)
+                                                <h6 class="font-weight-bold text-dark mt-1 mb-1">Comm Channel: <span class="badge badge-soft-info">{{ ucfirst($log->type ?? 'Note') }}</span></h6>
+                                                <p class="text-muted small mb-0">{{ $log->subject ?? $log->remarks }}</p>
+                                            @endif
+                                        </div>
+                                        <div class="text-right">
+                                            @if($isOd)
+                                                <span class="badge badge-soft-info rounded-pill px-3">{{ $log->time_spend }} hrs</span>
+                                                <div class="small text-muted mt-1">{{ $log->task->project->clients->name ?? ($log->task->project->project_name ?? 'Internal') }}</div>
+                                            @elseif($isSales)
+                                                <span class="badge badge-soft-success rounded-pill px-3">Sales Action</span>
+                                                <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
+                                            @elseif($isCsd)
+                                                <span class="badge badge-soft-success rounded-pill px-3">CSD Log</span>
+                                                <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
+                                @endforeach
                             </div>
-                            @endforeach
                         </div>
+                        @empty
+                        <p class="text-muted text-center py-4">No activity entries in this period.</p>
+                        @endforelse
                     </div>
-                    @empty
-                    <p class="text-muted text-center py-4">No log entries in this period.</p>
-                    @endforelse
                 </div>
+                @if($dailyLogs->count() > 0)
+                <div id="rhythm-pagination-container" class="mt-4 d-flex justify-content-end">
+                    <!-- Pagination will be dynamically generated by JS -->
+                </div>
+                @endif
             </div>
         </div>
     </div>
-    @endif
 
     <div class="row mt-4">
         <!-- 📜 Recent Activity/Followup Logs -->
@@ -616,84 +632,7 @@
         </div>
     </div>
 
-    @if(Auth::id() != $employee->id)
-    <!-- 🛡️ System Access & Activity Logs (manager view only) -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="modern-card p-5 bg-white shadow-sm border-0">
-                <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
-                    <div>
-                        <h5 class="font-weight-bold text-dark mb-1">System Activity Log</h5>
-                        <p class="text-muted small mb-0">Chronological history of system access and security events.</p>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <span class="badge badge-soft-info px-2 py-1 mr-3">Recent 10 Actions</span>
-                        <a href="javascript:void(0)" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-weight-bold" onclick="alert('Full Activity History page is coming soon with detailed pagination!')">
-                            <i class="mdi mdi-eye-outline mr-1"></i> View All
-                        </a>
-                    </div>
-                </div>
 
-                <div class="table-responsive">
-                    <table class="table modern-table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Action</th>
-                                <th>Details</th>
-                                <th>IP & Location</th>
-                                <th>Device / Browser</th>
-                                <th>Timestamp</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($activities as $act)
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="activity-icon mr-3 bg-soft-{{ $act->activity == 'Login' ? 'success' : ($act->activity == 'Logout' ? 'danger' : 'primary') }} text-{{ $act->activity == 'Login' ? 'success' : ($act->activity == 'Logout' ? 'danger' : 'primary') }} rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
-                                            <i class="mdi {{ $act->activity == 'Login' ? 'mdi-login-variant' : ($act->activity == 'Logout' ? 'mdi-logout-variant' : 'mdi-cog-outline') }}"></i>
-                                        </div>
-                                        <span class="font-weight-bold text-dark">{{ $act->activity }}</span>
-                                    </div>
-                                </td>
-                                <td><span class="text-muted">{{ $act->details }}</span></td>
-                                <td>
-                                    <div class="d-flex flex-column">
-                                        <code class="text-primary">{{ $act->ip_address }}</code>
-                                        @if($act->location)
-                                        <small class="text-muted mt-1"><i class="mdi mdi-map-marker text-danger mr-1"></i>{{ $act->location }}</small>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="text-truncate d-inline-block" style="max-width: 250px;" title="{{ $act->user_agent }}">
-                                        {{ Str::limit($act->user_agent, 45) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="d-flex flex-column">
-                                        <span class="font-weight-bold text-dark">{{ $act->created_at->format('d M, Y') }}</span>
-                                        <small class="text-muted">{{ $act->created_at->format('h:i A') }} ({{ $act->created_at->diffForHumans() }})</small>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="5" class="text-center py-5">
-                                    <div class="p-4 bg-light rounded-circle d-inline-block mb-3">
-                                        <i class="mdi mdi-history text-muted" style="font-size: 40px;"></i>
-                                    </div>
-                                    <p class="text-muted">No system activity has been recorded yet.</p>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
 </div>
 @endsection
 
@@ -815,6 +754,82 @@
             }
         };
         new ApexCharts(document.querySelector("#individual-delivery-trend"), trendOptions).render();
+
+        // Daily Breakdown DataTable Pagination
+        $('#daily-breakdown-table').DataTable({
+            pageLength: 10,
+            lengthMenu: [10, 20, 50, 100],
+            ordering: false,
+            dom: 'rtip',
+            language: {
+                paginate: {
+                    previous: "<i class='mdi mdi-chevron-left'>",
+                    next: "<i class='mdi mdi-chevron-right'>"
+                }
+            }
+        });
+
+        // Daily Work Rhythm Custom Day-wise Pagination
+        const itemsPerPage = 3;
+        const $rhythmItems = $('.rhythm-day-item');
+        const numItems = $rhythmItems.length;
+        
+        if (numItems > itemsPerPage) {
+            const numPages = Math.ceil(numItems / itemsPerPage);
+            const $paginationContainer = $('#rhythm-pagination-container');
+            
+            let paginationHtml = '<ul class="pagination pagination-rounded mb-0">';
+            paginationHtml += '<li class="page-item disabled" id="rhythm-prev"><a class="page-link" href="javascript:void(0);"><i class="mdi mdi-chevron-left"></i></a></li>';
+            for (let i = 1; i <= numPages; i++) {
+                paginationHtml += `<li class="page-item ${i === 1 ? 'active' : ''} rhythm-page-link" data-page="${i}"><a class="page-link" href="javascript:void(0);">${i}</a></li>`;
+            }
+            paginationHtml += `<li class="page-item" id="rhythm-next"><a class="page-link" href="javascript:void(0);"><i class="mdi mdi-chevron-right"></i></a></li>`;
+            paginationHtml += '</ul>';
+            $paginationContainer.html(paginationHtml);
+            
+            let currentPage = 1;
+            
+            function showPage(page) {
+                currentPage = page;
+                $rhythmItems.hide();
+                $rhythmItems.slice((page - 1) * itemsPerPage, page * itemsPerPage).fadeIn(200);
+                
+                $('.daily-rhythm-timeline-wrapper').animate({ scrollTop: 0 }, 100);
+                $('.rhythm-page-link').removeClass('active');
+                $(`.rhythm-page-link[data-page="${page}"]`).addClass('active');
+                
+                if (page === 1) {
+                    $('#rhythm-prev').addClass('disabled');
+                } else {
+                    $('#rhythm-prev').removeClass('disabled');
+                }
+                
+                if (page === numPages) {
+                    $('#rhythm-next').addClass('disabled');
+                } else {
+                    $('#rhythm-next').removeClass('disabled');
+                }
+            }
+            
+            showPage(1);
+            
+            $(document).on('click', '.rhythm-page-link', function() {
+                const page = parseInt($(this).data('page'));
+                showPage(page);
+            });
+            
+            $(document).on('click', '#rhythm-prev', function() {
+                if (currentPage > 1) {
+                    showPage(currentPage - 1);
+                }
+            });
+            
+            $(document).on('click', '#rhythm-next', function() {
+                if (currentPage < numPages) {
+                    showPage(currentPage + 1);
+                }
+            });
+        }
     });
 </script>
 

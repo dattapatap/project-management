@@ -10,7 +10,12 @@
     <!-- 🚀 Professional Employee Report Header -->
     <div class="row mb-5 align-items-center">
         <div class="col-lg-6">
-            <h1 class="header-glow mb-2">{{ $isSalesTL ? 'Team Sales Report' : (Auth::user()->hasRole('Team-Leader') ? 'Team Report' : 'Employee Report') }}</h1>
+            <div class="d-flex align-items-center mb-2">
+                <a href="{{ url('/') }}" class="btn btn-outline-primary btn-sm mr-3 d-inline-flex align-items-center">
+                    <i class="mdi mdi-arrow-left mr-1"></i> Back
+                </a>
+                <h1 class="header-glow mb-0">{{ $isSalesTL ? 'Team Sales Report' : (Auth::user()->hasRole('Team-Leader') ? 'Team Report' : 'Employee Report') }}</h1>
+            </div>
             <p class="text-muted font-size-15 font-weight-medium">{{ $isSalesTL ? 'Strategic team sales conversions and pipeline intelligence.' : (Auth::user()->hasRole('Team-Leader') ? 'Strategic productivity tracking and team member insights.' : 'Strategic productivity tracking and departmental efficiency trends.') }}</p>
         </div>
         <div class="col-lg-6">
@@ -81,7 +86,7 @@
                     <div class="modern-card p-4">
                         <div class="d-flex align-items-center mb-3">
                             <div class="kpi-icon-box bg-success text-white mr-3">
-                                <i class="mdi mdi-currency-usd"></i>
+                                <i class="mdi mdi-currency-inr"></i>
                             </div>
                             <div>
                                 <h6 class="text-muted font-weight-bold text-uppercase mb-1" style="font-size: 10px; letter-spacing: 1.5px;">Avg Sales Conversion</h6>

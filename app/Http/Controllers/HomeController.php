@@ -195,6 +195,11 @@ class HomeController extends Controller
                     }]);
             }])->get();
 
+        // CSD Client Health Metrics for Donut Chart
+        $adminData['csd_healthy'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'healthy')->count();
+        $adminData['csd_at_risk'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'at_risk')->count();
+        $adminData['csd_churning'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'churning')->count();
+
         return $adminData;
     }
 
@@ -417,6 +422,12 @@ class HomeController extends Controller
                 $q->whereIn('status', ['ToDo', 'InProgress'])->with('project');
             }])
             ->get();
+
+        // Workload Heatmap — task load per team member
+        $memberIds = $adminData['team_employees']->pluck('id')->toArray();
+        $adminData['workload_heatmap'] = !empty($memberIds)
+            ? app(\App\Repositories\ProjectRepository::class)->getWorkloadByTeamMembers($memberIds)
+            : collect();
 
         return $adminData;
     }

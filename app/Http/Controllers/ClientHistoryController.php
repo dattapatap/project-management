@@ -95,12 +95,12 @@ class ClientHistoryController extends Controller
     public function createDsr(Request $request){
 
         if($request->dsr_status =='Matured'){
-            $proforma = 'required|max:2000|mimes:jpeg,jpg,png,gif,pdf';
-            $payment_type = 'required|string';
-            $category = 'required|numeric';
-            $sub_category = 'required|numeric';
-            $amount = 'required|numeric|gte:100|lte:package';
-            $package = 'required|numeric|gte:100';
+            $proforma = 'nullable|max:2000|mimes:jpeg,jpg,png,gif,pdf';
+            $payment_type = 'nullable|string';
+            $category = 'nullable|numeric';
+            $sub_category = 'nullable|numeric';
+            $amount = 'nullable|numeric|gte:100|lte:package';
+            $package = 'nullable|numeric|gte:100';
         }else{
             $proforma = 'nullable';
             $payment_type = 'nullable';
@@ -172,101 +172,20 @@ class ClientHistoryController extends Controller
                 $cliHistory->save();
 
                 if($request->dsr_status =='Matured'){
+                    // We only save the DSR history and update the client status.
+                    // The actual project, package, and payments are set up via the Handoff Wizard.
+                    $client->status = 'Matured';
+                    $client->updated_by = $userid;
+                    $client->save();
 
-                    $projectCat   = DB::table('project_category')->where('id', $request->category )->first();
-                    $projectnm   = DB::table('project_sub_categories')->where('id', $request->sub_category )->first();
-
-                    // Add proforma
-                    if($request->has('proforma')){
-                        $attachment = $request->file('proforma');
-                        $name = 'docs/'.time().'.'.$attachment->getClientOriginalExtension();
-                        $dbname = 'clients/'.$name;
-                        $request->file('proforma')->storeAs('clients', $name, 'public');
-
-                        $clidocs = new ClientDocs();
-                        $clidocs->client     = $request->client_id;
-                        $clidocs->history    = $cliHistory->id;
-                        $clidocs->category   = 'DSR';
-                        $clidocs->doc_type   = "Proforma";
-                        $clidocs->files      = $dbname;
-                        $clidocs->uploaded   = Carbon::now();
-                        $clidocs->created    = $userid;
-                        $clidocs->save();
-                    }
-
-                    // Assign Project to Department
-                    $dept   = new DepartmentProjects();
-                    $dept->client           =   $request->client_id;
-                    $dept->department       =   $projectCat->dept_id;
-                    $dept->category         =   $request->category;
-                    $dept->sub_category     =   $request->sub_category;
-                    $dept->assigned_by      =   $userid;
-                    $dept->created_date     =   Carbon::now();
-                    $dept->project_name     =   $projectnm->name;
-                    $dept->start_date       =   Carbon::now();
-                    $dept->status           =   "ToDo";
-                    $dept->save();
-
-
-                    //Create Client Package
-                    $clipack = new ClientPackages();
-                    $clipack->client           = $request->client_id;
-                    $clipack->project_id       = $dept->id;
-                    $clipack->package          = $request->package;
-                    $clipack->balance          = round($request->package - $request->advance);
-                    $clipack->created_by       = $userid;
-                    $clipack->updated_by       = $userid;
-                    $clipack->save();
-
-                    //Add Payment with type(Cash/Cheque/Online)
-                    $clidocs1 = new ClientPayments();
-                    $clidocs1->client           = $request->client_id;
-                    $clidocs1->package_id       = $clipack->id;
-                    $clidocs1->paid_date        = Carbon::now();
-                    $clidocs1->amount           = $request->advance;
-                    $clidocs1->remains          = round($request->package - $request->advance);
-                    $clidocs1->payment_type     = $request->payment_type;
-                    $clidocs1->created_by       = $userid;
-
-                    if($request->payment_type == 'Cheque'){
-                        $attachment = $request->file('payment_cheque_receipt');
-                        $name = 'payments/'.time().'.'.$attachment->getClientOriginalExtension();
-                        $dbname1 = 'clients/'.$name;
-                        $path = $request->file('payment_cheque_receipt')->storeAs('clients', $name, 'public');
-
-                        $clidocs1->file             = $dbname1;
-
-                    }else if($request->payment_type == 'Online'){
-                        $clidocs1->transactioinid = $request->transactionid;
-                    }else{
-                        $attachment = $request->file('payment_cash_receipt');
-                        $name = 'payments/'.time().'.'.$attachment->getClientOriginalExtension();
-                        $dbname2 = 'clients/'.$name;
-                        $request->file('payment_cash_receipt')->storeAs('clients', $name, 'public');
-
-                        $clidocs1->file   = $dbname2;
-                    }
-
-                    $clidocs1->save();
-
-                    app(ClientEngagementService::class)->recordInitialFromMaturity(
-                        $client,
-                        $dept,
-                        $clipack,
-                        $userid
-                    );
-
-                    // Get Department Members and filter by role
-                   $productManager = User::whereHas('roles', function($q){  $q->where('name', 'Project-Manager' ); })
-                                                        ->where('status', 'Active')->get();
-                   for($ctr=0; $ctr < count($productManager); $ctr++ ){
-                        $currUser = $productManager[$ctr];
-                        $currUser->notify((new ClientMatured($client,  $dept, $category=$projectnm->name))->delay(now()->addSeconds(5)));
-                    }
-
-                    $client->is_active = true;
-                    $client->active_from = Carbon::now();
-
+                    DB::commit();
+                    return response()->json([
+                        'code' => 200, 
+                        'status' => true, 
+                        'message' => 'Lead matured! Loading handoff wizard...', 
+                        'handoff_required' => true, 
+                        'client_id' => $client->id
+                    ], 200);
                 }
 
                 $client->status = $request->dsr_status;

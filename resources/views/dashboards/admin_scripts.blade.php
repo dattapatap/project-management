@@ -128,5 +128,71 @@
         };
         var projChart = new ApexCharts(document.querySelector("#admin-project-chart"), projOptions);
         projChart.render();
+
+        // Admin CSD Client Health Donut Chart
+        var csdHealthSeries = [
+            Number('{{ $adminData["csd_healthy"] ?? 0 }}'),
+            Number('{{ $adminData["csd_at_risk"] ?? 0 }}'),
+            Number('{{ $adminData["csd_churning"] ?? 0 }}')
+        ];
+        var csdHealthOptions = {
+            series: csdHealthSeries,
+            chart: {
+                type: 'donut',
+                height: 300,
+                dropShadow: {
+                    enabled: true,
+                    color: '#000',
+                    top: 2,
+                    left: 2,
+                    blur: 8,
+                    opacity: 0.1
+                }
+            },
+            labels: ['Healthy', 'At Risk', 'Churning'],
+            colors: ['#34c38f', '#f1b44c', '#f46a6a'],
+            stroke: {
+                show: true,
+                width: 5,
+                colors: ['#fff']
+            },
+            dataLabels: {
+                enabled: false
+            },
+            legend: {
+                position: 'bottom',
+                offsetY: 0,
+                height: 30,
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '72%',
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: 'Total Clients',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                color: '#9599ad',
+                                formatter: function(w) {
+                                    return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                                }
+                            },
+                            value: {
+                                show: true,
+                                fontSize: '24px',
+                                fontWeight: 700,
+                                color: '#343a40',
+                                offsetY: 5
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var csdHealthChart = new ApexCharts(document.querySelector("#admin-csd-health-chart"), csdHealthOptions);
+        csdHealthChart.render();
     });
 </script>

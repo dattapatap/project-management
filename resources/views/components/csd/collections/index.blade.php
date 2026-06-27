@@ -8,7 +8,7 @@
 <div class="container-fluid erp-page erp-page--csd">
     @include('layouts.partials.erp-page-header', [
         'title' => 'Collection Management',
-        'actions' => '<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAdd"><i class="mdi mdi-plus"></i> Add Follow-up</button>',
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAdd"><i class="mdi mdi-plus"></i> Add Follow-up</button>',
     ])
     <div class="card erp-table-card">
         <div class="card-body">

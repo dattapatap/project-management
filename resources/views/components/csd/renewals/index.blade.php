@@ -19,7 +19,8 @@
     @include('layouts.partials.erp-page-header', [
         'title' => 'Renewal Management',
         'subtitle' => 'Track AMC, domain, hosting & subscription renewals through to completion.',
-        'actions' => '<button type="button" class="btn btn-outline-primary btn-sm mr-1" id="btnSyncRenewals"><i class="mdi mdi-sync"></i> Sync AMC & Domains</button>'
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>'
+            . '<button type="button" class="btn btn-outline-primary btn-sm mr-1" id="btnSyncRenewals"><i class="mdi mdi-sync"></i> Sync AMC & Domains</button>'
             . '<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAdd"><i class="mdi mdi-plus"></i> Add Renewal</button>',
     ])
 

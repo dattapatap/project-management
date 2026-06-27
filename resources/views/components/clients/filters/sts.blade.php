@@ -305,7 +305,10 @@
             <h4 class="mb-1 text-white font-size-22 font-weight-700">🔍 Search STS (Sales Tracking System)</h4>
             <p class="mb-0 text-white-50 font-size-13">Filter, track performance, analyze touchpoints, and export chronological logs.</p>
         </div>
-        <div class="mt-3 mt-md-0">
+        <div class="mt-3 mt-md-0 d-flex align-items-center">
+            <a href="{{ url('/') }}" class="btn btn-light btn-sm mr-3 font-weight-bold d-inline-flex align-items-center" style="border-radius: 8px;">
+                <i class="mdi mdi-arrow-left mr-1"></i> Back
+            </a>
             <ol class="breadcrumb m-0 bg-transparent p-0">
                 <li class="breadcrumb-item"><a href="{{ url('/') }}" class="text-white-50">{{ env('APP_NAME')}}</a></li>
                 <li class="breadcrumb-item active text-white font-weight-600">Search STS</li>

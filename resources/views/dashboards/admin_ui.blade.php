@@ -78,7 +78,7 @@
 
 <!-- Analytics Charts Row -->
 <div class="row">
-    <div class="col-lg-8">
+    <div class="col-lg-6">
         <div class="card pm-dashboard-custom-card trendy-card">
             <div class="card-body">
                 <h4 class="card-title mb-4">Global Sales Trends (12 Months)</h4>
@@ -86,11 +86,19 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-4">
+    <div class="col-lg-3">
         <div class="card pm-dashboard-custom-card trendy-card">
             <div class="card-body">
                 <h4 class="card-title mb-4">Project Health</h4>
                 <div id="admin-project-chart" class="apex-charts" dir="ltr"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card pm-dashboard-custom-card trendy-card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">CSD Client Health</h4>
+                <div id="admin-csd-health-chart" class="apex-charts" dir="ltr"></div>
             </div>
         </div>
     </div>

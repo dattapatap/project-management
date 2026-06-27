@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Reports;
 use App\Http\Controllers\Controller;
 use App\Services\BranchScopeService;
 use App\Services\Reports\OdWorkReportService;
+use App\Services\Reports\NsdWorkReportService;
+use App\Services\Reports\CsdWorkReportService;
 use App\Services\Reports\ReportDateRangeService;
 use App\Services\Reports\ReportScopeService;
 use Illuminate\Http\Request;
@@ -16,7 +18,9 @@ class OperationsReportController extends Controller
     public function __construct(
         private ReportScopeService $scope,
         private ReportDateRangeService $dateRange,
-        private OdWorkReportService $odWork
+        private OdWorkReportService $odWork,
+        private NsdWorkReportService $nsdWork,
+        private CsdWorkReportService $csdWork
     ) {
         $this->middleware('auth');
     }
@@ -64,9 +68,15 @@ class OperationsReportController extends Controller
             $departmentId = (int) ($user->departments->department ?? BranchScopeService::DEPT_OD);
         }
 
-        $employees = $this->scope->visibleEmployeesQuery($user, $departmentId)
-            ->get()
-            ->map(fn ($emp) => $this->odWork->enrichEmployeeRow($emp, $range['from'], $range['to']));
+        $employees = $this->scope->visibleEmployeesQuery($user, $departmentId)->get();
+
+        if ($departmentId === BranchScopeService::DEPT_NSD) {
+            $employees = $employees->map(fn ($emp) => $this->nsdWork->enrichEmployeeRow($emp, $range['from'], $range['to']));
+        } elseif ($departmentId === BranchScopeService::DEPT_CSD) {
+            $employees = $employees->map(fn ($emp) => $this->csdWork->enrichEmployeeRow($emp, $range['from'], $range['to']));
+        } else {
+            $employees = $employees->map(fn ($emp) => $this->odWork->enrichEmployeeRow($emp, $range['from'], $range['to']));
+        }
 
         return DataTables::of($employees)
             ->addIndexColumn()

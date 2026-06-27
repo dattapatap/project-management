@@ -8,9 +8,10 @@
 @section('content')
 <div class="container-fluid erp-page erp-page--csd">
     @php
-        $headerActions = $canAssign
+        $backBtn = '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>';
+        $headerActions = $backBtn . ($canAssign
             ? '<button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAddAssignment"><i class="mdi mdi-plus"></i> Assign Client</button>'
-            : '';
+            : '');
     @endphp
     @include('layouts.partials.erp-page-header', [
         'title' => 'CSD Client Management',

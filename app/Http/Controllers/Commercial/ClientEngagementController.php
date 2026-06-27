@@ -52,6 +52,9 @@ class ClientEngagementController extends Controller
                 return '<span class="badge badge-' . $class . '">' . e($row->statusLabel()) . '</span>';
             })
             ->addColumn('parent_no', fn ($row) => e($row->parent?->engagement_no ?? '—'))
+            ->addColumn('csd_owner', fn ($row) => e($row->csdOwner?->name ?? 'Unassigned'))
+            ->addColumn('sales_owner', fn ($row) => e($row->salesOwner?->name ?? '—'))
+            ->addColumn('assigned_at', fn ($row) => $row->created_at ? $row->created_at->format('M d, Y H:i') : '—')
             ->addColumn('action', function ($row) {
                 $btn = '<a href="' . route('commercial.engagements.show', $row->id) . '" class="btn btn-sm btn-outline-primary"><i class="mdi mdi-eye"></i></a>';
                 if (in_array($row->status, [

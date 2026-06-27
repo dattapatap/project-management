@@ -4,11 +4,13 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamsController;
 
-Route::prefix('projects')->middleware(['auth'])->group(function(){
+Route::prefix('projects')->middleware(['auth', 'restrict.wms'])->group(function(){
 
     Route::get('/', [ProjectController::class, 'index']);
     Route::get('/create', [ProjectController::class, 'create']);
     Route::get('/search', [ProjectController::class, 'search']);
+    Route::get('/timeline', [ProjectController::class, 'timeline'])->name('projects.timeline');
+    Route::get('/resources', [\App\Http\Controllers\Od\ResourceController::class, 'index'])->name('projects.resources');
 
     Route::get('/taskboard/{project}', [TaskController::class, 'index']);
     Route::get('/taskboard/{task}/edit', [TaskController::class, 'edit']);

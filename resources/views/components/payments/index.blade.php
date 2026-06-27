@@ -8,7 +8,10 @@
 @section('content')
 
 <div class="container-fluid erp-page erp-page--admin erp-list-page">
-    @include('layouts.partials.erp-page-header', ['title' => 'Payments'])
+    @include('layouts.partials.erp-page-header', [
+        'title' => 'Payments',
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>'
+    ])
 
     <div class="row">
         <div class="col-lg-12">

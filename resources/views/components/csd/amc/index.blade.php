@@ -14,7 +14,7 @@
     @include('layouts.partials.erp-page-header', [
         'title' => 'AMC / Support Contracts',
         'subtitle' => 'Monthly (5-day reminder) and yearly (30-day reminder) agreements with document storage.',
-        'actions' => '<a href="' . route('csd.amc.create') . '" class="btn btn-primary btn-sm"><i class="mdi mdi-plus"></i> Add Contract</a>',
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><a href="' . route('csd.amc.create') . '" class="btn btn-primary btn-sm"><i class="mdi mdi-plus"></i> Add Contract</a>',
     ])
 
     @if(session('success'))

@@ -5,6 +5,7 @@ namespace App\Services\Reports;
 use App\Models\Task;
 use App\Models\TaskLog;
 use App\Models\User;
+use App\Models\DepartmentProjects;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -139,6 +140,22 @@ class OdWorkReportService
         $employee->productivity = min(100, (int) round(($summary['total_hours'] / $targetHours) * 100));
 
         return $employee;
+    }
+
+    public function currentProjects(int $userId): Collection
+    {
+        return DepartmentProjects::whereHas('tasks', function ($q) use ($userId) {
+                $q->where('assigned_to', $userId)
+                  ->whereIn('status', ['InProgress', 'ToDo']);
+            })
+            ->with(['clients'])
+            ->get()
+            ->map(fn ($proj) => (object) [
+                'id' => $proj->id,
+                'name' => $proj->project_name ?? ($proj->clients->name ?? 'Internal Project'),
+                'status' => 'WMS Project (' . $proj->status . ')',
+                'updated_at' => $proj->updated_at,
+            ]);
     }
 
     private function logsInRange(int $userId, Carbon $from, Carbon $to)

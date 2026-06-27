@@ -275,6 +275,80 @@
     </div>
 </div>
 
+{{-- Workload Heatmap Widget --}}
+@if(!empty($adminData['workload_heatmap']) && $adminData['workload_heatmap']->count())
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card pm-dashboard-custom-card shadow-sm border-0">
+            <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center justify-content-between">
+                <h5 class="font-size-15 mb-0 text-dark font-weight-bold">
+                    <i class="mdi mdi-chart-bar mr-1 text-warning"></i> Team Workload Heatmap
+                </h5>
+                <a href="{{ route('projects.resources') }}" class="btn btn-sm btn-soft-primary btn-rounded px-3">
+                    <i class="mdi mdi-open-in-new mr-1"></i> Full View
+                </a>
+            </div>
+            <div class="card-body pb-2">
+                <div class="row">
+                    @foreach($adminData['workload_heatmap'] as $member)
+                    @php
+                        $active = $member->todo_count + $member->inprogress_count;
+                        $loadColor = match(true) {
+                            $active === 0         => '#f0fff4',
+                            $active <= 2          => '#c6f6d5',
+                            $active <= 4          => '#fef9c3',
+                            $active <= 6          => '#fed7aa',
+                            default               => '#feb2b2',
+                        };
+                        $textColor = match(true) {
+                            $active === 0         => '#2f855a',
+                            $active <= 2          => '#276749',
+                            $active <= 4          => '#744210',
+                            $active <= 6          => '#7b341e',
+                            default               => '#c53030',
+                        };
+                        $loadLabel = match(true) {
+                            $active === 0 => 'Idle',
+                            $active <= 2  => 'Light',
+                            $active <= 4  => 'Moderate',
+                            $active <= 6  => 'High',
+                            default       => 'Overloaded',
+                        };
+                    @endphp
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="d-flex align-items-center p-3 rounded" style="background:{{ $loadColor }};border-radius:10px!important;">
+                            <img src="{{ Avatar::create($member->name)->toBase64() }}" class="rounded-circle mr-3" style="width:38px;height:38px;border:2px solid rgba(0,0,0,.08);">
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="font-weight-bold text-dark text-truncate" style="font-size:.85rem;">{{ $member->name }}</div>
+                                <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                                    <span class="badge" style="background:{{ $textColor }};color:#fff;font-size:.68rem;padding:2px 7px;border-radius:20px;">{{ $loadLabel }}</span>
+                                    <small class="text-muted">{{ $active }} active · {{ $member->completed_count }} done</small>
+                                </div>
+                                @if($member->overdue_count > 0)
+                                <small class="text-danger font-weight-bold"><i class="mdi mdi-alert-circle-outline"></i> {{ $member->overdue_count }} overdue</small>
+                                @endif
+                            </div>
+                            <div class="text-right ml-2" style="min-width:36px;">
+                                <div class="font-weight-bold" style="font-size:1.3rem;line-height:1;color:{{ $textColor }};">{{ $active }}</div>
+                                <small style="font-size:.65rem;color:#718096;">tasks</small>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                {{-- Mini legend --}}
+                <div class="d-flex gap-3 flex-wrap pb-1" style="gap:12px;">
+                    <small><span style="display:inline-block;width:10px;height:10px;background:#c6f6d5;border-radius:3px;margin-right:4px;"></span>Light (1–2)</small>
+                    <small><span style="display:inline-block;width:10px;height:10px;background:#fef9c3;border-radius:3px;margin-right:4px;"></span>Moderate (3–4)</small>
+                    <small><span style="display:inline-block;width:10px;height:10px;background:#fed7aa;border-radius:3px;margin-right:4px;"></span>High (5–6)</small>
+                    <small><span style="display:inline-block;width:10px;height:10px;background:#feb2b2;border-radius:3px;margin-right:4px;"></span>Overloaded (7+)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <!-- Urgent Deadlines Table -->
 <div class="row mb-5 pb-4 pt-4">
     <div class="col-12">

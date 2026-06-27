@@ -23,10 +23,11 @@ class SalesDashboardController extends Controller
     /**
      * Show the Sales Department dashboard.
      */
-    public function index(Request $request)
+    public function index(Request $request, \App\Services\Sales\TargetService $targetService)
     {
         $user = Auth::user();
         $selectedYear = $request->get('year', date('Y'));
+        $selectedMonth = $request->get('month', date('n'));
         $departmentId = $user->departments->department ?? null;
 
         $adminData = [];
@@ -35,6 +36,7 @@ class SalesDashboardController extends Controller
         if ($user->hasRole('Team-Leader') && $departmentId == 1) {
             // 💼 Sales Department Team Leader Dashboard - Loads both Team Oversight and Personal Workspace
             $adminData = $this->getSalesTLDashboardData($user, $selectedYear);
+            $adminData['leaderboard'] = $targetService->getLeaderboardData($selectedMonth, $selectedYear);
             $personalData = $this->getSalesExecutiveDashboardData($user, $selectedYear);
         } elseif ($user->hasRole('Sales-Executive')) {
             // 📞 Sales Executive (Employee) Dashboard
@@ -123,6 +125,7 @@ class SalesDashboardController extends Controller
             })
             ->where('status', 'Fresh')
             ->latest()
+            ->limit(50)
             ->get();
 
         // 5. Allocatable team members list

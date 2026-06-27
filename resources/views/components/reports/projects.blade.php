@@ -5,7 +5,12 @@
     <!-- 🚀 Stellar Header -->
     <div class="row mb-5 align-items-center">
         <div class="col-lg-6">
-            <h1 class="header-glow mb-2">Project Reports</h1>
+            <div class="d-flex align-items-center mb-2">
+                <a href="{{ url('/') }}" class="btn btn-outline-primary btn-sm mr-3 d-inline-flex align-items-center">
+                    <i class="mdi mdi-arrow-left mr-1"></i> Back
+                </a>
+                <h1 class="header-glow mb-0">Project Reports</h1>
+            </div>
             <p class="text-muted font-size-15 font-weight-medium">Strategic intelligence dashboard for system-wide project lifecycles.</p>
         </div>
         <div class="col-lg-6">

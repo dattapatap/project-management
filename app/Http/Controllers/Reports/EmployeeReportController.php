@@ -10,6 +10,8 @@ use App\Models\Task;
 use App\Models\TaskLog;
 use App\Models\User;
 use App\Services\Reports\OdWorkReportService;
+use App\Services\Reports\NsdWorkReportService;
+use App\Services\Reports\CsdWorkReportService;
 use App\Services\Reports\ReportDateRangeService;
 use App\Services\Reports\ReportScopeService;
 use App\Services\UserPerformanceService;
@@ -18,13 +20,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class EmployeeReportController extends Controller
 {
     public function __construct(
         private ReportScopeService $reportScope,
         private ReportDateRangeService $dateRange,
-        private OdWorkReportService $odWork
+        private OdWorkReportService $odWork,
+        private NsdWorkReportService $nsdWork,
+        private CsdWorkReportService $csdWork
     ) {
         $this->middleware('auth');
     }
@@ -246,6 +251,27 @@ class EmployeeReportController extends Controller
      */
     public function detail(Request $request, $id)
     {
+        $data = $this->getDetailData($request, $id);
+        return view('components.reports.employee_detail', $data);
+    }
+
+    /**
+     * Download Employee Detail Dossier as PDF
+     */
+    public function downloadPdf(Request $request, $id)
+    {
+        $data = $this->getDetailData($request, $id);
+        $pdf = Pdf::loadView('components.reports.employee_detail_pdf', $data);
+        
+        $filename = "performance_report_" . str_replace(' ', '_', strtolower($data['employee']->name)) . ".pdf";
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Gather detail intelligence data for an employee
+     */
+    private function getDetailData(Request $request, $id)
+    {
         $userId = base64_decode($id);
         $employee = User::with(['emp', 'departments.dept', 'roles'])->findOrFail($userId);
 
@@ -272,22 +298,78 @@ class EmployeeReportController extends Controller
         $odSummary = null;
         $odDailyBreakdown = collect();
         $odTaskBreakdown = collect();
+        $currentProjects = collect();
 
         if ($isOd) {
             $odSummary = $this->odWork->summaryForUser((int) $userId, $range['from'], $range['to']);
             $odDailyBreakdown = $this->odWork->dailyBreakdown((int) $userId, $range['from'], $range['to']);
             $odTaskBreakdown = $this->odWork->taskBreakdown((int) $userId, $range['from'], $range['to']);
+            $currentProjects = $this->odWork->currentProjects((int) $userId);
             $stats = array_merge($stats, $odSummary);
+
+            // Range-aware productivity override
+            $targetHours = max(1, $range['from']->diffInDays($range['to']) + 1) * 8;
+            $performanceScore = $targetHours > 0 ? min(100, (int) round(($odSummary['total_hours'] / $targetHours) * 100)) : 0;
+        } elseif ($isSales) {
+            $nsdSummary = $this->nsdWork->summaryForUser((int) $userId, $range['from'], $range['to']);
+            $odDailyBreakdown = $this->nsdWork->dailyBreakdown((int) $userId, $range['from'], $range['to']);
+            $currentProjects = $this->nsdWork->currentProjects((int) $userId);
+            $stats = array_merge($stats, $nsdSummary);
+
+            // Range-aware productivity override
+            $targetMatured = 5;
+            $daysDiff = max(1, $range['from']->diffInDays($range['to']) + 1);
+            if ($daysDiff < 7) {
+                $targetMatured = 1;
+            } elseif ($daysDiff <= 31) {
+                $targetMatured = 5;
+            } else {
+                $targetMatured = ceil($daysDiff / 30) * 5;
+            }
+            $performanceScore = min(100, (int) round(($nsdSummary['matured_count'] / $targetMatured) * 100));
+        } elseif ($isCsd) {
+            $csdSummary = $this->csdWork->summaryForUser((int) $userId, $range['from'], $range['to']);
+            $odDailyBreakdown = $this->csdWork->dailyBreakdown((int) $userId, $range['from'], $range['to']);
+            $currentProjects = $this->csdWork->currentProjects((int) $userId);
+            $stats = array_merge($stats, $csdSummary);
+
+            // Range-aware productivity override
+            $score = $csdSummary['active_clients'] * 3
+                + $csdSummary['comms_count'] * 2
+                + $csdSummary['tickets_resolved'] * 5
+                + $csdSummary['collections_paid'] * 4
+                + $csdSummary['opportunities_won'] * 10
+                + $csdSummary['change_requests_completed'] * 6;
+            $performanceScore = min(100, (int) $score);
         }
 
-        $dailyLogsQuery = TaskLog::with('task.project.clients')->where('userid', $userId)
-            ->whereBetween('log_date', [$range['from']->toDateString(), $range['to']->toDateString()]);
-
-        $dailyLogs = $dailyLogsQuery->orderBy('created_at', 'desc')
-            ->get()
-            ->groupBy(function ($date) {
-                return Carbon::parse($date->created_at)->format('d M, Y');
-            });
+        $dailyLogs = collect();
+        if ($isOd) {
+            $dailyLogs = TaskLog::with('task.project.clients')->where('userid', $userId)
+                ->whereBetween('log_date', [$range['from']->toDateString(), $range['to']->toDateString()])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->groupBy(function ($log) {
+                    return Carbon::parse($log->created_at)->format('d M, Y');
+                });
+        } elseif ($isSales) {
+            $dailyLogs = \App\Models\ClientHistory::with('client')->where('created', $userId)
+                ->whereBetween('created_at', [$range['from'], $range['to']])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->groupBy(function ($log) {
+                    return Carbon::parse($log->created_at)->format('d M, Y');
+                });
+        } elseif ($isCsd) {
+            $dailyLogs = CsdCommunication::with('client')
+                ->where('created_by', $userId)
+                ->whereBetween('communication_date', [$range['from'], $range['to']])
+                ->orderBy('communication_date', 'desc')
+                ->get()
+                ->groupBy(function ($log) {
+                    return Carbon::parse($log->created_at)->format('d M, Y');
+                });
+        }
 
         $tasks = Task::with('project.clients')->where('assigned_to', $userId)->latest()->take(10)->get();
         $logs = TaskLog::with('task.project.clients')->where('userid', $userId)->latest()->take(15)->get();
@@ -299,14 +381,10 @@ class EmployeeReportController extends Controller
         $recentWonOpps = collect();
 
         if ($isSales) {
-            $recentMaturedQuery = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')->whereYear('updated_at', $selectedYear);
-            $salesLogsQuery = \App\Models\ClientHistory::with('client')->where('created', $userId)->whereYear('created_at', $selectedYear);
-
-            if ($selectedMonth != 'All') {
-                $monthNum = date('m', strtotime($selectedMonth));
-                $recentMaturedQuery->whereMonth('updated_at', $monthNum);
-                $salesLogsQuery->whereMonth('created_at', $monthNum);
-            }
+            $recentMaturedQuery = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')
+                ->whereBetween('updated_at', [$range['from'], $range['to']]);
+            $salesLogsQuery = \App\Models\ClientHistory::with('client')->where('created', $userId)
+                ->whereBetween('created_at', [$range['from'], $range['to']]);
 
             $recentMatured = $recentMaturedQuery->latest('updated_at')->take(10)->get();
             $salesLogs = $salesLogsQuery->latest()->take(15)->get();
@@ -328,11 +406,11 @@ class EmployeeReportController extends Controller
                 ->get();
         }
 
-        return view('components.reports.employee_detail', compact(
+        return compact(
             'employee', 'tasks', 'logs', 'salesLogs', 'stats', 'selectedYear', 'selectedMonth', 'months',
             'monthlyTrend', 'dailyLogs', 'isSales', 'isCsd', 'isOd', 'deptType', 'performanceScore',
             'recentMatured', 'recentCsdComms', 'recentWonOpps', 'activities', 'range',
-            'odSummary', 'odDailyBreakdown', 'odTaskBreakdown'
-        ));
+            'odSummary', 'odDailyBreakdown', 'odTaskBreakdown', 'currentProjects'
+        );
     }
 }

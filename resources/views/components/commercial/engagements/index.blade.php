@@ -9,7 +9,7 @@
     @include('layouts.partials.erp-page-header', [
         'title' => 'Commercial Engagements',
         'subtitle' => 'Tracked upsell / cross-sell orders — parent & child chain per client',
-        'actions' => '',
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>',
     ])
     <div class="card erp-table-card">
         <div class="card-body">
@@ -22,6 +22,9 @@
                         <th>Title</th>
                         <th>Type</th>
                         <th>Parent</th>
+                        <th>Followed By</th>
+                        <th>Converted By</th>
+                        <th>Assigned At</th>
                         <th>Est. Value</th>
                         <th>Closed</th>
                         <th>Status</th>
@@ -80,6 +83,9 @@ $(function () {
             { data: 'title' },
             { data: 'engagement_type' },
             { data: 'parent_no' },
+            { data: 'csd_owner' },
+            { data: 'sales_owner' },
+            { data: 'assigned_at' },
             { data: 'estimated_value' },
             { data: 'closed_value' },
             { data: 'status' },

@@ -48,6 +48,11 @@ Route::get('/storage-link', function () {
     return "Storage folder symlink created successfully on the server!";
 });
 
+Route::get('/migrate', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return '<pre>' . Artisan::output() . '</pre>';
+});
+
 
 
 Route::get('/', function () {
@@ -153,6 +158,29 @@ Route::group(['middleware' => ['auth', 'restrict.sales']], function () {
     Route::post('/assignToExecutive', [ClientsController::class, 'assignToExecutive'])->name('assignUsersToexecutive');
     Route::post('client/{client}/nudge', [ClientsController::class, 'nudgeExecutive'])->name('client.nudge');
     Route::post('clients/nudge-exec', [ClientsController::class, 'nudgeExecutiveByUserId']);
+
+    // Sales Pipeline Kanban Board
+    Route::get('sales/pipeline', [\App\Http\Controllers\Sales\SalesPipelineController::class, 'index'])->name('sales.pipeline');
+    Route::post('sales/pipeline/move', [\App\Http\Controllers\Sales\SalesPipelineController::class, 'moveCard'])->name('sales.pipeline.move');
+
+    // Service Catalog Manager
+    Route::get('sales/catalog', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'index'])->name('sales.catalog.index');
+    Route::post('sales/catalog', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'store'])->name('sales.catalog.store');
+    Route::put('sales/catalog/{id}', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'update'])->name('sales.catalog.update');
+    Route::post('sales/catalog/{id}/toggle', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'toggleStatus'])->name('sales.catalog.toggle');
+
+    // Sales Target Planner & Leaderboards
+    Route::get('sales/targets', [\App\Http\Controllers\Sales\SalesTargetController::class, 'index'])->name('sales.targets.index');
+    Route::post('sales/targets', [\App\Http\Controllers\Sales\SalesTargetController::class, 'store'])->name('sales.targets.store');
+    Route::get('sales/leaderboard', [\App\Http\Controllers\Sales\SalesTargetController::class, 'leaderboard'])->name('sales.targets.leaderboard');
+
+    // Sales Activity Calendar
+    Route::get('sales/calendar', [\App\Http\Controllers\Sales\SalesActivityController::class, 'index'])->name('sales.calendar.index');
+    Route::get('sales/calendar/events', [\App\Http\Controllers\Sales\SalesActivityController::class, 'events'])->name('sales.calendar.events');
+
+    // Automated Sales-to-OD Handoff Wizard
+    Route::get('sales/handoff/{clientId}', [\App\Http\Controllers\Sales\HandoffWizardController::class, 'showWizard'])->name('sales.handoff.wizard');
+    Route::post('sales/handoff', [\App\Http\Controllers\Sales\HandoffWizardController::class, 'processHandoff'])->name('sales.handoff.process');
 });
 
 // 🔒 WMS / Operations (DO) Department Protected Routes
@@ -248,6 +276,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/reports/employees', [EmployeeReportController::class, 'index'])->name('reports.employees');
     Route::get('/reports/employees/data', [EmployeeReportController::class, 'data'])->name('reports.employees.data');
     Route::get('/reports/employee/{id}', [EmployeeReportController::class, 'detail'])->name('reports.employee.detail');
+    Route::get('/reports/employee/{id}/pdf', [EmployeeReportController::class, 'downloadPdf'])->name('reports.employee.pdf');
     Route::get('/reports/operations', [OperationsReportController::class, 'index'])->name('reports.operations');
     Route::get('/reports/operations/data', [OperationsReportController::class, 'data'])->name('reports.operations.data');
     Route::get('/my-insights', [EmployeeReportController::class, 'myInsights'])->name('my-insights');

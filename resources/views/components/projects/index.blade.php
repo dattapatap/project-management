@@ -98,7 +98,12 @@
     <div class="project-header-section">
         <div class="row align-items-center">
             <div class="col-md-4">
-                <h4 class="erp-page-title mb-0">Explore Projects</h4>
+                <div class="d-flex align-items-center mb-1">
+                    <a href="{{ url('/') }}" class="btn btn-outline-primary btn-sm mr-2 d-inline-flex align-items-center">
+                        <i class="mdi mdi-arrow-left mr-1"></i> Back
+                    </a>
+                    <h4 class="erp-page-title mb-0">Explore Projects</h4>
+                </div>
                 <p class="text-muted mb-0 font-size-12">Manage and track active workflows</p>
             </div>
             <div class="col-md-4">

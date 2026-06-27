@@ -34,6 +34,7 @@ class UserUpdateRequest extends FormRequest
             'designation' => 'required|string',
             'code' => 'required|unique:employees,mem_code,'.$id.',user,deleted_at,NULL',
             'joining_date' => 'required|date',
+            'status' => 'required|string|in:Active,Inactive',
         ];
     }
 }

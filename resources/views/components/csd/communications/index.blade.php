@@ -8,7 +8,7 @@
 <div class="container-fluid erp-page erp-page--csd">
     @include('layouts.partials.erp-page-header', [
         'title' => 'Communication Center',
-        'actions' => '<button type="button" class="btn btn-primary btn-sm" id="btnLogCommunication"><i class="mdi mdi-plus"></i> Log Communication</button>',
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><button type="button" class="btn btn-primary btn-sm" id="btnLogCommunication"><i class="mdi mdi-plus"></i> Log Communication</button>',
     ])
     <div class="card erp-table-card">
         <div class="card-body">

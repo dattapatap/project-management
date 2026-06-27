@@ -21,21 +21,7 @@
 
             <div class="card-body">
                 <!-- Header company details -->
-                <div class="comp_header_detail">
-                    <div class="comp_header_item company_header" >
-                        <h3 class="fs-17 company_name">
-                            <a href="javascript:void(0)"> {{ $client->name }} </a>
-                        </h3>
-                        <p class="company_address fs-12">
-                            {{ $client->address }}
-                        </p>
-                        <span class="comp_cont_person fs-13">
-                            @isset( $client->mobile )
-                            {{ $client->cont_person }}@isset($client->designation) ({{ $client->designation }}) @endisset : {{ $client->mobile }}
-                            @endisset
-                        </span>
-                    </div>
-                </div>
+                @include('components.clients.history.header')
 
 
                 <ul class="nav nav-tabs nav-dept mt-3" role="tablist">

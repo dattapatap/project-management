@@ -17,6 +17,7 @@ class ClientPayments extends Model
         return $this->belongsTo(ClientPackages::class, 'package_id', 'id');
     }
 
-
-
+    public function clients(){
+        return $this->belongsTo(Clients::class, 'client', 'id');
+    }
 }

@@ -490,6 +490,13 @@
                 },
                 success: function(response) {
                     if (response.status == true) {
+                        if (response.handoff_required) {
+                            alertify.success(response.message);
+                            setTimeout(() => {
+                                window.location.href = "{{ url('/') }}/sales/handoff/" + response.client_id;
+                            }, 1000);
+                            return;
+                        }
                         if ($('#dsr_status').val() == 'Matured') {
                             setTimeout(() => {
                                 window.location.reload();
@@ -543,6 +550,13 @@
                 },
                 success: function(response) {
                     if (response.status == true) {
+                        if (response.handoff_required) {
+                            alertify.success(response.message);
+                            setTimeout(() => {
+                                window.location.href = "{{ url('/') }}/sales/handoff/" + response.client_id;
+                            }, 1000);
+                            return;
+                        }
                         if ($('#dsr_status').val() == 'Matured') {
                             setTimeout(() => {
                                 window.location.reload();

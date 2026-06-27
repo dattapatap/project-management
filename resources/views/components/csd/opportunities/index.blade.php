@@ -9,7 +9,7 @@
     @include('layouts.partials.erp-page-header', [
         'title' => 'Upselling & Opportunities',
         'subtitle' => 'Mark Won creates a tracked commercial order — after Won, edit the order in Commercial Orders (opportunity is locked).',
-        'actions' => '<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAdd"><i class="mdi mdi-plus"></i> New Opportunity</button>',
+        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAdd"><i class="mdi mdi-plus"></i> New Opportunity</button>',
     ])
     <div class="card erp-table-card">
         <div class="card-body">
