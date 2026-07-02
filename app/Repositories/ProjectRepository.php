@@ -73,11 +73,15 @@ class ProjectRepository extends BaseRepository
             }
         } elseif ($user->hasRole('Team-Leader')) {
             $this->scopeForTeamLeader($query, $user);
-            if ($status) {
+            if ($status === 'Pending') {
+                $query->whereIn('status', ['ToDo', 'InProgress']);
+            } elseif ($status && $status !== 'all') {
                 $query->where('status', $status);
             }
         } else {
-            if ($status) {
+            if ($status === 'Pending') {
+                $query->whereIn('status', ['ToDo', 'InProgress']);
+            } elseif ($status && $status !== 'all') {
                 $query->where('status', $status);
             }
         }
@@ -97,14 +101,20 @@ class ProjectRepository extends BaseRepository
         $query = $baseQuery ? clone $baseQuery : $this->query();
         $nearDeadline = Carbon::now()->addDays(7);
 
-        return $query->selectRaw("
+        $base = $query->toBase();
+        $base->columns = []; // Clear standard selects to prevent ONLY_FULL_GROUP_BY errors
+        $base->orders = [];  // Clear ORDER BY clause to prevent ONLY_FULL_GROUP_BY errors
+
+        $row = $base->selectRaw("
             count(*) as total,
             count(case when status != 'Completed' and end_date <= ? then 1 end) as near_deadline,
             count(case when status = 'ToDo' then 1 end) as not_started,
             count(case when status = 'InProgress' then 1 end) as in_progress,
             count(case when status != 'Completed' then 1 end) as pending,
             count(case when status = 'Completed' then 1 end) as completed
-        ", [$nearDeadline])->first()->toArray();
+        ", [$nearDeadline])->first();
+
+        return (array) $row;
     }
 
     /**

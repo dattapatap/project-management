@@ -43,6 +43,21 @@ class DepartmentProjectsController extends Controller
                 $client = Clients::findOrFail($request->post('clientsid'));
 
                 DB::beginTransaction();
+
+                if ($client->status !== 'Matured') {
+                    $client->status = 'Matured';
+                    $client->updated_by = $userid;
+                    $client->save();
+
+                    // Log history
+                    $client->histories()->create([
+                        'category' => 'STS',
+                        'status'   => 'Matured',
+                        'remarks'  => 'Client matured automatically upon project creation by ' . Auth::user()->name,
+                        'created'  => $userid,
+                    ]);
+                }
+
                 $projectnm   = DB::table('project_sub_categories')->where('id', $request->category )->first();
 
                 // Assign Project to Department
@@ -57,7 +72,7 @@ class DepartmentProjectsController extends Controller
                 $dept->project_name     =   $projectnm->name;
                 $dept->start_date       =   Carbon::parse($request->start_date)->format('Y-m-d h:i');
                 $dept->end_date         =   Carbon::parse($request->end_date)->format('Y-m-d h:i');
-                $dept->status           =   $request->team_leader ? "InProgress" : "ToDo";
+                $dept->status           =   "ToDo";
                 $dept->description      =   $request->description;
                 $dept->save();
 

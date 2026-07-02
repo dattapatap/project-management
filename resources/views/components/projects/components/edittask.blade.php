@@ -34,7 +34,7 @@
                             <label> Est. Start Date <span class="text_required">*</span></label>
                             <div class="form-group">
                                 <input type="datetime-local" class="form-control" name="txt_task_est_start_date" id="txt_task_est_start_date"
-                                placeholder="Est Start Date" min="<?= date('Y-m-d\TH:i'); ?>" >
+                                placeholder="Est Start Date" min="<?= date('Y-m-d\T00:00'); ?>" >
                                 <span class="invalid-feedback" id="txt_task_est_start_date-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
@@ -42,7 +42,7 @@
                             <label> Est. End Date <span class="text_required">*</span></label>
                             <div class="form-group">
                                 <input type="datetime-local" class="form-control" name="txt_task_est_end_date" id="txt_task_est_end_date"
-                                placeholder="Est. End Date"  min="<?= date('Y-m-d\TH:i'); ?>">
+                                placeholder="Est. End Date"  min="<?= date('Y-m-d\T00:00'); ?>">
                                 <span class="invalid-feedback" id="txt_task_est_end_date-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>

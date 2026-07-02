@@ -12,18 +12,12 @@ use Illuminate\Support\Facades\DB;
 
 class SalesDashboardController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     */
-    public function __construct()
+    public function __construct(private \App\Services\Sales\TargetService $targetService)
     {
         $this->middleware('auth');
     }
 
-    /**
-     * Show the Sales Department dashboard.
-     */
-    public function index(Request $request, \App\Services\Sales\TargetService $targetService)
+    public function index(Request $request)
     {
         $user = Auth::user();
         $selectedYear = $request->get('year', date('Y'));
@@ -34,12 +28,10 @@ class SalesDashboardController extends Controller
         $personalData = [];
 
         if ($user->hasRole('Team-Leader') && $departmentId == 1) {
-            // 💼 Sales Department Team Leader Dashboard - Loads both Team Oversight and Personal Workspace
             $adminData = $this->getSalesTLDashboardData($user, $selectedYear);
-            $adminData['leaderboard'] = $targetService->getLeaderboardData($selectedMonth, $selectedYear);
+            $adminData['leaderboard'] = $this->targetService->getLeaderboardData($selectedMonth, $selectedYear);
             $personalData = $this->getSalesExecutiveDashboardData($user, $selectedYear);
         } elseif ($user->hasRole('Sales-Executive')) {
-            // 📞 Sales Executive (Employee) Dashboard
             $adminData = $this->getSalesExecutiveDashboardData($user, $selectedYear);
         }
 

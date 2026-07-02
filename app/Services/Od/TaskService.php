@@ -90,6 +90,30 @@ class TaskService
             return ['success' => false, 'message' => 'Unauthorized! You can only update your own tasks.'];
         }
 
+        // Rule 1: Once moved to InProgress or Completed, cannot go back to ToDo
+        if (in_array($task->status, ['InProgress', 'Completed']) && $newStatus === 'ToDo') {
+            return ['success' => false, 'message' => 'Task cannot be moved back to ToDo once it is in progress or completed.'];
+        }
+
+        // Rule 2: Only Admin, BM, PM, TL can move Completed back to InProgress
+        if ($task->status === 'Completed' && $newStatus === 'InProgress') {
+            if (!$user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader'])) {
+                return ['success' => false, 'message' => 'Only administrators and managers can move completed tasks back to In Progress.'];
+            }
+        }
+
+        // Rule 3: Before completing, must have at least one time log
+        if ($newStatus === 'Completed') {
+            if ($task->logs()->count() === 0) {
+                return ['success' => false, 'message' => 'Cannot complete task. You must add at least one work time log before completing the task.'];
+            }
+        }
+
+        // Rule 4: Cannot transition directly from ToDo to Completed
+        if ($task->status === 'ToDo' && $newStatus === 'Completed') {
+            return ['success' => false, 'message' => 'Task must be in In Progress status before it can be Completed.'];
+        }
+
         $this->applyStatusTransition($task, $newStatus, $actStartDate);
         $task->save();
 
@@ -117,6 +141,30 @@ class TaskService
     {
         if (!$this->canModifyTask($task, $user)) {
             return ['success' => false, 'message' => 'Unauthorized! You can only move your own tasks.'];
+        }
+
+        // Rule 1: Once moved to InProgress or Completed, cannot go back to ToDo
+        if (in_array($task->status, ['InProgress', 'Completed']) && $newStatus === 'ToDo') {
+            return ['success' => false, 'message' => 'Task cannot be moved back to ToDo once it is in progress or completed.'];
+        }
+
+        // Rule 2: Only Admin, BM, PM, TL can move Completed back to InProgress
+        if ($task->status === 'Completed' && $newStatus === 'InProgress') {
+            if (!$user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader'])) {
+                return ['success' => false, 'message' => 'Only administrators and managers can move completed tasks back to In Progress.'];
+            }
+        }
+
+        // Rule 3: Before completing, must have at least one time log
+        if ($newStatus === 'Completed') {
+            if ($task->logs()->count() === 0) {
+                return ['success' => false, 'message' => 'Cannot complete task. You must add at least one work time log before completing the task.'];
+            }
+        }
+
+        // Rule 4: Cannot transition directly from ToDo to Completed
+        if ($task->status === 'ToDo' && $newStatus === 'Completed') {
+            return ['success' => false, 'message' => 'Task must be in In Progress status before it can be Completed.'];
         }
 
         return DB::transaction(function () use ($task, $user, $newStatus) {

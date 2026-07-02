@@ -23,27 +23,43 @@ class ResourceController extends Controller
     {
         $user = Auth::user();
 
-        // Determine team scope
+        // Determine team scope & department scope
         $teamId = null;
+        $selectedDeptId = 2; // Strictly OD (Operations)
+
         if ($user->hasRole('Team-Leader')) {
             $member = TeamMembers::where('user', $user->id)->where('status', true)->first();
             $teamId = $member?->team;
+        } else {
+            if ($request->has('team') && $request->get('team') !== '') {
+                $teamId = (int) $request->get('team');
+            }
         }
 
         // Get all active projects with task & member data
         $projects = $this->projectRepo->getResourceAllocation($teamId);
 
-        // Build member list: collect all users assigned to tasks across these projects
-        $memberIds = $projects->flatMap(function ($project) {
-            return $project->tasks->pluck('assigned_to');
-        })->unique()->filter()->values()->toArray();
+        // Build member list based on selected scope
+        if ($teamId) {
+            $memberIds = TeamMembers::where('team', $teamId)
+                ->where('status', true)
+                ->pluck('user')
+                ->unique()
+                ->filter()
+                ->toArray();
+        } else {
+            // Get active users belonging to the selected department
+            $memberIds = User::whereHas('departments', function ($q) use ($selectedDeptId) {
+                $q->where('department', $selectedDeptId);
+            })->where('status', 'Active')->pluck('id')->toArray();
+        }
 
         // Get workload stats per member
         $workload = $memberIds
             ? $this->projectRepo->getWorkloadByTeamMembers($memberIds)
             : collect();
 
-        // Build teams list for filter (Admin/PM only)
+        // Build list of teams for filter (Admin/PM/BM only)
         $teams = [];
         if ($user->hasRole(['Admin', 'Project-Manager', 'Branch-Manager'])) {
             $teams = Teams::with('teammembers.member')->get();
@@ -54,7 +70,8 @@ class ResourceController extends Controller
             'workload',
             'memberIds',
             'teams',
-            'teamId'
+            'teamId',
+            'selectedDeptId'
         ));
     }
 }

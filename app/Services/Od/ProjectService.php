@@ -289,6 +289,23 @@ class ProjectService
      */
     public function updateStatus(DepartmentProjects $project, User $user, string $status, ?string $actStartDate = null): array
     {
+        // Rule 1: Once started, cannot go back to ToDo
+        if (in_array($project->status, ['InProgress', 'Completed']) && $status === 'ToDo') {
+            return ['success' => false, 'message' => 'Project cannot be moved back to ToDo once it has started.'];
+        }
+
+        // Rule 2: Reopening Completed project is restricted to Admin & Branch-Manager
+        if ($project->status === 'Completed' && $status === 'InProgress') {
+            if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
+                return ['success' => false, 'message' => 'Only Admins and Branch Managers can reopen completed projects.'];
+            }
+        }
+
+        // Rule 3: Must be InProgress before Completed (cannot skip InProgress)
+        if ($project->status === 'ToDo' && $status === 'Completed') {
+            return ['success' => false, 'message' => 'Project must be started (In Progress) before it can be marked as Completed.'];
+        }
+
         if ($status === 'Completed') {
             if ($project->status === 'Completed') {
                 return ['success' => false, 'message' => 'Project is already completed!'];

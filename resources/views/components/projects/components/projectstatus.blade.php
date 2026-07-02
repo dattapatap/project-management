@@ -1,4 +1,4 @@
-<div id="mdlChangeStatus" class="modal fade" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+<div id="mdlProjectStatus" class="modal fade" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header">
@@ -13,19 +13,15 @@
                     <input type="hidden" value="" name="projectstatusid" id="projectstatusid">
                     <div class="row">
                         <div class="col-md-12 ">
-                            <label>Task Status <span class="text_required">*</span></label>
-                            <select class="form-control" id="status" name="status" style="width: 100%">
+                            <label>Project Status <span class="text_required">*</span></label>
+                            <select class="form-control" id="project_status_select" name="status" style="width: 100%">
                                 <option value="">Select Status</option>
+                                <option value="ToDo">ToDo</option>
                                 <option value="InProgress">InProgress</option>
                                 <option value="Completed">Completed</option>
                             </select>
                             <span class="invalid-feedback" id="status-input-error" role="alert"> <strong></strong></span>
                         </div>
-                        {{-- <div class="col-md-12 mt-2 taskdate" style="display: none;">
-                            <label>Actual Project Start Date <span class="text_required">*</span></label>
-                            <input type="text" name="proj_start_date" id="proj_start_date" class="form-control">
-                            <span class="invalid-feedback" id="proj_start_date-input-error" role="alert"> <strong></strong></span>
-                        </div> --}}
                     </div>
 
                     <div class="row">
@@ -45,44 +41,64 @@
 <script>
     $(document).ready(function() {
         $(document).on('click', '.btn_project_status', function(eve) {
-            $('#projectstatusid').val($(this).attr('projectid'))
-            $('#status').val($(this).attr('status')).change(); // Pre-select current status
-            $('#mdlChangeStatus').modal('show');
+            let projectId = $(this).attr('projectid');
+            let currentStatus = $(this).attr('status');
+
+            $('#projectstatusid').val(projectId);
+
+            // Store current status in data attribute
+            $('#project_status_select').data('current-status', currentStatus);
+
+            // Rebuild the select options dynamically based on currentStatus and role
+            let statusSelect = $('#project_status_select');
+            statusSelect.empty().append('<option value="">Select Status</option>');
+
+            let isManagement = {{ Auth::user()->hasRole(['Admin', 'Branch-Manager']) ? 'true' : 'false' }};
+
+            if (currentStatus === 'ToDo' || !currentStatus) {
+                statusSelect.append('<option value="ToDo">ToDo</option>');
+                statusSelect.append('<option value="InProgress">InProgress</option>');
+            } else if (currentStatus === 'InProgress') {
+                statusSelect.append('<option value="InProgress">InProgress</option>');
+                statusSelect.append('<option value="Completed">Completed</option>');
+            } else if (currentStatus === 'Completed') {
+                if (isManagement) {
+                    statusSelect.append('<option value="InProgress">InProgress</option>');
+                }
+                statusSelect.append('<option value="Completed">Completed</option>');
+            }
+
+            statusSelect.val(currentStatus).change();
+            $('#mdlProjectStatus').modal('show');
         });
 
-        $('#status').change(function() {
-            // Field removed as per user request
+        $('#project_status_select').change(function() {
             $('.taskdate').css('display', 'none');
-        })
-
-        $('#proj_start_date').datetimepicker({
-            minDate: moment().subtract(10, 'd'),
-            allowInputToggle: false,
-            locale: moment().local('en'),
-            format: 'DD/MM/YYYY hh:mm A',
-            icons: {
-                time: 'mdi mdi-clock-outline',
-                date: 'fa fa-calendar',
-                up: 'fa fa-chevron-up',
-                down: 'fa fa-chevron-down',
-                previous: 'fa fa-chevron-left',
-                next: 'fa fa-chevron-right',
-                today: 'fa fa-check',
-                clear: 'fa fa-trash',
-                close: 'mdi mdi-clock-outline'
-            }
         })
 
         $('#frm_project_status').on('submit', function(ev) {
             ev.preventDefault();
+
+            let selectedStatus = $('#project_status_select').val();
+            let currentStatus = $('#project_status_select').data('current-status') || '';
+
+            if (selectedStatus !== currentStatus && (selectedStatus === 'InProgress' || selectedStatus === 'Completed')) {
+                let msg = 'Are you sure you want to change project status to ' + selectedStatus + '? You will not be able to revert it.';
+                if (selectedStatus === 'Completed') {
+                    msg = 'Are you sure you want to complete this project? You will not be able to revert it.';
+                }
+                if (!confirm(msg)) {
+                    return false;
+                }
+            }
+
             $(".invalid-feedback").children("strong").text("");
             $.ajax({
                 type: 'POST',
                 url: base_url + '/projects/changestatus',
                 data: {
-                    'status': $('#status').val(),
-                    'projectid': $('#projectstatusid').val(),
-                    'act_start_date': $('#proj_start_date').val()
+                    'status': $('#project_status_select').val(),
+                    'projectid': $('#projectstatusid').val()
                 },
                 beforeSend: function() {
                     $('#cover-spin').css('display', 'block');
@@ -91,7 +107,7 @@
                     $('#cover-spin').css('display', 'none');
                     if (response.success == true) {
                         alertify.success(response.message);
-                        $('#mdlChangeStatus').modal('hide');
+                        $('#mdlProjectStatus').modal('hide');
                         $('#frm_project_status')[0].reset();
                         location.reload();
                     } else {
@@ -100,7 +116,7 @@
                 },
                 error: function(response) {
                     $('#cover-spin').css('display', 'none');
-                    if (response.responseJSON.status === 400) {
+                    if (response.responseJSON && response.responseJSON.status === 400) {
                         let errors = response.responseJSON.errors;
                         Object.keys(errors).forEach(function(key) {
                             $("#" + key + "Input").addClass("is-invalid");

@@ -97,15 +97,17 @@
             </a>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #34c38f !important;">
-                <div class="card-body py-3">
-                    <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Completed</p>
-                    <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['completed'] }}</h3>
+            <a href="{{ url('projects?status=Completed') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #34c38f !important;">
+                    <div class="card-body py-3">
+                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Completed</p>
+                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['completed'] }}</h3>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-6 col-md-3">
-            <a href="{{ url('projects') }}" class="text-decoration-none">
+            <a href="{{ url('projects?status=all') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #556ee6 !important;">
                     <div class="card-body py-3">
                         <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Total Projects</p>

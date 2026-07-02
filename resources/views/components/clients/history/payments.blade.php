@@ -164,7 +164,9 @@
                     <div class="row">
                         @php
                             $projects = DB::table('department_projects')->select('id', 'project_name')
-                                                ->where('client', $client->id)->get();
+                                                ->where('client', $client->id)
+                                                ->whereNull('deleted_at')
+                                                ->get();
                         @endphp
                         <div class="col-12">
                             <div class="form-group">

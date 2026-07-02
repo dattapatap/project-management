@@ -69,6 +69,12 @@ class ClientsController extends Controller
                     }
                 }
 
+                if ($this->user->hasRole(["Admin", "Branch-Manager"])) {
+                    if ($client->status != 'Matured') {
+                        $btns .= '<a class="dropdown-item directMatureClient" client="' . $client->id . '" href="javascript:void(0);">Mark as Matured</a>';
+                    }
+                }
+
                 $action = '<div class="d-flex align-items-center justify-content-center">';
 
                 // View/STS View Button (Always visible)
@@ -188,12 +194,13 @@ class ClientsController extends Controller
     public function ajaxStore(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:clients,name,NULL,id,deleted_at,NULL',
             'contact_person' => 'required|string|max:255',
             'designation' => 'nullable|string|max:255',
-            'email' => 'required|email|max:255',
-            'mobile' => 'required|string|max:20',
+            'email' => 'required|email|max:255|unique:clients,email,NULL,id,deleted_at,NULL',
+            'mobile' => 'required|string|max:20|unique:clients,mobile,NULL,id,deleted_at,NULL',
             'city' => 'required|string|max:255',
+            'address' => 'required|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -213,6 +220,27 @@ class ClientsController extends Controller
             $client->created_by = $userid;
             $client->tele_ref_user = $userid;
             $client->updated_by = $userid;
+
+            // Resolve Branch Manager to set as ref_user
+            $branchId = app(\App\Services\BranchScopeService::class)->resolveBranchId(User::find($userid));
+            $branchManager = null;
+            if ($branchId) {
+                $branchManager = User::role('Branch-Manager')
+                    ->where('status', 'Active')
+                    ->whereIn('id', function($query) use ($branchId) {
+                        $query->select('user')
+                            ->from('user_branches')
+                            ->where('branch', $branchId);
+                    })
+                    ->first();
+            }
+            if (!$branchManager) {
+                $branchManager = User::role('Branch-Manager')
+                    ->where('status', 'Active')
+                    ->first();
+            }
+            $client->ref_user = $branchManager ? $branchManager->id : $userid;
+
             $client->save();
 
             // Add Initial Client History
@@ -739,6 +767,40 @@ class ClientsController extends Controller
                 'status' => false,
                 'message' => 'Failed to nudge executive. Please try again.'
             ], 500);
+        }
+    }
+
+    public function directMature(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
+            return response()->json(['status' => false, 'message' => 'Unauthorized! Only Admins and Branch Managers can mature leads directly.'], 403);
+        }
+
+        try {
+            DB::beginTransaction();
+            $client = Clients::findOrFail($id);
+            if ($client->status === 'Matured') {
+                return response()->json(['status' => false, 'message' => 'Client is already matured.'], 400);
+            }
+
+            $client->status = 'Matured';
+            $client->updated_by = $user->id;
+            $client->save();
+
+            // Log history
+            $client->histories()->create([
+                'category' => 'STS',
+                'status'   => 'Matured',
+                'remarks'  => 'Lead matured directly by ' . $user->name,
+                'created'  => $user->id,
+            ]);
+
+            DB::commit();
+            return response()->json(['status' => true, 'message' => 'Client matured successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => false, 'message' => 'Something went wrong: ' . $e->getMessage()], 500);
         }
     }
 }

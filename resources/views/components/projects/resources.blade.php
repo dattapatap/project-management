@@ -1,6 +1,6 @@
-@extends('layouts.erp')
+@extends('layouts.app')
 @section('title', 'Resource Allocation')
-@push('css')
+@section('styles')
 <style>
     /* ── Layout ─────────────────────────────────────────────────── */
     .res-page { padding:24px; }
@@ -24,28 +24,37 @@
 
     /* ── Workload Heatmap ───────────────────────────────────────── */
     .section-card {
-        background:#fff; border-radius:14px;
-        box-shadow:0 4px 20px rgba(0,0,0,.07);
-        padding:24px; margin-bottom:24px;
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        padding: 24px;
+        margin-bottom: 24px;
     }
-    .section-card h5 { font-size:1rem; font-weight:700; color:#2d3748; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
-    .section-card h5 i { color:#667eea; }
+    .section-card h5 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .section-card h5 i { color: #3b82f6; }
 
     /* ── Heatmap grid ───────────────────────────────────────────── */
     .heatmap-grid {
-        display:grid;
-        grid-template-columns: 200px repeat(auto-fill, minmax(90px, 1fr));
-        gap:4px;
-        font-size:.8125rem;
-        overflow-x:auto;
+        display: grid;
+        grid-template-columns: 240px repeat(5, 1fr);
+        gap: 8px;
+        font-size: .85rem;
+        overflow-x: auto;
+        min-width: 780px;
     }
     .hm-cell {
-        padding:10px 8px; border-radius:8px;
-        display:flex; flex-direction:column; align-items:center;
-        justify-content:center; text-align:center; min-width:80px;
+        padding: 12px 10px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        min-width: 90px;
     }
-    .hm-header { background:#f7f8fb; font-weight:700; color:#4a5568; font-size:.75rem; }
-    .hm-name { background:#f7f8fb; text-align:left; align-items:flex-start; gap:4px; }
+    .hm-header { background: #f8fafc; font-weight: 700; color: #475569; font-size: .8rem; border: 1px solid #e2e8f0; }
+    .hm-name { background: #f8fafc; text-align: left; align-items: flex-start; gap: 4px; border: 1px solid #e2e8f0; }
     .hm-name .avatar {
         width:30px; height:30px; border-radius:50%;
         background:linear-gradient(135deg,#667eea,#764ba2);
@@ -99,28 +108,39 @@
     .heat-legend-item { display:flex; align-items:center; gap:6px; font-size:.75rem; color:#718096; }
     .heat-dot { width:14px; height:14px; border-radius:4px; }
 </style>
-@endpush
+@endsection
 
 @section('content')
-<div class="res-page">
+<div class="container-fluid erp-page pb-5">
 
-    {{-- Header --}}
-    <div class="res-header">
-        <div class="res-title">
-            <i class="mdi mdi-account-switch"></i>
-            Resource Allocation
+    <div class="erp-page-header my-4">
+        <div class="erp-page-header__main">
+            <h4 class="erp-page-title">
+                <i class="mdi mdi-account-switch mr-2 text-primary"></i>Resource Allocation Matrix
+            </h4>
+            <p class="erp-page-subtitle">Track team assignments, workload balance, and availability</p>
         </div>
-        @if(count($teams))
-        <form method="GET" action="{{ route('projects.resources') }}" style="display:flex;gap:8px;align-items:center;">
-            <select name="team" onchange="this.form.submit()"
-                style="padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:.875rem;color:#4a5568;background:#fff;outline:none;">
-                <option value="">All Teams</option>
-                @foreach($teams as $team)
-                    <option value="{{ $team->id }}" {{ $teamId == $team->id ? 'selected' : '' }}>{{ $team->name }}</option>
-                @endforeach
-            </select>
-        </form>
-        @endif
+        <div class="erp-page-header__actions">
+            @if(Auth::user()->hasRole(['Admin', 'Project-Manager', 'Branch-Manager']))
+            <form method="GET" action="{{ route('projects.resources') }}" class="form-inline d-flex align-items-center" style="gap: 8px;">
+                <!-- Team Selector -->
+                <select name="team" class="form-control form-control-sm border" style="width: 155px; height: 35px;" onchange="this.form.submit()">
+                    <option value="">All Teams</option>
+                    @foreach($teams as $team)
+                        <option value="{{ $team->id }}" {{ $teamId == $team->id ? 'selected' : '' }}>{{ $team->name }}</option>
+                    @endforeach
+                </select>
+                
+                <a href="{{ url('/') }}" class="btn btn-outline-secondary btn-sm" style="height: 35px; line-height: 23px;">
+                    <i class="mdi mdi-arrow-left"></i>
+                </a>
+            </form>
+            @else
+                <a href="{{ url('/') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="mdi mdi-arrow-left mr-1"></i>Back
+                </a>
+            @endif
+        </div>
     </div>
 
     {{-- Stats --}}
@@ -130,11 +150,61 @@
         $overloaded    = $workload->filter(fn($m) => ($m->todo_count + $m->inprogress_count) > 5)->count();
         $idle          = $workload->filter(fn($m) => ($m->todo_count + $m->inprogress_count) === 0)->count();
     @endphp
-    <div class="stats-row">
-        <div class="stat-card blue"><div class="stat-num">{{ $totalProjects }}</div><div class="stat-lbl">Active Projects</div></div>
-        <div class="stat-card amber"><div class="stat-num">{{ $totalMembers }}</div><div class="stat-lbl">Team Members</div></div>
-        <div class="stat-card red"><div class="stat-num">{{ $overloaded }}</div><div class="stat-lbl">Overloaded (&gt;5 tasks)</div></div>
-        <div class="stat-card green"><div class="stat-num">{{ $idle }}</div><div class="stat-lbl">Available / Idle</div></div>
+
+    <!-- Stats Cards Grid -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-white shadow-sm border mb-3">
+                <div class="card-body d-flex align-items-center justify-content-between p-4">
+                    <div>
+                        <p class="text-muted font-weight-medium mb-1">Active Projects</p>
+                        <h4 class="mb-0 text-dark font-weight-bold">{{ $totalProjects }}</h4>
+                    </div>
+                    <div class="avatar-title rounded-circle bg-soft-primary text-primary" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        <i class="mdi mdi-briefcase-outline"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-white shadow-sm border mb-3">
+                <div class="card-body d-flex align-items-center justify-content-between p-4">
+                    <div>
+                        <p class="text-muted font-weight-medium mb-1">Team Members</p>
+                        <h4 class="mb-0 text-dark font-weight-bold">{{ $totalMembers }}</h4>
+                    </div>
+                    <div class="avatar-title rounded-circle bg-soft-info text-info" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        <i class="mdi mdi-account-group-outline"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-white shadow-sm border mb-3">
+                <div class="card-body d-flex align-items-center justify-content-between p-4">
+                    <div>
+                        <p class="text-muted font-weight-medium mb-1">Overloaded Members</p>
+                        <h4 class="mb-0 text-danger font-weight-bold">{{ $overloaded }}</h4>
+                    </div>
+                    <div class="avatar-title rounded-circle bg-soft-danger text-danger" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        <i class="mdi mdi-alert-circle-outline"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-white shadow-sm border mb-3">
+                <div class="card-body d-flex align-items-center justify-content-between p-4">
+                    <div>
+                        <p class="text-muted font-weight-medium mb-1">Available / Idle</p>
+                        <h4 class="mb-0 text-success font-weight-bold">{{ $idle }}</h4>
+                    </div>
+                    <div class="avatar-title rounded-circle bg-soft-success text-success" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        <i class="mdi mdi-checkbox-marked-circle-outline"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Workload Heatmap --}}

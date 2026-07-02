@@ -59,7 +59,7 @@
             </a>
         </div>
         <div class="col-6 col-md-4 col-lg">
-            <a href="{{ url('projects/search?search=Completed') }}" class="text-decoration-none">
+            <a href="{{ url('projects?status=Completed') }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-success">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -76,7 +76,7 @@
             </a>
         </div>
         <div class="col-6 col-md-4 col-lg">
-            <a href="{{ url('projects') }}" class="text-decoration-none">
+            <a href="{{ url('projects?status=all') }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-primary">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -167,61 +167,61 @@
                                 </span>
                             </a>
                             <div class="btn-group float-right">
-                                <a href="#" class="dropdown-toggle arrow-none erp-dropdown-toggle" data-bs-toggle="dropdown"
+                                <a href="#" class="dropdown-toggle arrow-none erp-dropdown-toggle" data-bs-toggle="dropdown">
                                     <i class="mdi mdi-dots-vertical"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-start">
 
                                     <a href="{{ url('projects/taskboard/' . base64_encode($item->id)) }}"
-                                        class="dropdown-item btn_edit_department" dept_id="{{ $item->id }}">
-                                        <i class="mdi mdi-rocket"></i>Taskbar
+                                        class="dropdown-item">
+                                        <i class="mdi mdi-rocket mr-2"></i>Taskboard
                                     </a>
 
-                                    <a class="dropdown-item btn_project_status" projectid="{{ $item->id }}" status="{{ $item->status }}">
-                                        <i class="mdi mdi-folder-outline"></i> Change Status
+                                    <a href="javascript:void(0);" class="dropdown-item btn_project_status" projectid="{{ $item->id }}" status="{{ $item->status }}">
+                                        <i class="mdi mdi-folder-outline mr-2"></i>Change Status
                                     </a>
 
                                     @if($item->status != 'Completed' && !$item->assigned_to)
                                     @if(!$item->project_team)
-                                    <a class="dropdown-item btn_assign_project"
+                                    <a href="javascript:void(0);" class="dropdown-item btn_assign_project"
                                         projectid="{{ $item->id }}">
-                                        <i class="mdi mdi-account-group"></i> Assign To Team
+                                        <i class="mdi mdi-account-group mr-2"></i>Assign To Team
                                     </a>
                                     @endif
 
                                     @if($item->project_team)
                                     @if($user->hasRole('Team-Leader'))
-                                    <a class="dropdown-item btn_assign_to_me"
+                                    <a href="javascript:void(0);" class="dropdown-item btn_assign_to_me"
                                         projectid="{{ $item->id }}">
-                                        <i class="mdi mdi-account-check"></i> Assign to Me
+                                        <i class="mdi mdi-account-check mr-2"></i>Assign to Me
                                     </a>
                                     @endif
 
                                     @if($user->hasRole(['Admin', 'Project-Manager']))
-                                    <a class="dropdown-item btn_assign_to_tl"
+                                    <a href="javascript:void(0);" class="dropdown-item btn_assign_to_tl"
                                         projectid="{{ $item->id }}"
                                         categoryid="{{ $item->category }}">
-                                        <i class="mdi mdi-account-star"></i> Assign to TL
+                                        <i class="mdi mdi-account-star mr-2"></i>Assign to TL
                                     </a>
                                     @endif
                                     @endif
                                     @endif
 
                                     @if($item->status != 'Completed')
-                                    <a class="dropdown-item btn_project_update"
+                                    <a href="javascript:void(0);" class="dropdown-item btn_project_update"
                                         projectid="{{ $item->id }}">
-                                        <i class="mdi mdi-update"></i> Add Update
+                                        <i class="mdi mdi-update mr-2"></i>Add Update
                                     </a>
-                                    <a class="dropdown-item btn_add_task" projectid="{{ $item->id }}">
-                                        <i class="mdi mdi-checkbox-marked-circle-outline"></i> Add Task
+                                    <a href="javascript:void(0);" class="dropdown-item btn_add_task" projectid="{{ $item->id }}">
+                                        <i class="mdi mdi-checkbox-marked-circle-outline mr-2"></i>Add Task
                                     </a>
-                                    <a class="dropdown-item btn_edit_project"
+                                    <a href="javascript:void(0);" class="dropdown-item btn_edit_project"
                                         projectid="{{ $item->id }}">
-                                        <i class="mdi mdi-pencil"></i> Edit
+                                        <i class="mdi mdi-pencil mr-2"></i>Edit
                                     </a>
                                     @endif
                                     <a class="dropdown-item" href="{{ url('projects/' . base64_encode($item->id) . '/history') }}">
-                                        <i class="mdi mdi-history mr-2"></i> History
+                                        <i class="mdi mdi-history mr-2"></i>History
                                     </a>
 
                                 </div>
@@ -461,7 +461,7 @@
 </div>
 
 <div class="row mt-3">
-    <div class="col-12 d-flex justify-content-end">
+    <div class="col-12 d-flex justify-content-center">
         {{ $projects->links('pagination::bootstrap-4') }}
     </div>
 </div>

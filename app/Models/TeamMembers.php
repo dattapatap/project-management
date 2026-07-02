@@ -13,6 +13,10 @@ class TeamMembers extends Model
         return $this->belongsTo(User::class, 'user', 'id');
     }
 
+    public function member(){
+        return $this->belongsTo(User::class, 'user', 'id');
+    }
+
     public function team(){
         return $this->belongsTo(Teams::class, 'team', 'id');
     }

@@ -419,7 +419,7 @@
                                         <button class="btn btn-sm btn-primary shadow-sm tasklog px-3" taskid="{{ $task->id }}">
                                             <i class="mdi mdi-clock-outline mr-1"></i> Log Time
                                         </button>
-                                        <button class="btn btn-sm btn-soft-primary changeStatus px-3" taskid="{{ $task->id }}">
+                                        <button class="btn btn-sm btn-soft-primary changeStatus px-3" taskid="{{ $task->id }}" currentstatus="{{ $task->status }}">
                                             <i class="mdi mdi-arrow-left-right-bold mr-1"></i> Status
                                         </button>
                                     </div>

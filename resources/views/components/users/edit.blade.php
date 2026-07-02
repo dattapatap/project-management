@@ -18,7 +18,7 @@
         background: #ffffff;
         border: 1px solid #e2e8f0;
         color: #4b5563;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         text-decoration: none !important;
     }
@@ -121,12 +121,12 @@
         color: #0f172a !important;
         background-color: #ffffff !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.01) !important;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.01) !important;
     }
 
     .input-premium:focus {
         border-color: #6366f1 !important;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12), inset 0 1px 2px rgba(0,0,0,0) !important;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0) !important;
         background-color: #ffffff !important;
         outline: none !important;
     }
@@ -179,12 +179,14 @@
     }
 
     /* Validations states */
-    .parsley-error, .is-invalid {
+    .parsley-error,
+    .is-invalid {
         border-color: #ef4444 !important;
         background-color: #fffafb !important;
     }
 
-    .parsley-error:focus, .is-invalid:focus {
+    .parsley-error:focus,
+    .is-invalid:focus {
         box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12) !important;
     }
 
@@ -260,7 +262,7 @@
                     <form class="custom-validation" action="{{ route('users.update', $users->id) }}" method="POST">
                         @csrf
                         @method('PUT')
-                        
+
                         <input type="hidden" name="user_id" value="{{ $users->id }}">
 
                         <div class="row">
@@ -277,13 +279,13 @@
                                     <label for="name">
                                         <i class="mdi mdi-account"></i>Full Name <span class="text_required">*</span>
                                     </label>
-                                    <input type="text" name="name" id="name" value="{{ old('name', $users->name) }}" 
-                                        class="form-control input-premium @error('name') parsley-error @enderror" 
+                                    <input type="text" name="name" id="name" value="{{ old('name', $users->name) }}"
+                                        class="form-control input-premium @error('name') parsley-error @enderror"
                                         placeholder="Full Name" required>
                                     @error('name')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
 
@@ -292,13 +294,13 @@
                                     <label for="email">
                                         <i class="mdi mdi-email"></i>Email Address <span class="text_required">*</span>
                                     </label>
-                                    <input type="email" name="email" id="email" value="{{ old('email', $users->email) }}" 
-                                        class="form-control input-premium @error('email') parsley-error @enderror" 
+                                    <input type="email" name="email" id="email" value="{{ old('email', $users->email) }}"
+                                        class="form-control input-premium @error('email') parsley-error @enderror"
                                         placeholder="username@domain.com" required>
                                     @error('email')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
 
@@ -307,14 +309,14 @@
                                     <label for="mobile">
                                         <i class="mdi mdi-phone"></i>Contact Number <span class="text_required">*</span>
                                     </label>
-                                    <input type="text" name="mobile" id="mobile" value="{{ old('mobile', $users->mobile) }}"  
+                                    <input type="text" name="mobile" id="mobile" value="{{ old('mobile', $users->mobile) }}"
                                         class="form-control input-premium @error('mobile') parsley-error @enderror"
                                         placeholder="10-digit mobile number" minlength="10" maxlength="12"
                                         onKeyPress="return isNumberKey(event);" required>
                                     @error('mobile')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
 
@@ -323,16 +325,34 @@
                                     <label for="dob">
                                         <i class="mdi mdi-calendar-heart"></i>Birth Date <span class="text_required">*</span>
                                     </label>
-                                    <input type="date" name="dob" id="dob" 
+                                    <input type="date" name="dob" id="dob"
                                         value="{{ old('dob', Carbon\Carbon::parse($users->emp->dob)->format('Y-m-d')) }}"
                                         class="form-control input-premium @error('dob') parsley-error @enderror"
-                                        max="<?= date('Y-m-d', strtotime(date('Y-m-d').' -18 year')); ?>" required>
+                                        max="<?= date('Y-m-d', strtotime(date('Y-m-d') . ' -18 year')); ?>" required>
                                     @error('dob')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
+
+                                <!-- Field: Joining Date -->
+                                <div class="form-group form-group-premium">
+                                    <label for="joining_date">
+                                        <i class="mdi mdi-calendar-text"></i>Joining Date <span class="text_required">*</span>
+                                    </label>
+                                    <input type="date" name="joining_date" id="joining_date"
+                                        value="{{ old('joining_date', Carbon\Carbon::parse($users->emp->joining_dt)->format('Y-m-d')) }}"
+                                        class="form-control input-premium @error('joining_date') parsley-error @enderror"
+                                        max="<?= date('Y-m-d'); ?>" required>
+                                    @error('joining_date')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                    @enderror
+                                </div>
+
+
                             </div>
 
                             <!-- Right Column: Professional Profile -->
@@ -348,13 +368,13 @@
                                     <label for="code">
                                         <i class="mdi mdi-card-bulleted-outline"></i>Member Code (Employee ID) <span class="text_required">*</span>
                                     </label>
-                                    <input type="text" name="code" id="code" value="{{ old('code', $users->emp->mem_code) }}"  
+                                    <input type="text" name="code" id="code" value="{{ old('code', $users->emp->mem_code) }}"
                                         class="form-control input-premium @error('code') parsley-error @enderror"
                                         placeholder="Code" onkeyup="this.value = this.value.toUpperCase();" required>
                                     @error('code')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
 
@@ -363,15 +383,35 @@
                                     <label for="designation">
                                         <i class="mdi mdi-badge-account-outline"></i>Designation / Job Title <span class="text_required">*</span>
                                     </label>
-                                    <input type="text" name="designation" id="designation" value="{{ old('designation', $users->emp->designation) }}" 
-                                        class="form-control input-premium @error('designation') parsley-error @enderror" 
+                                    <input type="text" name="designation" id="designation" value="{{ old('designation', $users->emp->designation) }}"
+                                        class="form-control input-premium @error('designation') parsley-error @enderror"
                                         placeholder="Designation" required>
                                     @error('designation')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
+
+                                <div class="form-group form-group-premium">
+                                    <label for="role">
+                                        <i class="mdi mdi-shield-account"></i>System Authorization Role <span class="text_required">*</span>
+                                    </label>
+                                    <select class="form-control select2" name="role" id="role" required>
+                                        <option value="">Select Role</option>
+                                        @foreach ($roles as $item)
+                                        <option value="{{ $item->id }}" data-name="{{ $item->name }}" @if($users->roles[0]->id == $item->id) selected @endif>
+                                            {{ $item->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                    @error('role')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                    @enderror
+                                </div>
+
 
                                 <!-- Field: Department -->
                                 <div class="form-group form-group-premium">
@@ -381,53 +421,20 @@
                                     <select class="form-control select2" name="department" id="department" required>
                                         <option value="">Select Department</option>
                                         @foreach ($departments as $items)
-                                            <option value="{{ $items->id }}" @if($users->departments->department == $items->id) selected @endif>
-                                                {{ $items->name }} ({{ $items->branch->code }})
-                                            </option>
+                                        <option value="{{ $items->id }}" @if($users->departments->department == $items->id) selected @endif>
+                                            {{ $items->name }} ({{ $items->branch->code }})
+                                        </option>
                                         @endforeach
                                     </select>
                                     @error('department')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
 
                                 <!-- Field: Role -->
-                                <div class="form-group form-group-premium">
-                                    <label for="role">
-                                        <i class="mdi mdi-shield-account"></i>System Authorization Role <span class="text_required">*</span>
-                                    </label>
-                                    <select class="form-control select2" name="role" id="role" required>
-                                        <option value="">Select Role</option>
-                                        @foreach ($roles as $item)
-                                            <option value="{{ $item->id }}" @if($users->roles[0]->id == $item->id) selected @endif>
-                                                {{ $item->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('role')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
 
-                                <!-- Field: Joining Date -->
-                                <div class="form-group form-group-premium">
-                                    <label for="joining_date">
-                                        <i class="mdi mdi-calendar-text"></i>Joining Date <span class="text_required">*</span>
-                                    </label>
-                                    <input type="date" name="joining_date" id="joining_date" 
-                                        value="{{ old('joining_date', Carbon\Carbon::parse($users->emp->joining_dt)->format('Y-m-d')) }}"
-                                        class="form-control input-premium @error('joining_date') parsley-error @enderror"
-                                        max="<?= date('Y-m-d'); ?>" required>
-                                    @error('joining_date')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
 
                                 <!-- Field: Status -->
                                 <div class="form-group form-group-premium">
@@ -439,9 +446,9 @@
                                         <option value="Inactive" @if(old('status', $users->status) == 'Inactive') selected @endif>Inactive</option>
                                     </select>
                                     @error('status')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
                                     @enderror
                                 </div>
                             </div>
@@ -475,11 +482,29 @@
     $(document).ready(function() {
         // Init tooltip
         $('[data-toggle="tooltip"]').tooltip();
-        
+
         // Ensure Select2 fits form styles perfectly
         $('.select2').select2({
             width: '100%'
         });
+
+        function toggleDepartmentRequired() {
+            var selectedRoleName = $('#role option:selected').attr('data-name');
+            if (selectedRoleName === 'Branch-Manager') {
+                $('#department').removeAttr('required');
+                $('#department').closest('.form-group').find('.text_required').hide();
+            } else {
+                $('#department').attr('required', 'required');
+                $('#department').closest('.form-group').find('.text_required').show();
+            }
+        }
+
+        $('#role').on('change', function() {
+            toggleDepartmentRequired();
+        });
+
+        // Trigger on load
+        toggleDepartmentRequired();
     });
 </script>
 @endsection

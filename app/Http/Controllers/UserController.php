@@ -82,6 +82,8 @@ class UserController extends Controller
             $this->assertValidRoleAssignment($role->name);
             $user->assignRole($role);
 
+            $isBranchManager = $role && $role->name === 'Branch-Manager';
+
             $emp            = new Employees();
             $emp->user      = $user->id;
             $emp->name      = ucfirst($request->post('name'));
@@ -95,14 +97,25 @@ class UserController extends Controller
 
             $emp->save();
 
-            $userDept               = new UserDepartment();
-            $userDept->user         = $user->id;
-            $userDept->department   = $request->department;
-            $userDept->save();
+            if (!$isBranchManager && $request->filled('department')) {
+                $userDept               = new UserDepartment();
+                $userDept->user         = $user->id;
+                $userDept->department   = $request->department;
+                $userDept->save();
+            }
+
+            // Resolve branch from department, or fallback to creator's branch, or default branch
+            $branchId = null;
+            if ($request->filled('department')) {
+                $branchId = DB::table('departments')->where('id', $request->department)->value('branchid');
+            }
+            if (!$branchId) {
+                $branchId = Auth::user()->branchId() ?? DB::table('branches')->value('id') ?? 1;
+            }
 
             $userBranch               = new UserBranch();
             $userBranch->user         = $user->id;
-            $userBranch->branch       = DB::table('departments')->where('id', $request->department)->value('branchid');
+            $userBranch->branch       = $branchId;
             $userBranch->save();
 
             DB::commit();
@@ -182,10 +195,41 @@ class UserController extends Controller
 
             $emp->save();
 
-            $userDept               = UserDepartment::where('user', $user->id)->first();
-            $userDept->user         = $user->id;
-            $userDept->department   = $request->department;
-            $userDept->save();
+            $isBranchManager = $role && $role->name === 'Branch-Manager';
+
+            $userDept = UserDepartment::where('user', $user->id)->first();
+            if ($isBranchManager) {
+                if ($userDept) {
+                    $userDept->delete();
+                }
+            } else {
+                if ($request->filled('department')) {
+                    if (!$userDept) {
+                        $userDept = new UserDepartment();
+                    }
+                    $userDept->user         = $user->id;
+                    $userDept->department   = $request->department;
+                    $userDept->save();
+                }
+            }
+
+            // Update user branch as well
+            $userBranch = UserBranch::where('user', $user->id)->first();
+            if (!$userBranch) {
+                $userBranch = new UserBranch();
+                $userBranch->user = $user->id;
+            }
+            
+            $branchId = null;
+            if ($request->filled('department')) {
+                $branchId = DB::table('departments')->where('id', $request->department)->value('branchid');
+            }
+            if (!$branchId) {
+                $branchId = Auth::user()->branchId() ?? DB::table('branches')->value('id') ?? 1;
+            }
+            
+            $userBranch->branch = $branchId;
+            $userBranch->save();
 
             DB::commit();
             return redirect()->route('users.index')->with('success', 'Member updated successfully');

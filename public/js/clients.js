@@ -52,6 +52,33 @@ $(document).ready(function () {
         })
 
     })
+
+    $(document).on('click', '.directMatureClient', function () {
+        let client_id = $(this).attr('client');
+        if (confirm('Are you sure you want to mark this client as matured directly?')) {
+            $.ajax({
+                type: 'POST',
+                url: base_url + '/clients/' + client_id + '/direct-mature',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.status == true) {
+                        alertify.success(response.message);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
+                    } else {
+                        alertify.error(response.message);
+                    }
+                },
+                error: function (response) {
+                    alertify.error('Failed to mature client.');
+                }
+            });
+        }
+    });
 })
 
 // Project Creation

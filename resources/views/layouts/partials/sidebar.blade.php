@@ -129,16 +129,10 @@ $showReports = $isAdmin || $isPm || $isBm;
         <span class="dept-label">Operations</span>
     </li>
     @if ($showOdProjects)
-    <li class="dept-item dept-item--od {{ request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources') ? 'mm-active' : '' }}">
-        <a href="javascript:void(0);" class="has-arrow waves-effect {{ request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources') ? 'active' : '' }}">
+    <li class="dept-item dept-item--od {{ request()->is('projects') || (request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources')) ? 'mm-active' : '' }}">
+        <a href="{{ url('/projects') }}" class="waves-effect {{ request()->is('projects') || (request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources')) ? 'active' : '' }}">
             <i class="mdi mdi-folder-multiple-outline"></i><span>Projects</span>
         </a>
-        <ul class="sub-menu" aria-expanded="{{ request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources') ? 'true' : 'false' }}">
-            <li class="{{ request()->is('projects') && !request()->is('projects/create') ? 'mm-active' : '' }}"><a href="{{ url('/projects') }}">All Projects</a></li>
-            @if ($isPm || $isAdmin)
-            <li class="{{ request()->is('projects/create') ? 'mm-active' : '' }}"><a href="{{ url('/projects/create') }}">Create Project</a></li>
-            @endif
-        </ul>
     </li>
     <li class="dept-item dept-item--od {{ request()->is('projects/timeline*') ? 'mm-active' : '' }}">
         <a href="{{ route('projects.timeline') }}" class="waves-effect {{ request()->is('projects/timeline*') ? 'active' : '' }}">

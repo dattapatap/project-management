@@ -168,6 +168,25 @@ class HandoffWizardController extends Controller
                 $pm->notify((new ClientMatured($client, $dept, $request->project_name))->delay(now()->addSeconds(5)));
             }
 
+            // Notify Branch Managers
+            $refUser = User::find($client->ref_user);
+            $branchId = null;
+            if ($refUser) {
+                $branchId = app(\App\Services\BranchScopeService::class)->resolveBranchId($refUser);
+            }
+            $branchManagersQuery = User::role('Branch-Manager')->where('status', 'Active');
+            if ($branchId) {
+                $branchManagersQuery->whereIn('id', function ($query) use ($branchId) {
+                    $query->select('user')
+                        ->from('user_branches')
+                        ->where('branch', $branchId);
+                });
+            }
+            $branchManagers = $branchManagersQuery->get();
+            foreach ($branchManagers as $bm) {
+                $bm->notify((new ClientMatured($client, $dept, $request->project_name))->delay(now()->addSeconds(5)));
+            }
+
             // 8. Update Client active state
             $client->is_active = true;
             $client->active_from = Carbon::now();

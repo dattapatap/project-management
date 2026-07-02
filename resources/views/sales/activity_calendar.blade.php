@@ -12,6 +12,7 @@
             <p class="erp-page-subtitle">View and filter callbacks</p>
         </div>
         <div class="erp-page-header__actions d-flex align-items-center">
+            <input type="date" id="calendar-date-selector" class="form-control form-control-sm border mr-2" style="width: 150px; height: 31px;" value="{{ date('Y-m-d') }}">
             <select id="calendar-month-selector" class="form-control form-control-sm border mr-2" style="width: 120px; height: 31px;">
                 @for($m=1; $m<=12; $m++)
                     <option value="{{ sprintf('%02d', $m) }}" {{ $m == date('n') ? 'selected' : '' }}>
@@ -202,6 +203,7 @@
         const showAllMonthBtn = document.getElementById('show-all-month-btn');
         const monthSelector = document.getElementById('calendar-month-selector');
         const yearSelector = document.getElementById('calendar-year-selector');
+        const dateSelector = document.getElementById('calendar-date-selector');
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -236,6 +238,8 @@
                 detailCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             },
             dateClick: function(info) {
+                // Sync date selector
+                if (dateSelector) dateSelector.value = info.dateStr;
                 // Filter sidebar list on date click
                 updateActivitiesList(info.dateStr);
             },
@@ -248,6 +252,14 @@
                 if (monthSelector) monthSelector.value = m;
                 if (yearSelector && yearSelector.querySelector(`option[value="${y}"]`)) {
                     yearSelector.value = y;
+                }
+
+                // Sync date selector to matching month start
+                if (dateSelector) {
+                    const currentVal = dateSelector.value;
+                    if (!currentVal || !currentVal.startsWith(`${y}-${m}`)) {
+                        dateSelector.value = `${y}-${m}-01`;
+                    }
                 }
 
                 // When view changes (month, week, day), refresh sidebar overview list
@@ -264,10 +276,36 @@
             const year = yearSelector.value;
             const month = monthSelector.value;
             calendar.gotoDate(`${year}-${month}-01`);
+            
+            // Also sync the date selector to the first of the month
+            if (dateSelector) {
+                dateSelector.value = `${year}-${month}-01`;
+            }
         }
 
         if (monthSelector) monthSelector.addEventListener('change', syncCalendarDate);
         if (yearSelector) yearSelector.addEventListener('change', syncCalendarDate);
+
+        if (dateSelector) {
+            dateSelector.addEventListener('change', function() {
+                const selectedDate = this.value;
+                if (!selectedDate) return;
+                
+                const parts = selectedDate.split('-');
+                const y = parts[0];
+                const m = parts[1];
+                
+                if (monthSelector) monthSelector.value = m;
+                if (yearSelector && yearSelector.querySelector(`option[value="${y}"]`)) {
+                    yearSelector.value = y;
+                }
+                
+                calendar.gotoDate(selectedDate);
+                setTimeout(function() {
+                    updateActivitiesList(selectedDate);
+                }, 500);
+            });
+        }
 
         // Show all month button event handler
         showAllMonthBtn.addEventListener('click', function() {

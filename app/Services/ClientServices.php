@@ -13,9 +13,7 @@ class ClientServices
         $clients = null;
 
         if ($user->hasRole(['Sales-Executive'])) {
-            if ($category == 'Fresh') {
-                $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where('ref_user', $user->id)->where('status', $category)->latest();
-            } else if ($category == 'Matured') {
+            if ($category == 'Fresh' || $category == 'Matured' || $category == 'Not Interested') {
                 $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where('ref_user', $user->id)->where('status', $category)->latest();
             } else {
                 $clients = Clients::with(['referral', 'telereferral', 'creator', 'history'])->where('ref_user', $user->id)->whereNotIn('status', ['Fresh', 'Matured', 'Not Interested'])->latest();

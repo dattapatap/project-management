@@ -28,8 +28,7 @@ class ClientEngagementService
     public function __construct(
         private BranchScopeService $branchScope,
         private CsdTeamScopeService $csdScope
-    ) {
-    }
+    ) {}
 
     public function listQuery(User $user): Builder
     {
@@ -84,8 +83,13 @@ class ClientEngagementService
 
             $opportunity->update(['engagement_id' => $engagement->id]);
 
-            $this->recordEvent($engagement, 'opportunity_won', null, $engagement->status,
-                'Upsell opportunity won by CSD — awaiting NSD commercial closure.');
+            $this->recordEvent(
+                $engagement,
+                'opportunity_won',
+                null,
+                $engagement->status,
+                'Upsell opportunity won by CSD — awaiting NSD commercial closure.'
+            );
 
             return $engagement;
         });
@@ -142,8 +146,13 @@ class ClientEngagementService
             $project->update(['engagement_id' => $engagement->id]);
             $package->update(['engagement_id' => $engagement->id]);
 
-            $this->recordEvent($engagement, 'initial_maturity', null, $engagement->status,
-                'Initial sale matured via NSD DSR.');
+            $this->recordEvent(
+                $engagement,
+                'initial_maturity',
+                null,
+                $engagement->status,
+                'Initial sale matured via NSD DSR.'
+            );
 
             return $engagement;
         });
@@ -160,8 +169,12 @@ class ClientEngagementService
             throw new \InvalidArgumentException('This engagement is not awaiting commercial work.');
         }
 
-        return $this->transition($engagement, ClientEngagement::STATUS_COMMERCIAL_IN_PROGRESS,
-            'commercial_started', 'NSD started commercial closure.');
+        return $this->transition(
+            $engagement,
+            ClientEngagement::STATUS_COMMERCIAL_IN_PROGRESS,
+            'commercial_started',
+            'NSD started commercial closure.'
+        );
     }
 
     /**
@@ -243,14 +256,39 @@ class ClientEngagementService
                 'delivery_started_at' => now(),
             ]);
 
-            $this->recordEvent($engagement, 'commercial_closed', ClientEngagement::STATUS_COMMERCIAL_IN_PROGRESS,
-                $engagement->status, 'NSD closed commercial — OD project #' . $project->id . ' created.');
+            $this->recordEvent(
+                $engagement,
+                'commercial_closed',
+                ClientEngagement::STATUS_COMMERCIAL_IN_PROGRESS,
+                $engagement->status,
+                'NSD closed commercial — OD project #' . $project->id . ' created.'
+            );
 
-            $productManagers = User::whereHas('roles', fn ($q) => $q->where('name', 'Project-Manager'))
+            $productManagers = User::whereHas('roles', fn($q) => $q->where('name', 'Project-Manager'))
                 ->where('status', 'Active')->get();
             $client = Clients::find($engagement->client_id);
             foreach ($productManagers as $pm) {
                 $pm->notify((new ClientMatured($client, $project, $projectSub->name))->delay(now()->addSeconds(5)));
+            }
+
+            // Notify Branch Managers
+            $refUser = User::find($client->ref_user);
+            $branchId = null;
+            if ($refUser) {
+                $branchId = app(BranchScopeService::class)->resolveBranchId($refUser);
+            }
+            $branchManagersQuery = User::whereHas('roles', fn($q) => $q->where('name', 'Branch-Manager'))
+                ->where('status', 'Active');
+            if ($branchId) {
+                $branchManagersQuery->whereIn('id', function ($query) use ($branchId) {
+                    $query->select('user')
+                        ->from('user_branches')
+                        ->where('branch', $branchId);
+                });
+            }
+            $branchManagers = $branchManagersQuery->get();
+            foreach ($branchManagers as $bm) {
+                $bm->notify((new ClientMatured($client, $project, $projectSub->name))->delay(now()->addSeconds(5)));
             }
 
             return $engagement->fresh(['clients', 'project', 'package', 'parent', 'children']);
@@ -265,8 +303,12 @@ class ClientEngagementService
             return;
         }
 
-        $this->transition($engagement, ClientEngagement::STATUS_COMPLETED,
-            'delivery_completed', 'OD project marked completed.');
+        $this->transition(
+            $engagement,
+            ClientEngagement::STATUS_COMPLETED,
+            'delivery_completed',
+            'OD project marked completed.'
+        );
         $engagement->update(['completed_at' => now()]);
     }
 
@@ -307,8 +349,8 @@ class ClientEngagementService
             ->orderByDesc('id')
             ->first()
             ?? ClientEngagement::where('client_id', $clientId)
-                ->where('engagement_type', ClientEngagement::TYPE_INITIAL)
-                ->first();
+            ->where('engagement_type', ClientEngagement::TYPE_INITIAL)
+            ->first();
     }
 
     private function nextEngagementNo(): string
@@ -371,8 +413,13 @@ class ClientEngagementService
         $teamLeader = $teamLeaders->first();
 
         if (!$teamLeader) {
-            $this->recordEvent($engagement, 'csd_tl_missing', null, $engagement->status,
-                'No CSD Team Leader found for winning executive — client assignment unchanged.');
+            $this->recordEvent(
+                $engagement,
+                'csd_tl_missing',
+                null,
+                $engagement->status,
+                'No CSD Team Leader found for winning executive — client assignment unchanged.'
+            );
 
             return null;
         }
@@ -409,8 +456,13 @@ class ClientEngagementService
             'csd_team_leader_id' => $teamLeader->id,
         ]);
 
-        $this->recordEvent($engagement, 'csd_tl_assigned', null, $engagement->status,
-            "Client assigned to CSD Team Leader {$teamLeader->name}.");
+        $this->recordEvent(
+            $engagement,
+            'csd_tl_assigned',
+            null,
+            $engagement->status,
+            "Client assigned to CSD Team Leader {$teamLeader->name}."
+        );
 
         return $teamLeader;
     }
@@ -440,7 +492,7 @@ class ClientEngagementService
                 $csdBranchUsers = User::whereIn('id', function ($q) use ($branchId) {
                     $q->select('user')->from('user_branches')->where('branch', $branchId);
                 })
-                    ->whereHas('roles', fn ($r) => $r->where('name', 'Branch-Manager'))
+                    ->whereHas('roles', fn($r) => $r->where('name', 'Branch-Manager'))
                     ->pluck('id');
                 $recipientIds = $recipientIds->merge($csdBranchUsers);
             }
@@ -453,8 +505,8 @@ class ClientEngagementService
 
         $recipients = User::whereIn('id', $recipientIds->unique()->filter()->values())
             ->where(function ($q) {
-                $q->whereHas('departments', fn ($d) => $d->where('department', BranchScopeService::DEPT_CSD))
-                    ->orWhereHas('roles', fn ($r) => $r->where('name', 'Branch-Manager'));
+                $q->whereHas('departments', fn($d) => $d->where('department', BranchScopeService::DEPT_CSD))
+                    ->orWhereHas('roles', fn($r) => $r->where('name', 'Branch-Manager'));
             })
             ->get();
 
@@ -504,7 +556,7 @@ class ClientEngagementService
                 $q->whereIn('csd_owner_id', $ids)
                     ->orWhereIn('csd_team_leader_id', $ids)
                     ->orWhereIn('created_by', $ids)
-                    ->orWhereHas('opportunity', fn ($oq) => $oq->whereIn('assigned_to', $ids));
+                    ->orWhereHas('opportunity', fn($oq) => $oq->whereIn('assigned_to', $ids));
                 if ($user->hasRole('Team-Leader')) {
                     $q->orWhere('csd_team_leader_id', $user->id);
                 }

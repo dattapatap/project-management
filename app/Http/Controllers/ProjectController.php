@@ -23,6 +23,10 @@ class ProjectController extends Controller
         $user = Auth::user();
         $status = $request->status;
 
+        if (is_null($status)) {
+            $status = 'Pending';
+        }
+
         $result = $this->projectService->getProjectIndexData($user, $status);
         $projects = $result['projects'];
         $stats = $result['stats'];
@@ -48,7 +52,7 @@ class ProjectController extends Controller
 
     public function create()
     {
-        $clients = Clients::where('status', 'Matured')->orderBy('name', 'asc')->get();
+        $clients = Clients::orderBy('name', 'asc')->get();
         return view('components.projects.create', compact('clients'));
     }
 

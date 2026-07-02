@@ -44,7 +44,9 @@
                                 <select class="form-control select2" name="clientsid" id="clientsid" style="width: 100%;">
                                     <option selected value> Select Client</option>
                                     @foreach ($clients as $item)
-                                    <option value="{{ $item->id }}"> {{ $item->name }}</option>
+                                    <option value="{{ $item->id }}">
+                                        {{ $item->name }} @if($item->status != 'Matured') ({{ $item->status }}) @endif
+                                    </option>
                                     @endforeach
                                 </select>
                                 <span class="invalid-feedback" id="clientsid-input-error" role="alert"> <strong></strong></span>
@@ -116,7 +118,7 @@
                                 <label> Project Est. Start Date <span class="text_required">*</span></label>
                                 <div class="form-group">
                                     <input type="datetime-local" class="form-control" name="start_date" id="start_date"
-                                        placeholder="Start Date" tabindex="5" min="<?= date('Y-m-d\TH:i'); ?>">
+                                        placeholder="Start Date" tabindex="5" min="<?= date('Y-m-d\T00:00'); ?>">
                                     <span class="invalid-feedback" id="start_date-input-error" role="alert"> <strong></strong></span>
                                 </div>
                             </div>
@@ -124,7 +126,7 @@
                                 <label> Project Est. End Date <span class="text_required">*</span></label>
                                 <div class="form-group">
                                     <input type="datetime-local" class="form-control" name="end_date" id="end_date"
-                                        placeholder="End Date" tabindex="6" min="<?= date('Y-m-d\TH:i'); ?>">
+                                        placeholder="End Date" tabindex="6" min="<?= date('Y-m-d\T00:00'); ?>">
                                     <span class="invalid-feedback" id="end_date-input-error" role="alert"> <strong></strong></span>
                                 </div>
                             </div>
@@ -206,6 +208,11 @@
                                 <label>City <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="city" required placeholder="City">
                                 <span class="invalid-feedback error-city"></span>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label>Address <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="address" required rows="2" placeholder="Enter Full Address"></textarea>
+                                <span class="invalid-feedback error-address"></span>
                             </div>
                         </div>
                     </div>
@@ -352,7 +359,10 @@
                 },
                 success: function(response) {
                     if (response.status) {
+                        // Close modal programmatically and simulate close button click to remove backdrop
                         $('#addClientModal').modal('hide');
+                        $('#addClientModal').find('[data-bs-dismiss="modal"], [data-dismiss="modal"], .btnmdlclose').first().click();
+
                         alertify.success(response.message);
                         form[0].reset();
 

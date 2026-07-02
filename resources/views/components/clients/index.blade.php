@@ -3,9 +3,9 @@
 @section('content')
 <div class="container-fluid erp-page erp-page--nsd companies-wrapper">
     @include('layouts.partials.erp-page-header', [
-        'title' => 'Companies Directory',
-        'subtitle' => 'Leads, follow-ups, and conversion pipeline.',
-        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>'
+    'title' => 'Companies Directory',
+    'subtitle' => 'Leads, follow-ups, and conversion pipeline.',
+    'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>'
     ])
     <!-- Main Repository Section -->
     <div class="row">
@@ -39,7 +39,7 @@
                                 </a>
                             </li>
 
-                            @if($user->hasBranchWideAccess() || $user->hasRole('Team-Leader'))
+                            @if($user->hasBranchWideAccess() || $user->hasRole(['Team-Leader', 'Sales-Executive']))
                             <li class="nav-item">
                                 <a class="nav-link @if(client_category_active('not-interested')) active @endif" href="{{ client_list_url('Not Interested') }}">
                                     <i class="bx bx-block"></i>
@@ -62,7 +62,7 @@
                     </div>
 
                     <input type="hidden" id="category_name" value="{{ normalize_client_category(request()->segment(2)) }}">
-                     <script>
+                    <script>
                         var isPM = "{{ $user->hasRole('Project-Manager') ? 'true' : 'false' }}";
                         var isAuthority = "{{ $user->hasBranchWideAccess() || $user->hasRole('Team-Leader') ? 'true' : 'false' }}";
                     </script>

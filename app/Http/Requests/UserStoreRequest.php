@@ -24,6 +24,10 @@ class UserStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $roleId = $this->input('role');
+        $role = $roleId ? \Spatie\Permission\Models\Role::find($roleId) : null;
+        $isBranchManager = $role && $role->name === 'Branch-Manager';
+
         return [
             'name' => 'required|string|max:50|unique:users,name,NULL,id,deleted_at,NULL',
             'email' => 'required|email|unique:users,email,NULL,id,deleted_at,NULL',
@@ -31,7 +35,7 @@ class UserStoreRequest extends FormRequest
             'gender' => 'required',
             'dob' => 'required|date',
             'role' => 'required',
-            'department' => 'required',
+            'department' => $isBranchManager ? 'nullable' : 'required',
             'designation' => 'required|string',
             'code' => 'required|unique:employees,mem_code,NULL,id,deleted_at,NULL',
             'joining_date' => 'required|date',

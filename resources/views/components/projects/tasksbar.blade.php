@@ -30,10 +30,19 @@
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-flex align-items-center justify-content-between">
-                <div class="pb-2 d-flex align-items-center justify-content-between">
-                    <a href="{{ url('/projects') }}" class="btn-back">
+                <div class="pb-2 d-flex align-items-center">
+                    <a href="{{ url('/projects') }}" class="btn-back mr-3" style="text-decoration: none;">
                         <i class="mdi mdi-keyboard-backspace fs-20"></i>
                     </a>
+                    <h4 class="mb-0 font-weight-bold text-dark mr-3">{{ $project->project_name }}</h4>
+                    <span class="badge badge-pill @if($project->status == 'ToDo') badge-danger @elseif($project->status == 'InProgress') badge-info @else badge-success @endif mr-3" style="padding: 6px 12px; font-size: 11px;">
+                        {{ $project->status }}
+                    </span>
+                    @if($project->status != 'Completed' && Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
+                    <button type="button" class="btn btn-sm btn-success btn_project_status px-3 ml-2" projectid="{{ $project->id }}" status="{{ $project->status }}">
+                        <i class="mdi mdi-check-decagram mr-1"></i> Change Status
+                    </button>
+                    @endif
                 </div>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
@@ -67,7 +76,7 @@
                     <main class="kanban-drag" data-status="ToDo">
 
                         @foreach ($todo as $items)
-                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}">
+                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}" data-url="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}" style="cursor: pointer;">
                             <div class="kanban-item-title">
                                 <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
                                     <h6 class="title c-p">
@@ -89,7 +98,7 @@
                                         </a>
                                     </li>
                                     <li class="task-edit">
-                                        <a taskid="{{ $items->id }}" href="javascript:void(0);" class="changeStatus" title="Change Task Status">
+                                        <a taskid="{{ $items->id }}" currentstatus="{{ $items->status }}" href="javascript:void(0);" class="changeStatus" title="Change Task Status">
                                             <i class="mdi mdi-arrow-left-right-bold"></i>
                                         </a>
                                     </li>
@@ -183,7 +192,7 @@
                     </header>
                     <main class="kanban-drag" data-status="InProgress">
                         @foreach ($inprocess as $items)
-                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}">
+                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}" data-url="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}" style="cursor: pointer;">
                             <div class="kanban-item-title">
                                 <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
                                     <h6 class="title c-p">
@@ -204,7 +213,7 @@
                                         </a>
                                     </li>
                                     <li class="task-edit">
-                                        <a taskid="{{ $items->id }}" href="javascript:void(0);" class="changeStatus" title="Change Task Status">
+                                        <a taskid="{{ $items->id }}" currentstatus="{{ $items->status }}" href="javascript:void(0);" class="changeStatus" title="Change Task Status">
                                             <i class="mdi mdi-arrow-left-right-bold"></i>
                                         </a>
                                     </li>
@@ -289,7 +298,7 @@
                     </header>
                     <main class="kanban-drag" data-status="Completed">
                         @foreach ($completed as $items)
-                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}">
+                        <div class="kanban-item task-body {{ request('task_id') == $items->id ? 'highlight-task' : '' }}" data-id="{{ $items->id }}" data-url="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}" style="cursor: pointer;">
                             <div class="kanban-item-title">
                                 <a href="{{ url('projects/task/'. base64_encode($items->id) .'/history')}}">
                                     <h6 class="title c-p">
@@ -311,7 +320,7 @@
                                         </a>
                                     </li>
                                     <li class="task-edit">
-                                        <a taskid="{{ $items->id }}" href="javascript:void(0);" class="changeStatus" title="Change Task Status">
+                                        <a taskid="{{ $items->id }}" currentstatus="{{ $items->status }}" href="javascript:void(0);" class="changeStatus" title="Change Task Status">
                                             <i class="mdi mdi-arrow-left-right-bold"></i>
                                         </a>
                                     </li>
@@ -387,18 +396,22 @@
 @endsection
 @section('component')
 
-
 @include('components.projects.components.projecttask')
 @include('components.projects.components.changestatus')
 @include('components.projects.components.tasklog')
-
 @include('components.projects.components.edittask')
+@include('components.projects.components.projectstatus')
 
 @endsection
 
 @section('scripts')
+<script>
+    window.WMS_USER = {
+        is_management: {{ Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']) ? 'true' : 'false' }}
+    };
+</script>
 <script src="{{ asset('assets/libs/draggable/Sortable.min.js') }}"></script>
-<script src="{{ asset('js/kanban.js') }}"></script>
+<script src="{{ asset('js/kanban.js') }}?v={{ time() }}"></script>
 <script>
     function confirmation() {
         if (confirm('Do you want to delete this task? it will not revert once deleted!')) {
@@ -407,5 +420,18 @@
             return false;
         }
     }
+
+    $(document).ready(function() {
+        $(document).on('click', '.kanban-item', function(e) {
+            // Ignore click if user clicked on action buttons/links
+            if ($(e.target).closest('.task-action, .changeStatus, .tasklog, a, button').length) {
+                return;
+            }
+            let url = $(this).attr('data-url');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
 </script>
 @endsection

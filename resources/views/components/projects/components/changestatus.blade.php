@@ -8,7 +8,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_task_status" class="custom-validation"  method="POST">
+                <form id="frm_task_status" class="custom-validation" method="POST">
                     @csrf
                     <input type="hidden" value="" name="taskid" id="taskid">
                     <div class="row">
@@ -32,8 +32,7 @@
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Update</button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Update</button>
                             </div>
                         </div>
                     </div>
@@ -45,40 +44,87 @@
 </div>
 
 <script>
+    $(document).ready(function() {
+        $(document).on('click', '.changeStatus', function(eve) {
+            let taskId = $(this).attr('taskid');
+            let currentStatus = $(this).attr('currentstatus');
 
-    $(document).ready(function(){
-        $(document).on('click', '.changeStatus', function(eve){
-            $('#taskid').val($(this).attr('taskid'))
+            $('#taskid').val(taskId);
+
+            // Store current status in data attribute
+            $('#status').data('current-status', currentStatus);
+
+            // Rebuild the select options dynamically based on currentStatus and role
+            let statusSelect = $('#status');
+            statusSelect.empty().append('<option value="">Select Status</option>');
+
+            let isManagement = {
+                {
+                    Auth::user() - > hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']) ? 'true' : 'false'
+                }
+            };
+
+            if (currentStatus === 'ToDo' || !currentStatus) {
+                statusSelect.append('<option value="ToDo">ToDo</option>');
+                statusSelect.append('<option value="InProgress">InProgress</option>');
+            } else if (currentStatus === 'InProgress') {
+                statusSelect.append('<option value="InProgress">InProgress</option>');
+                statusSelect.append('<option value="Completed">Completed</option>');
+            } else if (currentStatus === 'Completed') {
+                if (isManagement) {
+                    statusSelect.append('<option value="InProgress">InProgress</option>');
+                }
+                statusSelect.append('<option value="Completed">Completed</option>');
+            }
+
+            statusSelect.val(currentStatus).change();
             $('#mdlChangeStatus').modal('show');
         });
 
-        $('#status').change(function(){
-
-            if($(this).val() == 'InProgress'){
+        $('#status').change(function() {
+            if ($(this).val() == 'InProgress') {
                 $('.taskdate').css('display', 'block');
-            }else{
+            } else {
                 $('.taskdate').css('display', 'none');
             }
         })
 
-        $('#frm_task_status').on('submit', function(ev){
+        $('#frm_task_status').on('submit', function(ev) {
             ev.preventDefault();
+
+            let selectedStatus = $('#status').val();
+            let currentStatus = $('#status').data('current-status') || '';
+
+            if (selectedStatus !== currentStatus && (selectedStatus === 'InProgress' || selectedStatus === 'Completed')) {
+                let msg = 'Are you sure you want to change status to ' + selectedStatus + '? You will not be able to revert it back to ToDo.';
+                if (selectedStatus === 'Completed') {
+                    msg = 'Are you sure you want to complete this task? You will not be able to revert it back to ToDo.';
+                }
+                if (!confirm(msg)) {
+                    return false;
+                }
+            }
+
             $(".invalid-feedback").children("strong").text("");
             $.ajax({
                 type: 'POST',
-                url: base_url +'/projects/taskboard/changestatus',
-                data: { 'status': $('#status').val(), 'taskid':$('#taskid').val(), 'act_start_date':$('#act_start_date').val() },
+                url: base_url + '/projects/taskboard/changestatus',
+                data: {
+                    'status': $('#status').val(),
+                    'taskid': $('#taskid').val(),
+                    'act_start_date': $('#act_start_date').val()
+                },
                 beforeSend: function() {
                     $('#cover-spin').css('display', 'block');
                 },
                 success: function(response) {
                     $('#cover-spin').css('display', 'none');
-                    if(response.success == true){
+                    if (response.success == true) {
                         alertify.success(response.message);
                         $('#mdlChangeStatus').modal('hide');
                         $('#frm_task_status')[0].reset();
                         location.reload();
-                    }else{
+                    } else {
                         alertify.error(response.message);
                     }
                 },
@@ -97,5 +143,4 @@
         })
 
     })
-
 </script>

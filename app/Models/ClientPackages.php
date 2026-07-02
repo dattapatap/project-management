@@ -14,7 +14,7 @@ class ClientPackages extends Model
     }
 
     public function projects(){
-        return $this->belongsTo(DepartmentProjects::class, 'project_id', 'id')->select('id', 'project_name');
+        return $this->belongsTo(DepartmentProjects::class, 'project_id', 'id')->select('id', 'project_name')->withTrashed();
     }
 
     public function addedby(){

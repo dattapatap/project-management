@@ -24,13 +24,17 @@ class UserUpdateRequest extends FormRequest
     public function rules()
     {
         $id = $this->request->get('user_id');
+        $roleId = $this->input('role');
+        $role = $roleId ? \Spatie\Permission\Models\Role::find($roleId) : null;
+        $isBranchManager = $role && $role->name === 'Branch-Manager';
+
         return [
             'name' => 'required|string|max:50|unique:users,name,'.$id.',id,deleted_at,NULL',
             'email' => 'required|email|unique:users,email,'.$id.',id,deleted_at,NULL',
             'mobile' => 'required|digits:10|regex:/^[6-9][0-9]{9}/',
             'dob' => 'required|date',
             'role' => 'required',
-            'department' => 'required|numeric',
+            'department' => $isBranchManager ? 'nullable' : 'required|numeric',
             'designation' => 'required|string',
             'code' => 'required|unique:employees,mem_code,'.$id.',user,deleted_at,NULL',
             'joining_date' => 'required|date',

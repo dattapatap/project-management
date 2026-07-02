@@ -48,10 +48,6 @@ Route::get('/storage-link', function () {
     return "Storage folder symlink created successfully on the server!";
 });
 
-Route::get('/migrate', function () {
-    Artisan::call('migrate', ['--force' => true]);
-    return '<pre>' . Artisan::output() . '</pre>';
-});
 
 
 
@@ -94,6 +90,7 @@ Route::group(['middleware' => ['auth']], function () {
     // Shared Category & User Allocation Lookup Routes
     Route::get('/projectcategory/subcategories', [ProjectSubCategoryController::class, 'getcategorybyid']);
     Route::get('/users-by-team-members', [UserController::class, 'getAllUserByRole'])->name('getUsersToAssign');
+    Route::post('client/ajax-create', [ClientsController::class, 'ajaxStore'])->name('client.ajax-create');
 });
 
 
@@ -105,8 +102,8 @@ Route::group(['middleware' => ['auth', 'restrict.sales']], function () {
     Route::get('clients/bulk-upload/sample', [ClientsController::class, 'bulkUploadSample'])->name('clients.bulkupload.sample');
 
     // Clients with Process
-    Route::post('client/ajax-create', [ClientsController::class, 'ajaxStore'])->name('client.ajax-create');
     Route::get('clients/{id}/edit', [ClientsController::class, 'edit']);
+    Route::post('clients/{id}/direct-mature', [ClientsController::class, 'directMature'])->name('clients.direct-mature');
     Route::get('clients/{id}/{urlname}', [ClientsController::class, 'showClient'])->name('client.detail');
 
     Route::redirect('client/Fresh', 'client/fresh');

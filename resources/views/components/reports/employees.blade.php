@@ -275,7 +275,7 @@
                     data: 'active_tasks', 
                     name: 'active_tasks',
                     render: function(data, type, row) {
-                        const isSales = row.roles.some(r => r.name === 'Sales-Executive');
+                        const isSales = (row.departments && row.departments.department == 1);
                         if (isSales) {
                             return `<div>
                                         <span class="font-weight-bold text-dark d-block">${row.matured_clients} Matured</span>
