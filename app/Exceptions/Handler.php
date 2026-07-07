@@ -47,4 +47,16 @@ class Handler extends ExceptionHandler
             //
         });
     }
+
+    /**
+     * Render an exception into an HTTP response.
+     */
+    public function render($request, Throwable $e)
+    {
+        if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException && $e->getStatusCode() === 503) {
+            return response()->view('maintenance', [], 503);
+        }
+
+        return parent::render($request, $e);
+    }
 }

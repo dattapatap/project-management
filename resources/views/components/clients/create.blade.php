@@ -118,7 +118,7 @@
     <div class="card mb-4 title-card-glass">
         <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between flex-wrap">
             <div class="d-flex align-items-center" style="gap: 15px;">
-                <a href="{{ url('client/Fresh') }}" class="btn-back-circle" data-toggle="tooltip" data-placement="top" title="Go Back">
+                <a href="{{ route('clients.index') }}" class="btn-back-circle" data-toggle="tooltip" data-placement="top" title="Go Back">
                     <i class="mdi mdi-keyboard-backspace font-size-18"></i>
                 </a>
                 <div>

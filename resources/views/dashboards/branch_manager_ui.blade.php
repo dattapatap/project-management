@@ -8,11 +8,17 @@
 @endphp
 
 <div class="row erp-dash-header mb-3 align-items-center">
-    <div class="col-lg-8">
+    <div class="col-lg-6">
         <h4 class="header-title erp-dash-title mb-1">{{ $adminData['branch_name'] ?? 'Branch' }} Overview</h4>
         <p class="text-muted mb-0 font-size-13">NSD · CSD · OD — department-wise performance &amp; pipeline</p>
     </div>
-    <div class="col-lg-4 text-lg-right mt-2 mt-lg-0">
+    <div class="col-lg-6 text-lg-right mt-2 mt-lg-0 d-flex align-items-center justify-content-lg-end flex-wrap" style="gap: 8px;">
+        <a href="{{ route('daily-targets.index') }}" class="btn btn-outline-primary btn-sm shadow-sm" style="border-radius: 8px; font-weight: 600; padding: 6px 12px;">
+            <i class="mdi mdi-target mr-1"></i> Set Daily Target
+        </a>
+        <a href="{{ route('sales.targets.index') }}" class="btn btn-outline-success btn-sm shadow-sm" style="border-radius: 8px; font-weight: 600; padding: 6px 12px;">
+            <i class="mdi mdi-trophy-outline mr-1"></i> Set Sales Target
+        </a>
         <div class="d-inline-flex align-items-center bg-white rounded shadow-sm border px-3 py-2">
             <i class="mdi mdi-calendar-range text-primary mr-2"></i>
             <select class="form-control form-control-sm border-0 shadow-none p-0 font-weight-bold" id="bm_dashboard_year_filter" style="width: 90px; background: transparent; cursor: pointer;">
@@ -21,7 +27,7 @@
                 @endforeach
             </select>
         </div>
-        <span class="badge badge-soft-primary ml-2">Branch Manager</span>
+        <span class="badge badge-soft-primary py-2 px-3" style="border-radius: 8px;">Branch Manager</span>
     </div>
 </div>
 

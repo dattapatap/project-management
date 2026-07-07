@@ -37,13 +37,13 @@ class AdvancedReportController extends Controller
         ];
 
         // 1. Category Distribution (All Projects)
-        $categoryData = DepartmentProjects::with('category')
+        $categoryData = DepartmentProjects::with('projectCategory')
             ->select('category', DB::raw('count(*) as total'))
             ->groupBy('category')
             ->get()
             ->map(function($item) {
                 return [
-                    'name' => $item->category->name ?? 'Uncategorized',
+                    'name' => $item->projectCategory->category ?? 'Uncategorized',
                     'total' => $item->total
                 ];
             });
@@ -101,7 +101,7 @@ class AdvancedReportController extends Controller
         $year = $request->get('year', date('Y'));
         $view = $request->get('view', 'global');
         
-        $data = DepartmentProjects::with(['clients', 'category', 'creator', 'tasks'])
+        $data = DepartmentProjects::with(['clients', 'projectCategory', 'creator', 'tasks'])
             ->withCount([
                 'tasks', 
                 'completedTask',

@@ -325,7 +325,7 @@
                             <td style="white-space:nowrap;color:{{ $isOverdue ? '#e53e3e' : '#4a5568' }}">
                                 {{ $project->end_date ? \Carbon\Carbon::parse($project->end_date)->format('d M Y') : '—' }}
                             </td>
-                            <td style="color:#718096;">{{ $project->category->category ?? '—' }}</td>
+                            <td style="color:#718096;">{{ $project->projectCategory->category ?? '—' }}</td>
                             <td>
                                 @forelse($assignedUsers as $u)
                                     <span class="task-pill">

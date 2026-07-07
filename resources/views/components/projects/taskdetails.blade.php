@@ -248,6 +248,101 @@
         transform: scale(1.2);
         border-color: #34c38f;
     }
+
+    /* ── Task Timer Widget ── */
+    .task-timer-widget {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(85, 110, 230, 0.08), rgba(85, 110, 230, 0.04));
+        border: 1px solid rgba(85, 110, 230, 0.15);
+        margin-top: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .task-timer-widget.timer-running {
+        background: linear-gradient(135deg, rgba(244, 67, 54, 0.08), rgba(244, 67, 54, 0.04));
+        border-color: rgba(244, 67, 54, 0.25);
+        animation: timer-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes timer-glow {
+        0%, 100% { box-shadow: 0 0 4px rgba(244, 67, 54, 0.15); }
+        50% { box-shadow: 0 0 12px rgba(244, 67, 54, 0.3); }
+    }
+
+    .timer-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+        color: #fff;
+    }
+
+    .timer-btn.btn-start {
+        background: linear-gradient(135deg, #34c759, #30d158);
+    }
+
+    .timer-btn.btn-start:hover {
+        background: linear-gradient(135deg, #30d158, #28b84c);
+        transform: scale(1.1);
+    }
+
+    .timer-btn.btn-pause {
+        background: linear-gradient(135deg, #f44336, #e53935);
+    }
+
+    .timer-btn.btn-pause:hover {
+        background: linear-gradient(135deg, #e53935, #d32f2f);
+        transform: scale(1.1);
+    }
+
+    .timer-display {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: #495057;
+        min-width: 60px;
+        letter-spacing: 0.5px;
+    }
+
+    .timer-running .timer-display {
+        color: #f44336;
+    }
+
+    .timer-rec-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f44336;
+        animation: rec-blink 1s ease-in-out infinite;
+    }
+
+    @keyframes rec-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.2; }
+    }
+
+    .timer-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #868e96;
+        font-weight: 600;
+    }
+
+    .timer-running .timer-label {
+        color: #f44336;
+    }
 </style>
 @endsection
 
@@ -400,11 +495,12 @@
                                 </div>
                                 <p class="text-muted mb-1 small uppercase font-weight-bold">Total Time Spent</p>
                                 @php
-                                $totalMinutes = round($task->logs->sum('time_spend') * 60);
+                                $totalMinutes = round($task->logs->whereNotNull('time_spend')->sum('time_spend') * 60);
                                 $h = floor($totalMinutes / 60);
                                 $m = $totalMinutes % 60;
+                                $timeSpentFormatted = $h > 0 ? sprintf('%02d:%02d Hrs', $h, $m) : sprintf('%02d:%02d min', $h, $m);
                                 @endphp
-                                <h3 class="mb-0 font-weight-bold text-dark">{{ $h }}h {{ $m }}m</h3>
+                                <h3 class="mb-0 font-weight-bold text-dark">{{ $timeSpentFormatted }}</h3>
                             </div>
                         </div>
                         <div class="col-md-8">
@@ -415,10 +511,23 @@
                                         <p class="text-muted mb-0 small uppercase font-weight-bold">Task Progress</p>
                                         <h5 class="mb-0 font-weight-bold text-primary task-progress-val">{{ $task->progress }}%</h5>
                                     </div>
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-sm btn-primary shadow-sm tasklog px-3" taskid="{{ $task->id }}">
-                                            <i class="mdi mdi-clock-outline mr-1"></i> Log Time
-                                        </button>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        @if($task->assigned_to == Auth::id())
+                                        @php $activeTimer = $task->activeTimerForUser(Auth::id()); @endphp
+                                        <div class="task-timer-widget {{ $activeTimer ? 'timer-running' : '' }}" data-task-id="{{ $task->id }}" style="margin-top: 0;">
+                                            @if($activeTimer)
+                                                <span class="timer-rec-dot"></span>
+                                                <span class="timer-label">REC</span>
+                                                <span class="timer-display" data-started="{{ $activeTimer->log_date }} {{ $activeTimer->starttime }}">00:00:00</span>
+                                            @else
+                                                <span class="timer-label">Timer</span>
+                                                <span class="timer-display">00:00:00</span>
+                                                <button type="button" class="timer-btn btn-start" data-action="start" data-task-id="{{ $task->id }}" title="Start/Resume Timer">
+                                                    <i class="mdi mdi-play"></i>
+                                                </button>
+                                            @endif
+                                        </div>
+                                        @endif
                                         <button class="btn btn-sm btn-soft-primary changeStatus px-3" taskid="{{ $task->id }}" currentstatus="{{ $task->status }}">
                                             <i class="mdi mdi-arrow-left-right-bold mr-1"></i> Status
                                         </button>
@@ -427,7 +536,25 @@
                                 <div class="progress progress-premium mb-3" style="height: 6px;">
                                     <div class="progress-bar main-progress-bar" role="progressbar" style="width: {{ $task->progress }}%"></div>
                                 </div>
-                                <input type="range" class="custom-range w-100" id="progress-range" min="0" max="100" value="{{ $task->progress }}" step="2">
+                                <div class="d-flex align-items-center mt-3 gap-2">
+                                    <div style="flex-grow: 1;">
+                                        <select class="form-control select2" id="progress-select" style="border-radius: 8px;">
+                                            @php
+                                            $progressOptions = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+                                            if (!in_array($task->progress, $progressOptions)) {
+                                                $progressOptions[] = $task->progress;
+                                                sort($progressOptions);
+                                            }
+                                            @endphp
+                                            @foreach ($progressOptions as $opt)
+                                                <option value="{{ $opt }}" {{ $task->progress == $opt ? 'selected' : '' }}>{{ $opt }}% Complete</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-primary px-3 shadow-sm" id="btn-update-progress" style="height: 38px; border-radius: 8px;">
+                                        <i class="mdi mdi-check-all mr-1"></i> Update
+                                    </button>
+                                </div>
                             </div>
                             @else
                             <div class="stats-card-premium" style="background: rgba(52, 195, 143, 0.05);">
@@ -441,9 +568,11 @@
                                             <h5 class="mb-0 font-weight-bold text-success">Mission Accomplished!</h5>
                                         </div>
                                     </div>
-                                    <button class="btn btn-sm btn-soft-success tasklog px-3" taskid="{{ $task->id }}">
-                                        <i class="mdi mdi-clock-outline mr-1"></i> Add Final Log
+                                    @if(Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
+                                    <button class="btn btn-sm btn-soft-primary changeStatus px-3" taskid="{{ $task->id }}" currentstatus="{{ $task->status }}">
+                                        <i class="mdi mdi-arrow-left-right-bold mr-1"></i> Reopen Task
                                     </button>
+                                    @endif
                                 </div>
                             </div>
                             @endif
@@ -469,18 +598,6 @@
                         <div class="activity-log-premium">
                             @php
                             $activities = collect();
-                            // Add Work Logs
-                            foreach($task->logs as $log) {
-                            $activities->push([
-                            'type' => 'log',
-                            'date' => $log->created_at,
-                            'user' => $log->user->name ?? 'User',
-                            'title' => 'Work Logged',
-                            'description' => $log->log_description,
-                            'duration' => $log->time_spend,
-                            'raw' => $log
-                            ]);
-                            }
                             // Add History (Status/Progress changes)
                             foreach($task->histories as $history) {
                             $activities->push([
@@ -513,12 +630,16 @@
                                     <span class="font-size-12 text-muted font-weight-medium">by {{ $item['user'] }}</span>
                                     @if($item['type'] == 'log')
                                     <span class="mx-2 text-muted">•</span>
+                                    @if(!empty($item['is_running']))
+                                    <span class="badge badge-soft-danger font-size-11"><i class="mdi mdi-record mr-1" style="animation: rec-blink 1s ease-in-out infinite;"></i> Running</span>
+                                    @else
                                     @php
-                                    $itemMinutes = round($item['duration'] * 60);
+                                    $itemMinutes = round(($item['duration'] ?? 0) * 60);
                                     $itemH = floor($itemMinutes / 60);
                                     $itemM = $itemMinutes % 60;
                                     @endphp
                                     <span class="badge badge-soft-success font-size-11">{{ $itemH }}h {{ $itemM }}m</span>
+                                    @endif
                                     @endif
                                 </div>
                                 <p class="mb-0 text-muted" style="font-size: 14px;">{{ $item['description'] }}</p>
@@ -594,7 +715,6 @@
 @endsection
 @section('component')
 @include('components.projects.components.changestatus')
-@include('components.projects.components.tasklog')
 @endsection
 
 @section('scripts')
@@ -636,47 +756,92 @@
                 }
             });
 
-            // Update range slider track color (visual enhancement)
-            let percentage = (val - 0) / (100 - 0) * 100;
-            $('#progress-range').css('background', 'linear-gradient(to right, ' + color + ' 0%, ' + color + ' ' + percentage + '%, #f0f2f8 ' + percentage + '%, #f0f2f8 100%)');
         }
 
-        // Real-time update on drag
-        $('#progress-range').on('input', function() {
-            updateProgressUI($(this).val());
-        });
+        $('#btn-update-progress').on('click', function(e) {
+            e.preventDefault();
+            let val = $('#progress-select').val();
+            let btn = $(this);
 
-        let progressTimeout;
-        $('#progress-range').on('change input', function(e) {
-
-            clearTimeout(progressTimeout);
-            let val = $(this).val();
-
-            progressTimeout = setTimeout(function() {
-                $.ajax({
-                    type: 'post',
-                    url: base_url + '/projects/task/progress',
-                    data: {
-                        'task_id': "{{ $task->id }}",
-                        'progerss': val,
-                        '_token': '{{ csrf_token() }}'
-                    },
-                    dataType: 'json',
-                    success: function(res) {
-                        if (res.success == true)
-                            alertify.success(res.message);
-                        else
-                            alertify.error(res.message);
-                    },
-                    error: function(err) {
-                        console.log(err);
-                    },
-                });
-            }, 800); // Wait 800ms after last change before saving
+            $.ajax({
+                type: 'post',
+                url: base_url + '/projects/task/progress',
+                data: {
+                    'task_id': "{{ $task->id }}",
+                    'progerss': val,
+                    '_token': '{{ csrf_token() }}'
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Updating...');
+                },
+                success: function(res) {
+                    btn.prop('disabled', false).html('<i class="mdi mdi-check-all mr-1"></i> Update');
+                    if (res.success == true) {
+                        alertify.success(res.message);
+                        updateProgressUI(val);
+                    } else {
+                        alertify.error(res.message);
+                    }
+                },
+                error: function(err) {
+                    btn.prop('disabled', false).html('<i class="mdi mdi-check-all mr-1"></i> Update');
+                    alertify.error('Something went wrong. Please try again.');
+                    console.log(err);
+                },
+            });
         });
 
         // Initial UI state
         updateProgressUI("{{ $task->progress }}");
+
+        /* ── Timer Tick: update all running timers every second ── */
+        setInterval(function() {
+            $('.task-timer-widget.timer-running .timer-display').each(function() {
+                var started = $(this).data('started');
+                if (!started) return;
+                var startTime = new Date(started);
+                var now = new Date();
+                var diff = Math.floor((now - startTime) / 1000);
+                if (diff < 0) diff = 0;
+                var h = String(Math.floor(diff / 3600)).padStart(2, '0');
+                var m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                var s = String(diff % 60).padStart(2, '0');
+                $(this).text(h + ':' + m + ':' + s);
+            });
+        }, 1000);
+
+        /* ── Timer Button Click Handler ── */
+        $(document).on('click', '.timer-btn', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            var $btn = $(this);
+            var taskId = $btn.data('task-id');
+            var action = $btn.data('action');
+            var url = base_url + '/projects/tasks/' + taskId + '/timer/' + action;
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: { _token: '{{ csrf_token() }}' },
+                success: function(res) {
+                    if (res.success) {
+                        alertify.success(res.message);
+                        location.reload();
+                    } else {
+                        alertify.error(res.message);
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    alertify.error('Something went wrong. Please try again.');
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
     });
 </script>
 @endsection

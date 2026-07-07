@@ -27,16 +27,13 @@ class ProjectService
     ) {
     }
 
-    /**
-     * Get paginated projects and computed statistics scoped to the user's role.
-     */
-    public function getProjectIndexData(User $user, ?string $status = null, int $perPage = 50): array
+    public function getProjectIndexData(User $user, ?string $status = null, ?int $department = null, int $perPage = 50): array
     {
-        $query = $this->projectRepo->buildIndexQuery($user, $status);
+        $query = $this->projectRepo->buildIndexQuery($user, $status, $department);
         $projects = $this->projectRepo->paginate($query, $perPage);
 
-        // Compute stats using same user scope
-        $statsQuery = $this->projectRepo->buildIndexQuery($user);
+        // Compute stats using same user scope and department filter
+        $statsQuery = $this->projectRepo->buildIndexQuery($user, null, $department);
         $stats = $this->projectRepo->computeStats($statsQuery);
 
         return [
@@ -48,7 +45,7 @@ class ProjectService
     /**
      * Search projects by query and compute stats.
      */
-    public function searchProjects(User $user, ?string $filter, int $perPage = 50): array
+    public function searchProjects(User $user, ?string $filter, int $perPage = 50, ?int $department = null): array
     {
         $query = $this->projectRepo->withStandardRelations();
 
@@ -56,6 +53,12 @@ class ProjectService
             $this->projectRepo->scopeForEmployee($query, $user->id);
         } elseif ($user->hasRole('Team-Leader')) {
             $this->projectRepo->scopeForTeamLeader($query, $user);
+        }
+
+        if ($department) {
+            $query->whereHas('projectCategory', function ($q) use ($department) {
+                $q->where('dept_id', $department);
+            });
         }
 
         if (!empty($filter)) {
@@ -68,14 +71,14 @@ class ProjectService
                     $q->where('project_name', 'like', '%' . $filter . '%')
                         ->orWhere('status', 'like', '%' . $filter . '%')
                         ->orWhereHas('clients', fn($sq) => $sq->where('name', 'like', '%' . $filter . '%'))
-                        ->orWhereHas('category', fn($sq) => $sq->where('category', 'like', '%' . $filter . '%'))
+                        ->orWhereHas('projectCategory', fn($sq) => $sq->where('category', 'like', '%' . $filter . '%'))
                         ->orWhereHas('sub_categories', fn($sq) => $sq->where('name', 'like', '%' . $filter . '%'));
                 });
             }
         }
 
         $projects = $this->projectRepo->paginate($query->latest(), $perPage);
-        $stats = $this->projectRepo->computeStats();
+        $stats = $this->projectRepo->computeStats(clone $query);
 
         return [
             'projects' => $projects,
@@ -240,31 +243,82 @@ class ProjectService
         });
     }
 
-    /**
-     * Get eligible employees for a project to assign tasks to.
-     */
-    public function getEmployeesForProject(int $projectId, User $user): array
+    public function getEmployeesForProject(int $projectId, User $user, bool $interTeam = false): array
     {
         $project = $this->projectRepo->withStandardRelations()->findOrFail($projectId);
-        $query = User::where('status', 'Active');
-
-        if ($project->project_team && $project->project_team->team) {
-            $teamUserIds = $project->project_team->team->teammembers->pluck('user');
-            $query->whereIn('id', $teamUserIds);
-        } else {
-            $deptId = $project->category;
-            $query->whereHas('teamMember', function ($q) use ($deptId) {
-                $q->where('department', $deptId);
-            });
-        }
 
         if ($user->hasRole('Team-Leader')) {
+            if ($interTeam) {
+                // Show all active Team Leaders in the TL's own department
+                $userDeptId = $user->departments?->department ?? $user->teamMember?->department ?? 2;
+                $otherTls = User::role('Team-Leader')
+                    ->where('status', 'Active')
+                    ->where('id', '!=', $user->id)
+                    ->whereHas('departments', function($q) use ($userDeptId) {
+                        $q->where('department', $userDeptId);
+                    })
+                    ->with(['teamMember.team'])
+                    ->get();
+
+                $data = [];
+                foreach ($otherTls as $tl) {
+                    $teamName = $tl->teamMember?->team?->name ?? 'No Team';
+                    $data[] = [
+                        'id' => $tl->id,
+                        'name' => "{$tl->name} (TL - {$teamName})"
+                    ];
+                }
+                return $data;
+            }
+
+            // Normal task creation: show all active users under his team
             $teamMember = TeamMembers::where('user', $user->id)->where('status', true)->first();
-            if ($teamMember) {
-                $query->whereHas('teamMember', function ($q) use ($teamMember) {
-                    $q->where('team', $teamMember->team);
+            $tlTeamId = $teamMember?->team;
+
+            $query = User::where('status', 'Active');
+            if ($tlTeamId) {
+                $query->whereHas('teamMember', function ($q) use ($tlTeamId) {
+                    $q->where('team', $tlTeamId);
+                });
+            } else {
+                $userDeptId = $user->departments?->department ?? $user->teamMember?->department ?? 2;
+                $query->whereHas('teamMember', function ($q) use ($userDeptId) {
+                    $q->where('department', $userDeptId);
                 });
             }
+
+            $employees = $query->select('id', 'name')->orderBy('name')->get();
+
+            $data = [];
+            foreach ($employees as $emp) {
+                $name = ($emp->id == $user->id) ? $emp->name . ' (Assign to me)' : $emp->name;
+                $data[] = ['id' => $emp->id, 'name' => $name];
+            }
+
+            // Ensure Team Leader is in the list
+            $hasCurrentUser = collect($data)->contains('id', $user->id);
+            if (!$hasCurrentUser) {
+                array_unshift($data, ['id' => $user->id, 'name' => $user->name . ' (Assign to me)']);
+            }
+
+            return $data;
+        }
+
+        // For non-Team Leader roles: Admin, Branch-Manager, Project-Manager
+        $query = User::where('status', 'Active')
+            ->where(function ($q) {
+                $q->whereHas('teamMember', function ($sub) {
+                    $sub->where('department', 2);
+                })->orWhereHas('departments', function ($sub) {
+                    $sub->where('department', 2);
+                });
+            });
+
+        if ($user->hasRole(['Admin', 'Branch-Manager'])) {
+            // Exclude Branch-Manager and Admin roles from being assigned to
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('name', ['Admin', 'Branch-Manager']);
+            });
         }
 
         $employees = $query->select('id', 'name')->orderBy('name')->get();
@@ -275,10 +329,12 @@ class ProjectService
             $data[] = ['id' => $emp->id, 'name' => $name];
         }
 
-        // Ensure current user is an option
-        $hasCurrentUser = collect($data)->contains('id', $user->id);
-        if (!$hasCurrentUser) {
-            array_unshift($data, ['id' => $user->id, 'name' => $user->name . ' (Assign to me)']);
+        // For Project-Manager (and other non-Admin/non-BM management), ensure they can assign to themselves
+        if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
+            $hasCurrentUser = collect($data)->contains('id', $user->id);
+            if (!$hasCurrentUser) {
+                array_unshift($data, ['id' => $user->id, 'name' => $user->name . ' (Assign to me)']);
+            }
         }
 
         return $data;
@@ -294,10 +350,10 @@ class ProjectService
             return ['success' => false, 'message' => 'Project cannot be moved back to ToDo once it has started.'];
         }
 
-        // Rule 2: Reopening Completed project is restricted to Admin & Branch-Manager
+        // Rule 2: Reopening Completed project is restricted to Admin, Branch-Manager & Team-Leader
         if ($project->status === 'Completed' && $status === 'InProgress') {
-            if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
-                return ['success' => false, 'message' => 'Only Admins and Branch Managers can reopen completed projects.'];
+            if (!$user->hasRole(['Admin', 'Branch-Manager', 'Team-Leader'])) {
+                return ['success' => false, 'message' => 'Only Admins, Branch Managers and Team Leaders can reopen completed projects.'];
             }
         }
 

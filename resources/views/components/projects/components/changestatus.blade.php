@@ -22,11 +22,7 @@
                             </select>
                             <span class="invalid-feedback" id="status-input-error" role="alert"> <strong></strong></span>
                         </div>
-                        <div class="col-md-12 mt-2 taskdate" style="display: none;">
-                            <label>Actual Task Start Date <span class="text_required">*</span></label>
-                            <input type="datetime-local" name="act_start_date" id="act_start_date" class="form-control" value="{{ date('Y-m-d\TH:i') }}">
-                            <span class="invalid-feedback" id="act_start_date-input-error" role="alert"> <strong></strong></span>
-                        </div>
+
                     </div>
 
                     <div class="row">
@@ -57,12 +53,7 @@
             // Rebuild the select options dynamically based on currentStatus and role
             let statusSelect = $('#status');
             statusSelect.empty().append('<option value="">Select Status</option>');
-
-            let isManagement = {
-                {
-                    Auth::user() - > hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']) ? 'true' : 'false'
-                }
-            };
+            let isManagement = {{ Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']) ? 'true' : 'false' }};
 
             if (currentStatus === 'ToDo' || !currentStatus) {
                 statusSelect.append('<option value="ToDo">ToDo</option>');
@@ -81,13 +72,7 @@
             $('#mdlChangeStatus').modal('show');
         });
 
-        $('#status').change(function() {
-            if ($(this).val() == 'InProgress') {
-                $('.taskdate').css('display', 'block');
-            } else {
-                $('.taskdate').css('display', 'none');
-            }
-        })
+
 
         $('#frm_task_status').on('submit', function(ev) {
             ev.preventDefault();

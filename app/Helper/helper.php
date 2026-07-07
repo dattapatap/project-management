@@ -84,7 +84,7 @@ function projects($category, $user, $year = null)
                 });
             }
         })->when($userDeptId, function($q) use ($userDeptId) {
-            $q->whereHas('category', function($sq) use ($userDeptId) {
+            $q->whereHas('projectCategory', function($sq) use ($userDeptId) {
                 $sq->where('dept_id', $userDeptId);
             });
         });

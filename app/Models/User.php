@@ -86,6 +86,11 @@ class User extends Authenticatable
         return $this->hasMany(CsdClientAssignment::class, 'assigned_to', 'id');
     }
 
+    public function dayClosings()
+    {
+        return $this->hasMany(DayClosing::class, 'user_id', 'id');
+    }
+
     public function isGlobalAdmin(): bool
     {
         return $this->hasRole('Admin');
@@ -101,8 +106,28 @@ class User extends Authenticatable
         return $this->hasRole(['Admin', 'Branch-Manager']);
     }
 
+    /**
+     * Only Admin and Branch Manager can set sales targets.
+     */
+    public function canAssignTarget(): bool
+    {
+        return $this->hasRole(['Admin', 'Branch-Manager']);
+    }
+
     public function branchId(): ?int
     {
         return app(\App\Services\BranchScopeService::class)->getBranchId($this);
+    }
+
+    public function globalAttendanceLogs()
+    {
+        return $this->hasMany(GlobalAttendanceLog::class, 'userid', 'id');
+    }
+
+    public function activeGlobalTimer()
+    {
+        return $this->globalAttendanceLogs()
+            ->whereNull('endtime')
+            ->first();
     }
 }

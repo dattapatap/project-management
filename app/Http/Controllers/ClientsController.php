@@ -194,11 +194,11 @@ class ClientsController extends Controller
     public function ajaxStore(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:clients,name,NULL,id,deleted_at,NULL',
+            'name' => 'required|string|max:255',
             'contact_person' => 'required|string|max:255',
             'designation' => 'nullable|string|max:255',
-            'email' => 'required|email|max:255|unique:clients,email,NULL,id,deleted_at,NULL',
-            'mobile' => 'required|string|max:20|unique:clients,mobile,NULL,id,deleted_at,NULL',
+            'email' => 'required|email|max:255',
+            'mobile' => 'required|string|max:20',
             'city' => 'required|string|max:255',
             'address' => 'required|string|max:500',
         ]);
@@ -211,6 +211,50 @@ class ClientsController extends Controller
             DB::beginTransaction();
             $userid = Auth::id();
 
+            // Check if a client with the same name, email, or mobile already exists (including soft-deleted check)
+            $existingClient = Clients::where(function ($query) use ($request) {
+                $query->where('name', $request->name)
+                    ->orWhere('email', $request->email);
+            })->whereNull('deleted_at')->first();
+
+            if ($existingClient) {
+                if ($existingClient->status === 'Matured') {
+                    // Client already exists and is Matured - block duplicate creation
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Client "' . $existingClient->name . '" added.'
+                    ], 409);
+                }
+
+                // Client exists but is NOT Matured - update to Matured
+                $existingClient->status = 'Matured';
+                $existingClient->updated_by = $userid;
+
+                // Set ref_user to Admin
+                $admin = User::role('Admin')->where('status', 'Active')->first();
+                $existingClient->ref_user = $admin ? $admin->id : $userid;
+
+                $existingClient->save();
+
+                // Add history for the status change
+                $existingClient->histories()->create([
+                    'category' => 'STS',
+                    'status'   => 'Matured',
+                    'remarks'  => 'Client matured through Project Management section',
+                    'created'  => $userid,
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Client "' . $existingClient->name . '" already existed and has been updated to Matured.',
+                    'client' => ['id' => $existingClient->id, 'name' => $existingClient->name]
+                ], 200);
+            }
+
+            // No existing client found - create new
             $client = new Clients();
             $this->assignClientData($client, $request);
 
@@ -221,25 +265,9 @@ class ClientsController extends Controller
             $client->tele_ref_user = $userid;
             $client->updated_by = $userid;
 
-            // Resolve Branch Manager to set as ref_user
-            $branchId = app(\App\Services\BranchScopeService::class)->resolveBranchId(User::find($userid));
-            $branchManager = null;
-            if ($branchId) {
-                $branchManager = User::role('Branch-Manager')
-                    ->where('status', 'Active')
-                    ->whereIn('id', function($query) use ($branchId) {
-                        $query->select('user')
-                            ->from('user_branches')
-                            ->where('branch', $branchId);
-                    })
-                    ->first();
-            }
-            if (!$branchManager) {
-                $branchManager = User::role('Branch-Manager')
-                    ->where('status', 'Active')
-                    ->first();
-            }
-            $client->ref_user = $branchManager ? $branchManager->id : $userid;
+            // Set ref_user to Admin
+            $admin = User::role('Admin')->where('status', 'Active')->first();
+            $client->ref_user = $admin ? $admin->id : $userid;
 
             $client->save();
 
@@ -286,52 +314,76 @@ class ClientsController extends Controller
         if ($requiresAssign) {
             $users = User::where('deleted_at', null)->where('status', 'Active')
                 ->whereHas('roles', function ($q) {
-                    $q->whereIn('name', ['Sales-Executive', 'Team-Leader']);
+                    $q->whereIn('name', ['Sales-Executive', 'Team-Leader', 'Branch-Manager']);
                 })->get();
         }
 
         return view('components.clients.bulkupload', compact('users', 'requiresAssign'));
     }
 
-    public function bulkUploadSample()
+    public function bulkUploadSample(Request $request)
     {
+        $type = $request->get('type', 'fresh'); // 'fresh' or 'matured'
+
         $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="companies_bulk_upload_template.csv"',
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="companies_bulk_upload_template_' . $type . '.csv"',
         ];
 
-        $callback = function () {
+        $callback = function () use ($type) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, [
-                'Company Name',
-                'Contact Person',
-                'Designation',
-                'Email ID',
-                'Mobile',
-                'City',
-                'Website Link',
-                'Address',
-                'Remarks',
-                'TBRO Touchpoint Type',
-                'Schedule Time',
-                'Schedule Date (TBRO)',
-                'STS Routing Status'
-            ]);
-            fputcsv($file, [
-                'Acme Corporation Ltd',
-                'John Doe',
-                'Business Head',
-                'john.doe@acme.com',
-                '9876543210',
-                'Chicago',
-                'https://acmecorp.com',
-                '456 Enterprise Boulevard',
-                'Interested in custom SEO and portal design services',
-                'Call',
-                '03:30 PM',
-                '15-05-2026',
-                'Fresh'
-            ]);
+
+            if ($type === 'matured') {
+                fputcsv($file, [
+                    'Company Name',
+                    'Contact Person',
+                    'Email ID',
+                    'Mobile',
+                    'City',
+                    'Address',
+                    'Website Link',
+                ]);
+                fputcsv($file, [
+                    'Alpha Corp',
+                    'Jane Smith',
+                    'jane.smith@alphacorp.com',
+                    '9123456780',
+                    'New York',
+                    '789 Maple Avenue',
+                    'https://alphacorp.com',
+                ]);
+            } else {
+                fputcsv($file, [
+                    'Company Name',
+                    'Contact Person',
+                    'Designation',
+                    'Email ID',
+                    'Mobile',
+                    'City',
+                    'Website Link',
+                    'Address',
+                    'Remarks',
+                    'TBRO Touchpoint Type',
+                    'Schedule Time',
+                    'Schedule Date (TBRO)',
+                    'STS Routing Status',
+                ]);
+                fputcsv($file, [
+                    'Acme Corporation Ltd',
+                    'John Doe',
+                    'Business Head',
+                    'john.doe@acme.com',
+                    '9876543210',
+                    'Chicago',
+                    'https://acmecorp.com',
+                    '456 Enterprise Boulevard',
+                    'Interested in custom SEO and portal design services',
+                    'Call',
+                    '03:30 PM',
+                    '15-05-2026',
+                    'Fresh',
+                ]);
+            }
             fclose($file);
         };
 
@@ -344,7 +396,8 @@ class ClientsController extends Controller
         $requiresAssign = $user->hasRole(['Admin', 'Branch-Manager', 'Manager']);
 
         $rules = [
-            'file' => 'required|file|mimes:csv,txt|max:5120'
+            'file'       => 'required|file|mimes:csv,txt|max:5120',
+            'client_type' => 'required|in:Fresh,Matured',
         ];
 
         if ($requiresAssign) {
@@ -353,13 +406,14 @@ class ClientsController extends Controller
 
         $request->validate($rules);
 
-        $file = $request->file('file');
+        $file       = $request->file('file');
+        $clientType = $request->input('client_type');
         $referralId = $requiresAssign ? $request->referral : $user->id;
-        $userId = $user->id;
+        $userId     = $user->id;
 
         $successCount = 0;
-        $failedCount = 0;
-        $errorsList = [];
+        $failedCount  = 0;
+        $errorsList   = [];
 
         // Enforce maximum record upload limit of 200 records
         if (($handle = fopen($file->getRealPath(), "r")) !== FALSE) {
@@ -395,115 +449,184 @@ class ClientsController extends Controller
                     continue;
                 }
 
-                // Extract and trim fields
-                $name         = trim($data[0] ?? '');
-                $cont_person  = trim($data[1] ?? '');
-                $designation  = trim($data[2] ?? '');
-                $email        = trim($data[3] ?? '');
-                $mobile       = trim($data[4] ?? '');
-                $city         = trim($data[5] ?? '');
-                $website_link = trim($data[6] ?? '');
-                $address      = trim($data[7] ?? '');
-                $remarks      = trim($data[8] ?? '');
-                $tbro_type    = trim($data[9] ?? '');
-                $tbro_time    = trim($data[10] ?? '');
-                $tbro_date    = trim($data[11] ?? '');
-                $sts_status   = trim($data[12] ?? '') ?: 'Fresh';
-
-                // Validation rules
-                if (empty($name) || empty($cont_person) || empty($designation) || empty($mobile) || empty($city) || empty($address) || empty($remarks)) {
-                    $failedCount++;
-                    $errorsList[] = "Row $rowNumber skipped: Missing required fields. Company Name, Contact Person, Designation, Mobile, City, Address, and Remarks are all mandatory.";
-                    continue;
-                }
-
-                // Duplicate check
-                $duplicateExists = Clients::where('name', $name)->whereNull('deleted_at')->exists();
-                if ($duplicateExists) {
-                    $failedCount++;
-                    $errorsList[] = "Row $rowNumber skipped: Company Name '$name' already exists in the system (Duplicate detected).";
-                    continue;
-                }
-
-                // Mobile validation (must be 10 digits starting with 6-9)
-                if (!preg_match('/^[6-9][0-9]{9}$/', $mobile)) {
-                    $failedCount++;
-                    $errorsList[] = "Row $rowNumber skipped: Mobile '$mobile' is invalid. Must be exactly 10 digits starting with 6, 7, 8, or 9.";
-                    continue;
-                }
-
-                // Email validation (optional but must be valid if provided)
-                if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $failedCount++;
-                    $errorsList[] = "Row $rowNumber skipped: Email ID '$email' is invalid.";
-                    continue;
-                }
-
-                // Optional TBRO parsing
-                $parsedTime = null;
-                if (!empty($tbro_time)) {
-                    try {
-                        $parsedTime = Carbon::parse($tbro_time)->format('H:i:s');
-                    } catch (\Exception $e) {
-                        // ignore or fail silently
-                    }
-                }
-
-                $parsedDate = null;
-                if (!empty($tbro_date)) {
-                    try {
-                        $parsedDate = Carbon::parse($tbro_date)->format('Y-m-d');
-                    } catch (\Exception $e) {
-                        // ignore or fail silently
-                    }
-                }
-
                 try {
                     DB::beginTransaction();
 
-                    $client = new Clients();
-                    $client->name          = ucfirst($name);
-                    $client->cont_person   = ucfirst($cont_person);
-                    $client->designation   = ucfirst($designation);
-                    $client->email         = $email ?: null;
-                    $client->mobile        = $mobile;
-                    $client->city          = ucfirst($city);
-                    $client->website_link  = $website_link ?: null;
-                    $client->address       = $address ?: null;
-                    $client->description   = $remarks ?: null;
+                    if ($clientType === 'Matured') {
+                        // Matured client format: Client Name, Contact Person, Email, Mobile, City, Address, Website Link
+                        $name         = trim($data[0] ?? '');
+                        $cont_person  = trim($data[1] ?? '');
+                        $email        = trim($data[2] ?? '');
+                        $mobile       = trim($data[3] ?? '');
+                        $city         = trim($data[4] ?? '');
+                        $address      = trim($data[5] ?? '');
+                        $website_link = trim($data[6] ?? '');
 
-                    // Compute matching category based on routing status
-                    $category = 'Fresh';
-                    if (strtolower($sts_status) !== 'fresh') {
-                        $category = 'Folloup';
+                        // Sanitize mobile number: remove non-numeric characters and handle prefixes like +91 or 0
+                        $mobile = preg_replace('/[^0-9]/', '', $mobile);
+                        if (strlen($mobile) === 12 && str_starts_with($mobile, '91')) {
+                            $mobile = substr($mobile, 2);
+                        } elseif (strlen($mobile) === 11 && str_starts_with($mobile, '0')) {
+                            $mobile = substr($mobile, 1);
+                        }
+
+                        // Validation for Matured clients
+                        if (empty($name) || empty($cont_person) || empty($mobile) || empty($city) || empty($address)) {
+                            throw new Exception("Missing required fields. Company Name, Contact Person, Mobile, City, and Address are mandatory.");
+                        }
+
+                        if (!preg_match('/^[6-9][0-9]{9}$/', $mobile)) {
+                            throw new Exception("Mobile '$mobile' is invalid. Must be exactly 10 digits starting with 6, 7, 8, or 9.");
+                        }
+
+                        if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            throw new Exception("Email ID '$email' is invalid.");
+                        }
+
+                        // Duplicate check for Matured clients: name AND mobile
+                        $duplicateExists = Clients::where('name', $name)
+                            ->where('mobile', $mobile)
+                            ->whereNull('deleted_at')
+                            ->first();
+
+                        if ($duplicateExists) {
+                            $errorsList[] = "Row $rowNumber skipped: Client '$name' with mobile '$mobile' already exists in the system (Duplicate detected).";
+                            $failedCount++;
+                            DB::rollBack();
+                            continue;
+                        }
+
+                        $client = new Clients();
+                        $client->name          = ucwords(strtolower($name));
+                        $client->cont_person   = ucwords(strtolower($cont_person));
+                        $client->designation   = null; // Not provided in Matured template
+                        $client->email         = $email ?: null;
+                        $client->mobile        = $mobile;
+                        $client->city          = ucwords(strtolower($city));
+                        $client->website_link  = $website_link ?: null;
+                        $client->address       = $address ?: null;
+                        $client->description   = 'Matured client added via bulk CSV upload';
+                        $client->category      = 'Direct'; // Or a suitable category for matured leads
+                        $client->status        = 'Matured';
+                        $client->is_active     = true;
+                        $client->ref_user      = $referralId;
+                        $client->created_by    = $userId;
+                        $client->tele_ref_user = $userId;
+                        $client->updated_by    = $userId;
+                        $client->save();
+
+                        $client->histories()->create([
+                            'category'  => 'STS',
+                            'status'    => 'Matured',
+                            'remarks'   => 'Matured client added via bulk CSV upload',
+                            'created'   => $userId,
+                        ]);
+                    } else {
+                        // Existing Fresh client format handling
+                        $name         = trim($data[0] ?? '');
+                        $cont_person  = trim($data[1] ?? '');
+                        $designation  = trim($data[2] ?? '');
+                        $email        = trim($data[3] ?? '');
+                        $mobile       = trim($data[4] ?? '');
+                        $city         = trim($data[5] ?? '');
+                        $website_link = trim($data[6] ?? '');
+                        $address      = trim($data[7] ?? '');
+                        $remarks      = trim($data[8] ?? '');
+                        $tbro_type    = trim($data[9] ?? '');
+                        $tbro_time    = trim($data[10] ?? '');
+                        $tbro_date    = trim($data[11] ?? '');
+                        $sts_status   = trim($data[12] ?? '') ?: 'Fresh';
+
+                        // Sanitize mobile number: remove non-numeric characters and handle prefixes like +91 or 0
+                        $mobile = preg_replace('/[^0-9]/', '', $mobile);
+                        if (strlen($mobile) === 12 && str_starts_with($mobile, '91')) {
+                            $mobile = substr($mobile, 2);
+                        } elseif (strlen($mobile) === 11 && str_starts_with($mobile, '0')) {
+                            $mobile = substr($mobile, 1);
+                        }
+
+                        // Validation rules for Fresh clients
+                        if (empty($name) || empty($cont_person) || empty($designation) || empty($mobile) || empty($city) || empty($address) || empty($remarks)) {
+                            throw new Exception("Missing required fields. Company Name, Contact Person, Designation, Mobile, City, Address, and Remarks are all mandatory.");
+                        }
+
+                        // Duplicate check for Fresh clients: only by name
+                        $duplicateExists = Clients::where('name', $name)->whereNull('deleted_at')->exists();
+                        if ($duplicateExists) {
+                            $errorsList[] = "Row $rowNumber skipped: Company Name '$name' already exists in the system (Duplicate detected).";
+                            $failedCount++;
+                            DB::rollBack();
+                            continue;
+                        }
+
+                        if (!preg_match('/^[6-9][0-9]{9}$/', $mobile)) {
+                            throw new Exception("Mobile '$mobile' is invalid. Must be exactly 10 digits starting with 6, 7, 8, or 9.");
+                        }
+
+                        if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            throw new Exception("Email ID '$email' is invalid.");
+                        }
+
+                        $parsedTime = null;
+                        if (!empty($tbro_time)) {
+                            try {
+                                $parsedTime = Carbon::parse($tbro_time)->format('H:i:s');
+                            } catch (\Exception $e) {
+                                // ignore or fail silently
+                            }
+                        }
+
+                        $parsedDate = null;
+                        if (!empty($tbro_date)) {
+                            try {
+                                $parsedDate = Carbon::parse($tbro_date)->format('Y-m-d');
+                            } catch (\Exception $e) {
+                                // ignore or fail silently
+                            }
+                        }
+
+                        $client = new Clients();
+                        $client->name          = ucwords(strtolower($name));
+                        $client->cont_person   = ucwords(strtolower($cont_person));
+                        $client->designation   = ucwords(strtolower($designation));
+                        $client->email         = $email ?: null;
+                        $client->mobile        = $mobile;
+                        $client->city          = ucwords(strtolower($city));
+                        $client->website_link  = $website_link ?: null;
+                        $client->address       = $address ?: null;
+                        $client->description   = $remarks ?: null;
+
+                        $category = 'Fresh';
+                        if (strtolower($sts_status) !== 'fresh') {
+                            $category = 'Folloup';
+                        }
+                        if (strtolower($sts_status) === 'not interested') {
+                            $category = 'Not Interested';
+                        }
+
+                        $client->category      = $category;
+                        $client->status        = $sts_status;
+                        $client->is_active     = false;
+                        $client->ref_user      = $referralId;
+                        $client->created_by    = $userId;
+                        $client->tele_ref_user = $userId;
+                        $client->updated_by    = $userId;
+                        $client->save();
+
+                        $client->histories()->create([
+                            'category'  => 'STS',
+                            'status'    => $sts_status,
+                            'tbro_type' => $tbro_type ?: null,
+                            'time'      => $parsedTime,
+                            'tbro'      => $parsedDate,
+                            'remarks'   => $remarks ?: 'Company added via bulk CSV upload',
+                            'created'   => $userId,
+                        ]);
                     }
-                    if (strtolower($sts_status) === 'not interested') {
-                        $category = 'Not Interested';
-                    }
-
-                    $client->category      = $category;
-                    $client->status        = $sts_status;
-                    $client->is_active     = false;
-                    $client->ref_user      = $referralId;
-                    $client->created_by    = $userId;
-                    $client->tele_ref_user = $userId;
-                    $client->updated_by    = $userId;
-                    $client->save();
-
-                    // Add STS history with optional parameters
-                    $client->histories()->create([
-                        'category'  => 'STS',
-                        'status'    => $sts_status,
-                        'tbro_type' => $tbro_type ?: null,
-                        'time'      => $parsedTime,
-                        'tbro'      => $parsedDate,
-                        'remarks'   => $remarks ?: 'Company added via bulk CSV upload',
-                        'created'   => $userId,
-                    ]);
 
                     DB::commit();
                     $successCount++;
-                } catch (\Exception $ex) {
+                } catch (Exception $ex) {
                     DB::rollBack();
                     $failedCount++;
                     $errorsList[] = "Row $rowNumber failed: " . $ex->getMessage();
@@ -520,10 +643,12 @@ class ClientsController extends Controller
         if ($failedCount > 0) {
             return redirect()->back()
                 ->with('success', $message)
-                ->with('bulk_errors', $errorsList);
+                ->with('bulk_errors', $errorsList)
+                ->withInput();
         }
 
-        return redirect()->route('clients.category', client_category_slug('Fresh'))->with('success', $message);
+        $targetCategory = ($clientType === 'Matured') ? 'Matured' : 'Fresh';
+        return redirect()->route('clients.category', client_category_slug($targetCategory))->with('success', $message);
     }
 
     public function show(Clients $client)

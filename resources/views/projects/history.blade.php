@@ -183,7 +183,7 @@
                             </div>
                             <div class="col-md-3 col-6 mb-4">
                                 <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Category</label>
-                                <p class="mb-0 font-weight-bold text-dark">{{ $project->category->category ?? 'N/A' }}</p>
+                                <p class="mb-0 font-weight-bold text-dark">{{ $project->projectCategory->category ?? 'N/A' }}</p>
                             </div>
                             <div class="col-md-3 col-6 mb-4">
                                 <label class="text-muted font-weight-bold text-uppercase mb-1 d-block" style="font-size: 10px; letter-spacing: 1px;">Start Date</label>
@@ -295,7 +295,7 @@
                                         <th class="border-0 px-4">Task Information</th>
                                         <th class="border-0">Assignee</th>
                                         <th class="border-0">Timeline</th>
-                                        <th class="border-0">Work Effort</th>
+                                        <th class="border-0">Time Spend on that task</th>
                                         <th class="border-0">Status</th>
                                         <th class="border-0 text-right">Progress</th>
                                         <th class="border-0 text-center pr-4">Action</th>
@@ -329,8 +329,13 @@
                                                 @endif
                                             </div>
                                         </td>
-                                        <td>
-                                            <div class="font-weight-bold">{{ number_format($task->total_time, 1) }}h</div>
+                                            @php
+                                            $totalMinutes = round(($task->total_time ?? 0) * 60);
+                                            $h = floor($totalMinutes / 60);
+                                            $m = $totalMinutes % 60;
+                                            $timeSpentFormatted = $h > 0 ? sprintf('%02d:%02d Hrs', $h, $m) : sprintf('%02d:%02d min', $h, $m);
+                                            @endphp
+                                            <div class="font-weight-bold">{{ $timeSpentFormatted }}</div>
                                         </td>
                                         <td>
                                             @php

@@ -31,7 +31,7 @@ class ReportController extends Controller
     public function sales_reports(Request $request)
     {
         $user = Auth::user();
-        $query = Clients::with(['telereferral', 'referral', 'creator', 'projects.category', 'projects.sub_categories', 'projects.tasks'])
+        $query = Clients::with(['telereferral', 'referral', 'creator', 'projects.projectCategory', 'projects.sub_categories', 'projects.tasks'])
             ->where('is_active', true)
             ->where('status', 'Matured');
 

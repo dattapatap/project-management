@@ -194,7 +194,7 @@
     <div class="card mb-4 title-card-glass">
         <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between flex-wrap">
             <div class="d-flex align-items-center" style="gap: 15px;">
-                <a href="{{ url('client/Fresh') }}" class="btn-back-circle" data-toggle="tooltip" data-placement="top" title="Go Back">
+                <a href="{{ route('clients.index') }}" class="btn-back-circle" data-toggle="tooltip" data-placement="top" title="Go Back">
                     <i class="mdi mdi-keyboard-backspace font-size-18"></i>
                 </a>
                 <div>
@@ -233,7 +233,12 @@
 
     @if($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 12px; font-weight: 500;">
-        <i class="mdi mdi-alert-circle mr-1"></i> Please resolve validation errors listed below.
+        <i class="mdi mdi-alert-circle mr-1"></i> <strong>Please resolve the validation errors:</strong>
+        <ul class="mt-2 mb-0" style="padding-left: 20px;">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
@@ -257,10 +262,26 @@
         <div class="col-lg-7">
             <div class="card form-card-premium">
                 <div class="card-body p-4 p-md-5">
-                    <h4 class="text-premium-dark font-size-16 mb-4">📤 Upload Your Spreadsheet</h4>
-
                     <form class="custom-validation" action="{{ route('clients.bulkupload.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
+
+                        <h4 class="text-premium-dark font-size-16 mb-4">📤 Upload Your Spreadsheet</h4>
+
+                        <!-- Client Type Selection -->
+                        <div class="form-group mb-4">
+                            <label class="font-weight-600 mb-2">Client Type for Upload:</label>
+                            <div class="d-flex gap-3">
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" id="clientTypeFresh" name="client_type" class="custom-control-input" value="Fresh" {{ old('client_type', 'Fresh') === 'Fresh' ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="clientTypeFresh">Fresh Clients</label>
+                                </div>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" id="clientTypeMatured" name="client_type" class="custom-control-input" value="Matured" {{ old('client_type') === 'Matured' ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="clientTypeMatured">Matured Clients</label>
+                                </div>
+                            </div>
+                            <span class="text-muted font-size-11 mt-1 d-block">Select the type of clients you are uploading. Matured clients use a simpler template.</span>
+                        </div>
 
                         <!-- Executive Allocation -->
                         @if($requiresAssign)
@@ -298,7 +319,7 @@
 
                         <!-- Action Controls -->
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                            <a href="{{ url('client/Fresh') }}" class="btn btn-light" style="border-radius: 10px; padding: 10px 20px;">
+                            <a href="{{ route('clients.index') }}" class="btn btn-light" style="border-radius: 10px; padding: 10px 20px;">
                                 Cancel
                             </a>
                             <button type="submit" class="btn btn-upload-submit">
@@ -319,7 +340,7 @@
                         <h4 class="font-size-15 font-weight-700 text-white mb-1">📥 Standard Template Format</h4>
                         <p class="text-white-50 font-size-12 mb-0">Download our pre-structured template containing example columns to avoid header mismatch errors.</p>
                     </div>
-                    <a href="{{ route('clients.bulkupload.sample') }}">
+                    <a href="{{ route('clients.bulkupload.sample') }}" id="downloadTemplateLink">
                         <i class="mdi mdi-file-excel"></i> Download Template
                     </a>
                 </div>
@@ -415,35 +436,87 @@
 @endsection
 
 @section('scripts')
-<script>
-    // File upload label updater script
-    function displaySelectedFile(input) {
-        const fileBox = document.getElementById('file-name');
-        if (input.files && input.files.length > 0) {
-            const file = input.files[0];
-            fileBox.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-            fileBox.classList.remove('d-none');
-        } else {
-            fileBox.classList.add('d-none');
+    <script>
+        // File upload label updater script
+        function displaySelectedFile(input) {
+            const fileBox = document.getElementById('file-name');
+            if (input.files && input.files.length > 0) {
+                const file = input.files[0];
+                fileBox.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                fileBox.classList.remove('d-none');
+            } else {
+                fileBox.classList.add('d-none');
+            }
         }
-    }
 
-    // Drag-and-drop feedback integrations
-    const dropzone = document.getElementById('dropzone');
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            dropzone.style.borderColor = '#7F00FF';
-            dropzone.style.background = 'rgba(127, 0, 255, 0.08)';
-        }, false);
-    });
+        // Drag-and-drop feedback integrations
+        const dropzone = document.getElementById('dropzone');
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = '#7F00FF';
+                dropzone.style.background = 'rgba(127, 0, 255, 0.08)';
+            }, false);
+        });
 
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            dropzone.style.borderColor = 'rgba(127, 0, 255, 0.35)';
-            dropzone.style.background = 'rgba(127, 0, 255, 0.015)';
-        }, false);
-    });
-</script>
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'rgba(127, 0, 255, 0.35)';
+                dropzone.style.background = 'rgba(127, 0, 255, 0.015)';
+            }, false);
+        });
+
+        // Dynamic template and instructions based on client type
+        const clientTypeRadios = document.querySelectorAll('input[name="client_type"]');
+        const downloadTemplateLink = document.getElementById('downloadTemplateLink');
+        const instructionsTableBody = document.querySelector('.instructions-table tbody');
+        const freshTemplateUrl = "{{ route('clients.bulkupload.sample') }}";
+        const maturedTemplateUrl = "{{ url('clients/bulk-upload/sample?type=matured') }}"; // We'll create this route
+
+        const freshInstructions = `
+            <tr><td><strong>Company Name</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Unique business title.</td></tr>
+            <tr><td><strong>Contact Person</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Primary contact full name.</td></tr>
+            <tr><td><strong>Designation</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">e.g. Director, Owner, Partner.</td></tr>
+            <tr><td><strong>Email ID</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">Must be a valid email format.</td></tr>
+            <tr><td><strong>Mobile</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">10 digits, starting with 6, 7, 8, or 9.</td></tr>
+            <tr><td><strong>City</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Location / registered city.</td></tr>
+            <tr><td><strong>Website Link</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">URL (http/https).</td></tr>
+            <tr><td><strong>Address</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Full office location address.</td></tr>
+            <tr><td><strong>Remarks</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Initial contact / pipeline comments.</td></tr>
+            <tr><td><strong>TBRO Touchpoint Type</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">e.g. Call, WhatsApp, Direct visit, etc.</td></tr>
+            <tr><td><strong>Schedule Time</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">Format: "hh:mm AM/PM" (e.g., 03:30 PM).</td></tr>
+            <tr><td><strong>Schedule Date (TBRO)</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">Format: DD-MM-YYYY (e.g., 15-05-2026).</td></tr>
+            <tr><td><strong>STS Routing Status</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">Status of lead (Defaults to "Fresh").</td></tr>
+        `;
+
+        const maturedInstructions = `
+            <tr><td><strong>Company Name</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Unique business title.</td></tr>
+            <tr><td><strong>Contact Person</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Primary contact full name.</td></tr>
+            <tr><td><strong>Email ID</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">Must be a valid email format.</td></tr>
+            <tr><td><strong>Mobile</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">10 digits, starting with 6, 7, 8, or 9.</td></tr>
+            <tr><td><strong>City</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Location / registered city.</td></tr>
+            <tr><td><strong>Address</strong></td><td class="text-center"><span class="badge badge-soft-danger px-2">Yes</span></td><td class="text-muted font-size-12">Full office location address.</td></tr>
+            <tr><td><strong>Website Link</strong></td><td class="text-center"><span class="badge badge-soft-secondary px-2">No</span></td><td class="text-muted font-size-12">URL (http/https).</td></tr>
+        `;
+
+        function updateTemplateAndInstructions() {
+            const selectedType = document.querySelector('input[name="client_type"]:checked').value;
+            if (selectedType === 'Fresh') {
+                downloadTemplateLink.href = freshTemplateUrl;
+                instructionsTableBody.innerHTML = freshInstructions;
+            } else {
+                downloadTemplateLink.href = maturedTemplateUrl;
+                instructionsTableBody.innerHTML = maturedInstructions;
+            }
+        }
+
+        // Initial update on page load
+        updateTemplateAndInstructions();
+
+        // Add event listeners for radio button changes
+        clientTypeRadios.forEach(radio => {
+            radio.addEventListener('change', updateTemplateAndInstructions);
+        });
+    </script>
 @endsection

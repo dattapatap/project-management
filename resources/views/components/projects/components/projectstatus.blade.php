@@ -53,7 +53,7 @@
             let statusSelect = $('#project_status_select');
             statusSelect.empty().append('<option value="">Select Status</option>');
 
-            let isManagement = {{ Auth::user()->hasRole(['Admin', 'Branch-Manager']) ? 'true' : 'false' }};
+            let isManagement = {{ Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Team-Leader']) ? 'true' : 'false' }};
 
             if (currentStatus === 'ToDo' || !currentStatus) {
                 statusSelect.append('<option value="ToDo">ToDo</option>');
@@ -83,15 +83,26 @@
             let currentStatus = $('#project_status_select').data('current-status') || '';
 
             if (selectedStatus !== currentStatus && (selectedStatus === 'InProgress' || selectedStatus === 'Completed')) {
+                let title = 'Change Status';
                 let msg = 'Are you sure you want to change project status to ' + selectedStatus + '? You will not be able to revert it.';
                 if (selectedStatus === 'Completed') {
+                    title = 'Complete Project';
                     msg = 'Are you sure you want to complete this project? You will not be able to revert it.';
                 }
-                if (!confirm(msg)) {
-                    return false;
-                }
+                alertify.confirm(title, msg, 
+                    function() {
+                        submitProjectStatusForm();
+                    }, 
+                    function() {
+                        // User cancelled
+                    }
+                );
+            } else {
+                submitProjectStatusForm();
             }
+        });
 
+        function submitProjectStatusForm() {
             $(".invalid-feedback").children("strong").text("");
             $.ajax({
                 type: 'POST',
@@ -125,8 +136,7 @@
                     }
                 }
             });
-
-        })
+        }
 
     })
 </script>

@@ -3,6 +3,24 @@
 @section('content')
 
 <div class="container-fluid erp-page pb-5">
+    @if(isset($hasSubmittedClosingToday) && !$hasSubmittedClosingToday && \Carbon\Carbon::now()->hour >= 18 && Auth::user()->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Sales-Executive', 'CSD-Executive', 'Team-Leader']))
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger shadow-sm d-flex align-items-center justify-content-between mb-0" style="border-radius: 12px; background: linear-gradient(135deg, #f857a6 0%, #ff5858 100%); color: white; border: none;">
+                <div class="d-flex align-items-center">
+                    <div class="display-4 mr-3" style="font-size: 24px; line-height: 1;">⏰</div>
+                    <div>
+                        <h5 class="text-white font-weight-bold mb-1">EOD Day Closing Pending</h5>
+                        <p class="text-white-50 mb-0 font-weight-medium">It is past 06:00 PM and you have not submitted your day-closing report yet. Please submit your summary now to complete your daily checklist.</p>
+                    </div>
+                </div>
+                <a href="{{ route('day-closing.index') }}" class="btn btn-light btn-sm font-weight-bold px-4 rounded-pill shadow-sm" style="color: #ff5858; white-space: nowrap;">
+                    <i class="mdi mdi-calendar-check-outline mr-1"></i> Submit Now
+                </a>
+            </div>
+        </div>
+    </div>
+    @endif
     <!-- start page title -->
     <div class="row">
         <div class="col-12">
@@ -58,13 +76,13 @@
         <div class="tab-pane fade {{ $activeTab == 'tab-tl-personal' ? 'show active' : '' }} tab-content-animate" id="my-workspace" role="tabpanel">
             @if(optional($user->departments)->department == 1)
             @include('dashboards.sales_ui', [
-                'adminData' => !empty($personalData) ? $personalData : $adminData,
-                'forceExecutiveView' => true
+            'adminData' => !empty($personalData) ? $personalData : $adminData,
+            'forceExecutiveView' => true
             ])
             @elseif(optional($user->departments)->department == 3)
             @include('dashboards.csd_ui', [
-                'adminData' => !empty($personalData) ? $personalData : $adminData,
-                'forceExecutiveView' => true
+            'adminData' => !empty($personalData) ? $personalData : $adminData,
+            'forceExecutiveView' => true
             ])
             @else
             @include('dashboards.employee_od_ui')

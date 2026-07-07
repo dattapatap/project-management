@@ -1,7 +1,16 @@
 {{-- Admin Dashboard UI --}}
-<div class="row mb-3">
-    <div class="col-12 d-flex justify-content-between align-items-center">
+<div class="row mb-3 align-items-center">
+    <div class="col-lg-6">
         <h4 class="header-title erp-dash-title mb-0">System Overview</h4>
+    </div>
+    <div class="col-lg-6 text-lg-right mt-2 mt-lg-0 d-flex align-items-center justify-content-lg-end flex-wrap" style="gap: 8px;">
+        <a href="{{ route('daily-targets.index') }}" class="btn btn-outline-primary btn-sm shadow-sm" style="border-radius: 8px; font-weight: 600; padding: 6px 12px;">
+            <i class="mdi mdi-target mr-1"></i> Set Daily Target
+        </a>
+        <a href="{{ route('sales.targets.index') }}" class="btn btn-outline-success btn-sm shadow-sm" style="border-radius: 8px; font-weight: 600; padding: 6px 12px;">
+            <i class="mdi mdi-trophy-outline mr-1"></i> Set Sales Target
+        </a>
+        <span class="badge badge-soft-danger py-2 px-3" style="border-radius: 8px;">Admin</span>
     </div>
 </div>
 
@@ -63,11 +72,6 @@
                     <div class="col-6 mb-2">
                         <a href="{{ route('departments.create') }}" class="btn btn-info btn-block btn-sm shadow-sm p-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
                             <i class="mdi mdi-domain mr-1"></i> Dept
-                        </a>
-                    </div>
-                    <div class="col-12">
-                        <a href="{{ route('clients.create') }}" class="btn btn-success btn-block btn-sm shadow-sm p-3" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border: none;">
-                            <i class="mdi mdi-briefcase-plus mr-1"></i> New Client / Project
                         </a>
                     </div>
                 </div>

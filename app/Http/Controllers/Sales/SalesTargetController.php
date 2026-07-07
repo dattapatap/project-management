@@ -29,24 +29,71 @@ class SalesTargetController extends Controller
         // Leaderboard for the selected month/year
         $leaderboard = $this->targetService->getLeaderboardData($selectedMonth, $selectedYear);
 
-        // Fetch list of sales reps if user is TL or Admin
-        $subordinates = [];
+        // Fetch list of targetable staff if user is Admin or Branch Manager
+        $subordinates = collect();
         if ($user->hasRole(['Admin', 'Branch-Manager'])) {
-            $subordinates = User::role('Sales-Executive')->where('status', 'Active')->get();
-        } elseif ($user->hasRole('Team-Leader')) {
-            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
-            $subordinates = User::whereHas('teamMember', function ($q) use ($teams) {
-                $q->whereIn('team', $teams);
-            })
-            ->role('Sales-Executive')
-            ->where('status', 'Active')
-            ->get();
+            // NSD: Sales Executives + NSD Team Leaders (dept=1)
+            $nsdUsers = User::where('status', 'Active')
+                ->where('id', '!=', $user->id)
+                ->where(function ($q) {
+                    $q->whereHas('roles', function ($r) {
+                        $r->where('name', 'Sales-Executive');
+                    })
+                        ->orWhere(function ($q2) {
+                            $q2->whereHas('roles', function ($r) {
+                                $r->where('name', 'Team-Leader');
+                            })->whereHas('departments', function ($d) {
+                                $d->where('department', 1); // NSD
+                            });
+                        });
+                })
+                ->get();
+
+            // CSD: CSD Executives + CSD Team Leaders (dept=3)
+            $csdUsers = User::where('status', 'Active')
+                ->where('id', '!=', $user->id)
+                ->where(function ($q) {
+                    $q->whereHas('roles', function ($r) {
+                        $r->where('name', 'CSD-Executive');
+                    })
+                        ->orWhere(function ($q2) {
+                            $q2->whereHas('roles', function ($r) {
+                                $r->where('name', 'Team-Leader');
+                            })->whereHas('departments', function ($d) {
+                                $d->where('department', 3); // CSD
+                            });
+                        });
+                })
+                ->get();
+
+            $subordinates = $nsdUsers->merge($csdUsers)->unique('id')->values();
+        }
+
+        $subordinateTargets = [];
+        if ($subordinates->isNotEmpty()) {
+            $subordinateIds = $subordinates->pluck('id')->toArray();
+            $subordinateTargetsRaw = \App\Models\SalesTarget::with('user')->whereIn('user_id', $subordinateIds)
+                ->where('period_year', $selectedYear)
+                ->orderBy('period_month', 'desc')
+                ->get();
+
+            foreach ($subordinateTargetsRaw as $tgt) {
+                $tgt->achieved_value = $this->targetService->calculateAchievedValue(
+                    $tgt->user_id,
+                    $tgt->target_type,
+                    $tgt->period_month,
+                    $tgt->period_year
+                );
+                $tgt->save();
+            }
+            $subordinateTargets = $subordinateTargetsRaw;
         }
 
         return view('sales.targets.index', compact(
             'targets',
             'leaderboard',
             'subordinates',
+            'subordinateTargets',
             'selectedMonth',
             'selectedYear'
         ));
@@ -67,22 +114,10 @@ class SalesTargetController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()->all()], 400);
         }
 
-        // Authorization check: TL can only set targets for their team members
+        // Only Admin and Branch Manager can set targets
         $user = Auth::user();
-        if (!$user->hasRole(['Admin', 'Branch-Manager', 'Team-Leader'])) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized to set targets.'], 403);
-        }
-
-        if ($user->hasRole('Team-Leader') && !$user->hasRole(['Admin', 'Branch-Manager'])) {
-            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
-            $isSubordinate = TeamMembers::whereIn('team', $teams)
-                ->where('user', $request->user_id)
-                ->where('status', true)
-                ->exists();
-
-            if (!$isSubordinate && $request->user_id != $user->id) {
-                return response()->json(['success' => false, 'message' => 'Cannot set target for users outside your team.'], 403);
-            }
+        if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only Admin and Branch Manager can set targets.'], 403);
         }
 
         try {

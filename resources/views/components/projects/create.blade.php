@@ -1,8 +1,92 @@
 @extends('layouts.app')
 
+@section('styles')
+<style>
+    .project-create-container {
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+    .project-create-container .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+        background: #ffffff;
+    }
+    .project-create-container .card-header {
+        background: linear-gradient(135deg, #f8fafd 0%, #edf2f9 100%);
+        border-bottom: 1px solid #edf2f7;
+        padding: 20px 24px;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+    .project-create-container .card-header h4 {
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        font-size: 1.15rem;
+    }
+    .project-create-container .card-body {
+        padding: 30px 24px;
+    }
+    .project-create-container label {
+        font-weight: 600;
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 6px;
+    }
+    .project-create-container label span.text_required {
+        color: #ef4444;
+    }
+    .project-create-container .form-control {
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        background-color: #f8fafc;
+        transition: all 0.2s ease-in-out;
+    }
+    .project-create-container .form-control:focus {
+        background-color: #ffffff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+    .project-create-container textarea.form-control {
+        height: auto;
+    }
+    .project-create-container .btn-primary {
+        background: linear-gradient(135deg, #556ee6 0%, #3b82f6 100%);
+        border: none;
+        color: #ffffff;
+        font-weight: 600;
+        padding: 10px 24px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(85, 110, 230, 0.25);
+    }
+    .project-create-container .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(85, 110, 230, 0.35);
+        background: linear-gradient(135deg, #4458cc 0%, #2563eb 100%);
+    }
+    .project-create-container .select2-container--default .select2-selection--single {
+        height: 44px !important;
+        border-radius: 10px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #f8fafc !important;
+        padding-top: 7px !important;
+    }
+    .project-create-container .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 42px !important;
+    }
+</style>
+@endsection
+
 @section('content')
 
-<div class="container-fluid">
+<div class="container-fluid project-create-container">
     <!-- start page title -->
     <div class="row">
         <div class="col-12">
@@ -45,7 +129,7 @@
                                     <option selected value> Select Client</option>
                                     @foreach ($clients as $item)
                                     <option value="{{ $item->id }}">
-                                        {{ $item->name }} @if($item->status != 'Matured') ({{ $item->status }}) @endif
+                                        {{ $item->name }}
                                     </option>
                                     @endforeach
                                 </select>
@@ -56,15 +140,14 @@
                                 <label> Project Department( Category ) <span class="text_required">*</span></label>
                                 @php
                                 $departments = DB::table('project_category')->where('deleted_at', null)->orderBy('id', 'asc')->get();
+                                $userDeptId = optional($user->departments)->department;
                                 @endphp
-                                <select class="form-control select2" name="{{ $user->hasRole('Team-Leader') ? '' : 'department' }}" id="department" width="100%" {{ $user->hasRole('Team-Leader') ? 'disabled' : '' }}>
+                                <select class="form-control select2" name="department" id="department" width="100%">
+                                    <option value="">Select Department</option>
                                     @foreach ($departments as $item)
-                                    <option value="{{ $item->id }}" {{ ($item->id == 1) ? 'selected' : '' }}> {{ $item->category }}</option>
+                                    <option value="{{ $item->id }}"> {{ $item->category }}</option>
                                     @endforeach
                                 </select>
-                                @if($user->hasRole('Team-Leader'))
-                                    <input type="hidden" name="department" value="1">
-                                @endif
                                 <span class="invalid-feedback" id="department-input-error" role="alert"><strong></strong></span>
                             </div>
 
@@ -72,13 +155,13 @@
                                 <label> Team Leader </label>
                                 <select class="form-control select2" name="{{ $user->hasRole('Team-Leader') ? '' : 'team_leader' }}" id="team_leader" style="width: 100%;" {{ $user->hasRole('Team-Leader') ? 'disabled' : '' }}>
                                     @if($user->hasRole('Team-Leader'))
-                                        <option value="{{ $user->id }}" selected>{{ $user->name }}</option>
+                                    <option value="{{ $user->id }}" selected>{{ $user->name }}</option>
                                     @else
-                                        <option selected value=""> Select Team Leader </option>
+                                    <option selected value=""> Select Team Leader </option>
                                     @endif
                                 </select>
                                 @if($user->hasRole('Team-Leader'))
-                                    <input type="hidden" name="team_leader" value="{{ $user->id }}">
+                                <input type="hidden" name="team_leader" value="{{ $user->id }}">
                                 @endif
                                 <span class="invalid-feedback" id="team_leader-input-error" role="alert"> <strong></strong></span>
                             </div>
@@ -246,7 +329,7 @@
 
         $(document).on('change', '#department', function() {
             let dept_value = $(this).val();
-            
+
             // Fetch Sub Categories
             $('#category').empty().append('<option selected="selected" value="">Select Category</option>');
             $.ajax({
@@ -294,7 +377,9 @@
         });
 
         // Trigger change on load to populate subcategories and TLs for default selection
-        $('#department').trigger('change');
+        if ($('#department').val()) {
+            $('#department').trigger('change');
+        }
 
         $('#frm_create_new_project').submit(function(e) {
             e.preventDefault();
@@ -359,9 +444,8 @@
                 },
                 success: function(response) {
                     if (response.status) {
-                        // Close modal programmatically and simulate close button click to remove backdrop
+                        // Close modal
                         $('#addClientModal').modal('hide');
-                        $('#addClientModal').find('[data-bs-dismiss="modal"], [data-dismiss="modal"], .btnmdlclose').first().click();
 
                         alertify.success(response.message);
                         form[0].reset();
@@ -373,7 +457,10 @@
                 },
                 error: function(response) {
                     $(".btn-save-client").html('Save Client').prop('disabled', false);
-                    if (response.responseJSON && response.responseJSON.errors) {
+                    if (response.status === 409 && response.responseJSON) {
+                        // Client already exists and is Matured
+                        alertify.error(response.responseJSON.message);
+                    } else if (response.responseJSON && response.responseJSON.errors) {
                         let errors = response.responseJSON.errors;
                         Object.keys(errors).forEach(function(key) {
                             form.find('[name="' + key + '"]').addClass('is-invalid');

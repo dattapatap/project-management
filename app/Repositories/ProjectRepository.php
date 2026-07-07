@@ -29,7 +29,7 @@ class ProjectRepository extends BaseRepository
             'tasks.user',
             'project_team.team.teammembers',
             'clients',
-            'category',
+            'projectCategory',
         ]);
     }
 
@@ -41,9 +41,6 @@ class ProjectRepository extends BaseRepository
         return $query->whereHas('tasks', fn($q) => $q->where('assigned_to', $userId));
     }
 
-    /**
-     * Scope projects visible to a Team Leader (assigned or team-linked).
-     */
     public function scopeForTeamLeader(Builder $query, User $user): Builder
     {
         $teamMember = TeamMembers::where('user', $user->id)->where('status', true)->first();
@@ -54,13 +51,17 @@ class ProjectRepository extends BaseRepository
             if ($teamId) {
                 $q->orWhereHas('project_team', fn($sq) => $sq->where('teamid', $teamId));
             }
+            // Expand project visibility to projects with tasks assigned to the TL or their team members
+            $q->orWhereHas('tasks', function ($sq) use ($user, $teamId) {
+                $sq->where('assigned_to', $user->id);
+                if ($teamId) {
+                    $sq->orWhereHas('user.teamMember', fn($ssq) => $ssq->where('team', $teamId));
+                }
+            });
         });
     }
 
-    /**
-     * Build the index query with role-based scoping.
-     */
-    public function buildIndexQuery(User $user, ?string $status = null): Builder
+    public function buildIndexQuery(User $user, ?string $status = null, ?int $department = null): Builder
     {
         $query = $this->withStandardRelations();
 
@@ -84,6 +85,12 @@ class ProjectRepository extends BaseRepository
             } elseif ($status && $status !== 'all') {
                 $query->where('status', $status);
             }
+        }
+
+        if ($department) {
+            $query->whereHas('projectCategory', function ($q) use ($department) {
+                $q->where('dept_id', $department);
+            });
         }
 
         return $query->latest();
@@ -149,7 +156,7 @@ class ProjectRepository extends BaseRepository
     public function getTimelineProjects(?User $user = null): Collection
     {
         $query = $this->query()
-            ->with(['clients', 'category', 'tasks' => function ($q) {
+            ->with(['clients', 'projectCategory', 'tasks' => function ($q) {
                 $q->select('id', 'projectid', 'title', 'status', 'startdate', 'enddate', 'act_startdate', 'act_enddate', 'assigned_to')
                   ->with('user:id,name');
             }])
@@ -171,7 +178,7 @@ class ProjectRepository extends BaseRepository
             ->with(['tasks' => function ($q) {
                 $q->select('id', 'projectid', 'assigned_to', 'status')
                   ->with('user:id,name');
-            }, 'clients:id,name', 'category'])
+            }, 'clients:id,name', 'projectCategory'])
             ->where('status', '!=', 'Completed');
 
         if ($teamId) {

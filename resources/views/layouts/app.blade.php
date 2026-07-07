@@ -1,6 +1,24 @@
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
+@php
+$showGlobalTimer = false;
+$hasSubmittedClosingToday = false;
+if (Auth::check()) {
+$user = Auth::user();
+if (!$user->hasRole('Admin')) {
+$userPerformance = new \App\Services\UserPerformanceService();
+$deptType = $userPerformance->departmentType($user);
+if (in_array($deptType, ['od', 'csd'])) {
+$showGlobalTimer = true;
+$hasSubmittedClosingToday = \App\Models\DayClosing::where('user_id', $user->id)
+->where('closing_date', now()->format('Y-m-d'))
+->exists();
+}
+}
+}
+@endphp
+
 <head>
     <meta charset="utf-8">
     <!-- Meta Tags -->
@@ -62,8 +80,8 @@
 </head>
 
 @php
-    $bodyDept = optional($user->departments ?? null)->department ?? ($user->hasBranchWideAccess() ? 'admin' : null);
-    $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') || request()->is('clients*') || request()->is('mysts*') || request()->is('reports/dsr*') ? 'nsd-module' : (request()->is('projects*') ? 'od-module' : ''));
+$bodyDept = optional($user->departments ?? null)->department ?? ($user->hasBranchWideAccess() ? 'admin' : null);
+$bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') || request()->is('clients*') || request()->is('mysts*') || request()->is('reports/dsr*') ? 'nsd-module' : (request()->is('projects*') ? 'od-module' : ''));
 @endphp
 
 <body data-sidebar="dark" data-dept="{{ $bodyDept }}" class="{{ $bodyModule }}">
@@ -92,6 +110,68 @@
                 </div>
 
                 <div class="d-flex">
+
+                    {{-- Start Global Timer Widget --}}
+                    @if($showGlobalTimer)
+                    <style>
+                        @keyframes rec-blink {
+                            0% {
+                                opacity: 1;
+                            }
+
+                            50% {
+                                opacity: 0.3;
+                            }
+
+                            100% {
+                                opacity: 1;
+                            }
+                        }
+
+                        .timer-rec-dot.active {
+                            background-color: #ef4444 !important;
+                            animation: rec-blink 1.5s ease-in-out infinite;
+                        }
+
+                        .global-timer-glass {
+                            background: rgba(255, 255, 255, 0.9);
+                            border: 1px solid rgba(85, 110, 230, 0.2);
+                            border-radius: 30px;
+                            transition: all 0.3s ease;
+                        }
+
+                        .global-timer-glass:hover {
+                            border-color: rgba(85, 110, 230, 0.5);
+                            box-shadow: 0 4px 12px rgba(85, 110, 230, 0.08);
+                        }
+                    </style>
+                    <div class="d-inline-flex align-items-center mr-3" style="align-self: center;">
+                        <div id="global-timer-widget" class="global-timer-glass d-flex align-items-center px-3 py-1.5 shadow-sm" style="height: 36px; gap: 8px; color: #495057; font-weight: 600; font-size: 12.5px;">
+                            <span class="timer-rec-dot" style="width: 8px; height: 8px; border-radius: 50%; background-color: #cbd5e1; display: inline-block;"></span>
+                            <span id="global-timer-status" class="text-muted text-uppercase" style="font-size: 9px; font-weight: 800; letter-spacing: 0.5px; max-width: 150px; overflow: hidden; text-truncate: ellipsis; white-space: nowrap;">Shift Off</span>
+                            <span id="global-timer-display" class="font-weight-bold text-dark" style="font-family: monospace; font-size: 13.5px; letter-spacing: 0.5px;">00:00:00</span>
+                            <button type="button" class="btn btn-sm btn-success rounded-circle p-0 d-flex align-items-center justify-content-center" id="btn-global-shift" title="Start Shift" style="width: 22px; height: 22px; min-width: 22px; border: none; @if($hasSubmittedClosingToday) display: none !important; @endif">
+                                <i class="mdi mdi-play font-size-12 text-white"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning rounded-circle p-0 d-flex align-items-center justify-content-center ml-2" id="btn-global-break" title="Take Break" style="width: 22px; height: 22px; min-width: 22px; border: none; display: none; @if($hasSubmittedClosingToday) display: none !important; @endif">
+                                <i class="mdi mdi-coffee font-size-12 text-white"></i>
+                            </button>
+                        </div>
+                    </div>
+                    @endif
+                    {{-- End Global Timer Widget --}}
+
+                    {{-- Start Add Task Shortcut Button --}}
+                    @auth
+                    @if(Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
+                    <div class="d-inline-flex align-items-center mr-3" style="align-self: center;">
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-weight-bold btn_header_add_task" style="height: 36px; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: none;">
+                            <i class="mdi mdi-plus-circle font-size-14 text-white"></i> Add Task
+                        </button>
+                    </div>
+                    @endif
+                    @endauth
+                    {{-- End Add Task Shortcut Button --}}
 
                     {{-- Start Notifications --}}
                     <div class="dropdown d-inline-block">
@@ -232,6 +312,48 @@
         <!-- ============================================================== -->
         <div class="main-content">
             <div class="page-content">
+                {{-- Start Global Timer Sticky Alert Banners --}}
+                @if($showGlobalTimer)
+                <div id="global-timer-banners" class="d-none" style="margin-bottom: 20px;">
+                    {{-- Shift Not Started Banner --}}
+                    <div id="banner-shift-not-started" class="alert alert-soft-danger p-3 shadow-sm d-none" style="border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3); background-color: rgba(239, 68, 68, 0.05);">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center mr-3" style="width: 40px; height: 40px; min-width: 40px;">
+                                    <i class="mdi mdi-alert-circle font-size-20"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 font-weight-bold text-danger">Shift Attendance Not Started!</h6>
+                                    <p class="mb-0 text-muted font-size-12">You have not clocked in for today. Please start your global timer shift to track tasks and work progress.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-sm rounded-pill px-4 shadow-sm py-1.5" onclick="$('#btn-global-shift').click()" style="white-space: nowrap;">
+                                <i class="mdi mdi-play mr-1"></i> Start Shift
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Break Time / Paused Banner --}}
+                    <div id="banner-shift-paused" class="alert alert-soft-warning p-3 shadow-sm d-none" style="border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); background-color: rgba(245, 158, 11, 0.05);">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center mr-3" style="width: 40px; height: 40px; min-width: 40px;">
+                                    <i class="mdi mdi-coffee font-size-20"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 font-weight-bold text-warning">You are currently on Break!</h6>
+                                    <p class="mb-0 text-muted font-size-12">Your workday attendance and task logging are paused. Don't forget to resume when you return to work.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-warning btn-sm text-white rounded-pill px-4 shadow-sm py-1.5" onclick="$('#btn-global-break').click()" style="white-space: nowrap;">
+                                <i class="mdi mdi-play mr-1"></i> Resume Shift
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                {{-- End Global Timer Sticky Alert Banners --}}
+
                 @yield('content')
             </div>
 
@@ -431,12 +553,253 @@
                 result = months[month] + ' ' + d + ' ' + year + ' ' + h + ':' + m + ':' + s;
                 $('#pane-timer').text(result);
             }, 1000);
+
+            // --- Global Shift Timer Javascript Integration ---
+            @if($showGlobalTimer)
+                (function() {
+                    let timerInterval = null;
+                    let activeStartMs = null;
+                    let baseAccumulatedSeconds = 0;
+                    let shiftRunning = false;
+                    let shiftHasTodayEntry = false;
+                    let shiftIsPaused = false;
+
+                    function formatSeconds(totalSeconds) {
+                        let hrs = Math.floor(totalSeconds / 3600);
+                        let mins = Math.floor((totalSeconds % 3600) / 60);
+                        let secs = totalSeconds % 60;
+                        return [
+                            hrs.toString().padStart(2, '0'),
+                            mins.toString().padStart(2, '0'),
+                            secs.toString().padStart(2, '0')
+                        ].join(':');
+                    }
+
+                    function updateWidgetStatus() {
+                        $.ajax({
+                            url: "{{ route('global-timer.status') }}",
+                            method: 'GET',
+                            dataType: 'json',
+                            success: function(res) {
+                                if (!res.success) return;
+
+                                baseAccumulatedSeconds = Math.round(parseFloat(res.accumulated_hours || 0) * 3600);
+                                shiftRunning = res.is_running;
+                                shiftHasTodayEntry = res.has_today_entry;
+                                shiftIsPaused = res.is_paused;
+
+                                // Clean interval
+                                if (timerInterval) clearInterval(timerInterval);
+
+                                if (res.has_submitted_closing) {
+                                    $('.timer-rec-dot').removeClass('active').css('background-color', '#cbd5e1');
+                                    $('#global-timer-status').text('Day Completed').addClass('text-muted').removeClass('text-success text-primary');
+                                    $('#global-timer-display').text(formatSeconds(baseAccumulatedSeconds));
+                                    $('#btn-global-shift').hide();
+                                    $('#btn-global-break').hide();
+
+                                    $('#global-timer-banners').addClass('d-none');
+                                    $('#banner-shift-not-started').addClass('d-none');
+                                    $('#banner-shift-paused').addClass('d-none');
+                                    return;
+                                }
+
+                                if (res.is_running) {
+                                    // Hide alert banners
+                                    $('#global-timer-banners').addClass('d-none');
+                                    $('#banner-shift-not-started').addClass('d-none');
+                                    $('#banner-shift-paused').addClass('d-none');
+
+                                    $('.timer-rec-dot').addClass('active');
+                                    if (res.active_task_title) {
+                                        $('#global-timer-status').text('Working: ' + res.active_task_title).addClass('text-primary').removeClass('text-muted');
+                                    } else {
+                                        $('#global-timer-status').text('Shift Running').addClass('text-success').removeClass('text-muted');
+                                    }
+
+                                    // Parse started time
+                                    let datePart = res.log_date; // Y-m-d
+                                    let timePart = res.starttime; // H:i:s
+                                    // Parse safely across browsers
+                                    let startDateTimeStr = datePart + 'T' + timePart;
+                                    let startedDateObj = new Date(startDateTimeStr);
+
+                                    activeStartMs = startedDateObj.getTime();
+
+                                    // Update buttons display
+                                    $('#btn-global-shift').show().removeClass('btn-success').addClass('btn-danger').attr('title', 'End Shift').html('<i class="mdi mdi-stop font-size-12 text-white"></i>');
+                                    $('#btn-global-break').show().removeClass('btn-success').addClass('btn-warning').attr('title', 'Take Break').html('<i class="mdi mdi-coffee font-size-12 text-white"></i>');
+
+                                    timerInterval = setInterval(function() {
+                                        let nowMs = new Date().getTime();
+                                        let elapsedSeconds = Math.max(0, Math.floor((nowMs - activeStartMs) / 1000));
+
+                                        // 9:00 PM cap logic on client-side too
+                                        let capDateTimeStr = datePart + 'T21:00:00';
+                                        let capMs = new Date(capDateTimeStr).getTime();
+                                        if (nowMs > capMs) {
+                                            elapsedSeconds = Math.max(0, Math.floor((capMs - activeStartMs) / 1000));
+                                        }
+
+                                        let totalSeconds = baseAccumulatedSeconds + elapsedSeconds;
+                                        $('#global-timer-display').text(formatSeconds(totalSeconds));
+                                    }, 1000);
+                                } else {
+                                    $('.timer-rec-dot').removeClass('active');
+                                    $('#global-timer-status').text(baseAccumulatedSeconds > 0 ? 'Shift Paused' : 'Shift Off').addClass('text-muted').removeClass('text-success text-primary');
+
+                                    $('#global-timer-display').text(formatSeconds(baseAccumulatedSeconds));
+
+                                    // Handle buttons display based on daily shift status
+                                    if (!res.has_today_entry) {
+                                        $('#btn-global-shift').show().removeClass('btn-danger').addClass('btn-success').attr('title', 'Start Shift').html('<i class="mdi mdi-play font-size-12 text-white"></i>');
+                                        $('#btn-global-break').hide();
+                                    } else if (res.is_paused) {
+                                        $('#btn-global-shift').show().removeClass('btn-success').addClass('btn-danger').attr('title', 'End Shift').html('<i class="mdi mdi-stop font-size-12 text-white"></i>');
+                                        $('#btn-global-break').show().removeClass('btn-warning').addClass('btn-success').attr('title', 'Resume Work').html('<i class="mdi mdi-play font-size-12 text-white"></i>');
+                                    } else {
+                                        // Shift is completely stopped for today
+                                        $('#btn-global-shift').hide();
+                                        $('#btn-global-break').hide();
+                                    }
+
+                                    // Handle banners visibility logic based on daily shift entry
+                                    if (!res.has_today_entry) {
+                                        // Shift not clocked-in today
+                                        $('#global-timer-banners').removeClass('d-none');
+                                        $('#banner-shift-not-started').removeClass('d-none');
+                                        $('#banner-shift-paused').addClass('d-none');
+                                    } else if (res.is_paused) {
+                                        // Shift is started today, but currently paused/on-break
+                                        $('#global-timer-banners').removeClass('d-none');
+                                        $('#banner-shift-not-started').addClass('d-none');
+                                        $('#banner-shift-paused').removeClass('d-none');
+                                    } else {
+                                        // Shift is completed/stopped for today
+                                        $('#global-timer-banners').addClass('d-none');
+                                        $('#banner-shift-not-started').addClass('d-none');
+                                        $('#banner-shift-paused').addClass('d-none');
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Initial fetch
+                    updateWidgetStatus();
+
+                    // Shift Control click (Start / End Shift)
+                    $('#btn-global-shift').click(function() {
+                        let btn = $(this);
+                        if (!shiftHasTodayEntry) {
+                            // Start Shift
+                            btn.prop('disabled', true);
+                            $.ajax({
+                                url: "{{ route('global-timer.start') }}",
+                                method: 'POST',
+                                success: function(res) {
+                                    if (res.success) {
+                                        alertify.success(res.message);
+                                        setTimeout(() => {
+                                            location.reload();
+                                        }, 600);
+                                    } else {
+                                        alertify.error(res.message);
+                                        btn.prop('disabled', false);
+                                    }
+                                },
+                                error: function() {
+                                    btn.prop('disabled', false);
+                                }
+                            });
+                        } else {
+                            // End Shift Confirmation Popup
+                            swal({
+                                    title: "Close Today's Shift?",
+                                    text: "Are you sure you want to end your workday attendance shift? This will also pause any active task timer.",
+                                    icon: "warning",
+                                    buttons: {
+                                        cancel: {
+                                            text: "Cancel",
+                                            value: null,
+                                            visible: true,
+                                            className: "btn btn-secondary shadow-sm",
+                                            closeModal: true,
+                                        },
+                                        confirm: {
+                                            text: "Close Shift",
+                                            value: true,
+                                            visible: true,
+                                            className: "btn btn-danger shadow-sm",
+                                            closeModal: true
+                                        }
+                                    },
+                                    dangerMode: true,
+                                })
+                                .then((willStop) => {
+                                    if (willStop) {
+                                        btn.prop('disabled', true);
+                                        $.ajax({
+                                            url: "{{ route('global-timer.stop') }}",
+                                            method: 'POST',
+                                            success: function(res) {
+                                                if (res.success) {
+                                                    alertify.success(res.message);
+                                                    setTimeout(() => {
+                                                        location.reload();
+                                                    }, 600);
+                                                } else {
+                                                    alertify.error(res.message);
+                                                    btn.prop('disabled', false);
+                                                }
+                                            },
+                                            error: function() {
+                                                btn.prop('disabled', false);
+                                            }
+                                        });
+                                    }
+                                });
+                        }
+                    });
+
+                    // Break Control click (Take Break / Resume)
+                    $('#btn-global-break').click(function() {
+                        let btn = $(this);
+                        btn.prop('disabled', true);
+                        let targetUrl = shiftIsPaused ? "{{ route('global-timer.start') }}" : "{{ route('global-timer.pause') }}";
+                        $.ajax({
+                            url: targetUrl,
+                            method: 'POST',
+                            success: function(res) {
+                                if (res.success) {
+                                    alertify.success(res.message);
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 600);
+                                } else {
+                                    alertify.error(res.message);
+                                    btn.prop('disabled', false);
+                                }
+                            },
+                            error: function() {
+                                btn.prop('disabled', false);
+                            }
+                        });
+                    });
+                })();
+            @endif
         });
     </script>
 
 
     @yield('component')
     @yield('scripts')
+
+    @auth
+    @if(Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
+    @include('components.projects.components.projecttask')
+    @endif
+    @endauth
 
 </body>
 

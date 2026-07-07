@@ -37,6 +37,12 @@ class HomeController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $todayDate = Carbon::today()->format('Y-m-d');
+        $hasSubmittedClosingToday = \App\Models\DayClosing::where('user_id', $user->id)
+            ->where('closing_date', $todayDate)
+            ->exists();
+        view()->share('hasSubmittedClosingToday', $hasSubmittedClosingToday);
+
         $tab = $request->query('tab');
         if ($tab) {
             session(['active_dashboard_tab' => $tab]);
@@ -118,7 +124,7 @@ class HomeController extends Controller
         $adminData['total_tasks'] = Task::count();
         $adminData['total_clients'] = Clients::count();
 
-        $adminData['recent_projects'] = DepartmentProjects::with(['category', 'clients'])->latest()->take(5)->get();
+        $adminData['recent_projects'] = DepartmentProjects::with(['projectCategory', 'clients'])->latest()->take(5)->get();
 
         $startOfMonth = Carbon::now()->startOfMonth();
         $startOfLastMonth = Carbon::now()->subMonth()->startOfMonth();
@@ -302,7 +308,7 @@ class HomeController extends Controller
 
         // Base query logic for YEARLY projects
         $yearlyQuery = function ($q) use ($user, $teamId, $userDeptId, $selectedYear) {
-            $q->with(['clients', 'category', 'project_team'])
+            $q->with(['clients', 'projectCategory', 'project_team'])
                 ->where(function ($sq) use ($user, $teamId) {
                     $sq->where('assigned_to', $user->id);
                     if ($teamId) {
@@ -312,7 +318,7 @@ class HomeController extends Controller
                     }
                 })
                 ->when($userDeptId, function ($sq) use ($userDeptId) {
-                    $sq->whereHas('category', function ($ssq) use ($userDeptId) {
+                    $sq->whereHas('projectCategory', function ($ssq) use ($userDeptId) {
                         $ssq->where('dept_id', $userDeptId);
                     });
                 })
@@ -481,12 +487,12 @@ class HomeController extends Controller
         });
 
         // Current Tasks for Board
-        $adminData['my_tasks'] = Task::with(['project.category', 'project.clients'])->where('assigned_to', $user->id)
+        $adminData['my_tasks'] = Task::with(['project.projectCategory', 'project.clients'])->where('assigned_to', $user->id)
             ->whereIn('status', ['ToDo', 'InProgress'])
             ->orderBy('priority', 'desc')
             ->get();
 
-        $adminData['recently_completed_tasks'] = Task::with(['project.category', 'project.clients'])->where('assigned_to', $user->id)
+        $adminData['recently_completed_tasks'] = Task::with(['project.projectCategory', 'project.clients'])->where('assigned_to', $user->id)
             ->where('status', 'Completed')
             ->orderBy('updated_at', 'desc')
             ->take(10)
@@ -494,7 +500,7 @@ class HomeController extends Controller
 
         $adminData['recent_projects'] = DepartmentProjects::whereHas('tasks', function ($q) use ($user, $year) {
             $q->where('assigned_to', $user->id);
-        })->with(['category', 'clients'])
+        })->with(['projectCategory', 'clients'])
             ->withCount(['tasks as user_tasks_count' => function ($q) use ($user) {
                 $q->where('assigned_to', $user->id);
             }])
@@ -504,6 +510,26 @@ class HomeController extends Controller
 
         // Daily Pulse (Today's specific metrics)
         $startOfToday = Carbon::now()->startOfDay();
+        $todaysTaskIds = TaskLog::where('userid', $user->id)
+            ->where('created_at', '>=', $startOfToday)
+            ->pluck('taskid')
+            ->toArray();
+
+        $todaysCreatedOrUpdatedTaskIds = Task::where('assigned_to', $user->id)
+            ->where(function($q) use ($startOfToday) {
+                $q->where('created_at', '>=', $startOfToday)
+                  ->orWhere('updated_at', '>=', $startOfToday);
+            })
+            ->pluck('id')
+            ->toArray();
+
+        $allTodaysTaskIds = array_unique(array_merge($todaysTaskIds, $todaysCreatedOrUpdatedTaskIds));
+
+        $adminData['todays_tasks'] = Task::with(['project.projectCategory', 'project.clients'])
+            ->whereIn('id', $allTodaysTaskIds)
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
         $adminData['daily_pulse'] = [
             'tasks_completed_today' => Task::where('assigned_to', $user->id)
                 ->where('status', 'Completed')

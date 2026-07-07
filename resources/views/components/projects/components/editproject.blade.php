@@ -1,3 +1,66 @@
+<style>
+    #mdlEditProject .modal-content {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+    #mdlEditProject .modal-header {
+        background: linear-gradient(135deg, #f8fafd 0%, #edf2f9 100%);
+        border-bottom: 1px solid #edf2f7;
+        padding: 20px 24px;
+    }
+    #mdlEditProject .modal-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.15rem;
+    }
+    #mdlEditProject .modal-body {
+        padding: 24px;
+    }
+    #mdlEditProject label {
+        font-weight: 600;
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 6px;
+    }
+    #mdlEditProject .form-control {
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        background-color: #f8fafc;
+        transition: all 0.2s ease-in-out;
+    }
+    #mdlEditProject .form-control:focus {
+        background-color: #ffffff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+    #mdlEditProject textarea.form-control {
+        height: auto;
+    }
+    #mdlEditProject .creatBtn {
+        background: linear-gradient(135deg, #556ee6 0%, #3b82f6 100%);
+        border: none;
+        color: #ffffff;
+        font-weight: 600;
+        padding: 10px 24px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(85, 110, 230, 0.25);
+    }
+    #mdlEditProject .creatBtn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(85, 110, 230, 0.35);
+    }
+</style>
+
 <div id="mdlEditProject" class="modal fade" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">

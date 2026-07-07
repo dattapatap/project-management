@@ -28,7 +28,12 @@ class ResourceController extends Controller
         $selectedDeptId = 2; // Strictly OD (Operations)
 
         if ($user->hasRole('Team-Leader')) {
-            $member = TeamMembers::where('user', $user->id)->where('status', true)->first();
+            $member = TeamMembers::where('user', $user->id)
+                ->where('status', true)
+                ->whereHas('team', function($q) use ($selectedDeptId) {
+                    $q->where('department', $selectedDeptId);
+                })
+                ->first();
             $teamId = $member?->team;
         } else {
             if ($request->has('team') && $request->get('team') !== '') {

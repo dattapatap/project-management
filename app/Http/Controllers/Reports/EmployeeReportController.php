@@ -119,8 +119,18 @@ class EmployeeReportController extends Controller
         });
 
         return view('components.reports.employees', compact(
-            'employeesCount', 'performanceTrend', 'selectedYear', 'selectedMonth', 'months',
-            'showSales', 'opsRate', 'salesRate', 'totalLeadsCount', 'maturedCount', 'activeFollowupCount', 'range'
+            'employeesCount',
+            'performanceTrend',
+            'selectedYear',
+            'selectedMonth',
+            'months',
+            'showSales',
+            'opsRate',
+            'salesRate',
+            'totalLeadsCount',
+            'maturedCount',
+            'activeFollowupCount',
+            'range'
         ));
     }
 
@@ -238,38 +248,27 @@ class EmployeeReportController extends Controller
             ->make(true);
     }
 
-    /**
-     * My Personal Insights (For regular employees)
-     */
+
     public function myInsights(Request $request)
     {
         return $this->detail($request, base64_encode(Auth::id()));
     }
 
-    /**
-     * Individual Employee Detail Dossier
-     */
+
     public function detail(Request $request, $id)
     {
         $data = $this->getDetailData($request, $id);
         return view('components.reports.employee_detail', $data);
     }
 
-    /**
-     * Download Employee Detail Dossier as PDF
-     */
     public function downloadPdf(Request $request, $id)
     {
         $data = $this->getDetailData($request, $id);
         $pdf = Pdf::loadView('components.reports.employee_detail_pdf', $data);
-        
+
         $filename = "performance_report_" . str_replace(' ', '_', strtolower($data['employee']->name)) . ".pdf";
         return $pdf->download($filename);
     }
-
-    /**
-     * Gather detail intelligence data for an employee
-     */
     private function getDetailData(Request $request, $id)
     {
         $userId = base64_decode($id);
@@ -293,7 +292,6 @@ class EmployeeReportController extends Controller
 
         $stats = $performance->buildMetrics($employee, $selectedYear, $selectedMonth);
         $performanceScore = $performance->performanceScore($stats, $deptType);
-        $monthlyTrend = $performance->buildMonthlyTrend($employee, $selectedYear);
 
         $odSummary = null;
         $odDailyBreakdown = collect();
@@ -406,11 +404,36 @@ class EmployeeReportController extends Controller
                 ->get();
         }
 
+        $pastClosings = \App\Models\DayClosing::where('user_id', $userId)
+            ->orderBy('closing_date', 'desc')
+            ->limit(30)
+            ->get();
+
         return compact(
-            'employee', 'tasks', 'logs', 'salesLogs', 'stats', 'selectedYear', 'selectedMonth', 'months',
-            'monthlyTrend', 'dailyLogs', 'isSales', 'isCsd', 'isOd', 'deptType', 'performanceScore',
-            'recentMatured', 'recentCsdComms', 'recentWonOpps', 'activities', 'range',
-            'odSummary', 'odDailyBreakdown', 'odTaskBreakdown', 'currentProjects'
+            'employee',
+            'tasks',
+            'logs',
+            'salesLogs',
+            'stats',
+            'selectedYear',
+            'selectedMonth',
+            'months',
+            'dailyLogs',
+            'isSales',
+            'isCsd',
+            'isOd',
+            'deptType',
+            'performanceScore',
+            'recentMatured',
+            'recentCsdComms',
+            'recentWonOpps',
+            'activities',
+            'range',
+            'odSummary',
+            'odDailyBreakdown',
+            'odTaskBreakdown',
+            'currentProjects',
+            'pastClosings'
         );
     }
 }

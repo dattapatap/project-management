@@ -68,14 +68,14 @@
             <div class="card emp-stat-card border-0 shadow-none">
                 <div class="card-body p-3">
                     <div class="stat-icon-box bg-soft-indigo">
-                        <i class="mdi mdi-rocket-launch-outline font-size-24"></i>
+                        <i class="mdi mdi-checkbox-marked-circle-outline font-size-24"></i>
                     </div>
-                    <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Total Projects</p>
-                    <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['projects_assigned_count'] }}</h2>
+                    <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Total Tasks</p>
+                    <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['total_tasks_assigned'] }}</h2>
                     <div class="mt-2 d-flex flex-wrap gap-1">
-                        <span class="badge badge-soft-warning font-size-10 mr-1 mb-1">{{ $adminData['projects_not_started_count'] ?? 0 }} Not Started</span>
-                        <span class="badge badge-soft-info font-size-10 mr-1 mb-1">{{ $adminData['projects_in_progress_count'] ?? 0 }} In Progress</span>
-                        <span class="badge badge-soft-success font-size-10 mb-1">{{ $adminData['completed_projects_count'] }} Completed</span>
+                        <span class="badge badge-soft-warning font-size-10 mr-1 mb-1">{{ $adminData['todo_tasks_count'] }} To Do</span>
+                        <span class="badge badge-soft-info font-size-10 mr-1 mb-1">{{ $adminData['active_tasks_count'] }} In Progress</span>
+                        <span class="badge badge-soft-success font-size-10 mb-1">{{ $adminData['completed_tasks_count'] }} Completed</span>
                     </div>
                 </div>
             </div>
@@ -98,16 +98,16 @@
         </a>
     </div>
     <div class="col-md-3">
-        <a href="{{ url('/projects') }}?status=Pending" class="text-decoration-none">
+        <a href="{{ url('/projects') }}" class="text-decoration-none">
             <div class="card emp-stat-card border-0 shadow-none">
                 <div class="card-body p-3">
                     <div class="stat-icon-box bg-soft-amber">
                         <i class="mdi mdi-timer-sand font-size-24"></i>
                     </div>
-                    <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Pending Work</p>
-                    <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['pending_tasks_count'] }}</h2>
+                    <p class="text-muted font-weight-bold mb-1 text-uppercase font-size-11">Inprogress Tasks</p>
+                    <h2 class="mb-0 font-weight-bold text-dark">{{ $adminData['active_tasks_count'] }}</h2>
                     <div class="mt-2">
-                        <span class="badge badge-soft-warning font-size-10">{{ $adminData['active_tasks_count'] }} In Progress</span>
+                        <span class="badge badge-soft-warning font-size-10">{{ $adminData['pending_tasks_count'] }} Pending</span>
                     </div>
                 </div>
             </div>
@@ -210,7 +210,7 @@
                     <div class="col-md-6 mb-3">
                         <div class="project-card-mini">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge badge-soft-info font-size-10">{{ $proj->category->name ?? 'Internal' }}</span>
+                                <span class="badge badge-soft-info font-size-10">{{ $proj->projectCategory->category ?? 'Internal' }}</span>
                                 <small class="text-muted">{{ $proj->user_tasks_count }} Tasks</small>
                             </div>
                             <h6 class="font-weight-bold text-dark mb-1">{{ Str::limit($proj->project_name, 30) }}</h6>
@@ -237,7 +237,12 @@
             <div class="card-header bg-white border-bottom py-3">
                 <ul class="nav nav-tabs-custom card-header-tabs border-0" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active font-weight-bold" data-toggle="tab" href="#active-tasks" role="tab">
+                        <a class="nav-link active font-weight-bold" data-toggle="tab" href="#todays-tasks" role="tab">
+                            Today's Tasks <span class="badge badge-pill badge-soft-info ml-1">{{ count($adminData['todays_tasks']) }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" data-toggle="tab" href="#active-tasks" role="tab">
                             Active Tasks <span class="badge badge-pill badge-soft-primary ml-1">{{ count($adminData['my_tasks']) }}</span>
                         </a>
                     </li>
@@ -250,8 +255,54 @@
             </div>
             <div class="card-body p-0">
                 <div class="tab-content">
+                    <!-- Today's Tasks Tab -->
+                    <div class="tab-pane active" id="todays-tasks" role="tabpanel">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                @forelse($adminData['todays_tasks'] as $task)
+                                <li class="list-group-item border-0 py-3 mb-2 mx-2 rounded-lg transition-all" style="transition: transform 0.2s;">
+                                    @php
+                                    $isUrgent = $task->priority === 'High' || $task->priority === 'Urgent';
+                                    $isCompleted = $task->status === 'Completed';
+                                    @endphp
+                                    <div class="d-flex align-items-center {{ $isCompleted ? 'bg-soft-success border-left border-success' : 'bg-soft-info' }} p-2 rounded-lg">
+                                        <div class="mr-3">
+                                            <div class="avatar-xs">
+                                                <span class="avatar-title rounded-circle bg-{{ $isCompleted ? 'success' : ($isUrgent ? 'warning' : 'info') }} text-white font-size-12">
+                                                    @if($isCompleted)
+                                                    <i class="mdi mdi-check"></i>
+                                                    @elseif($isUrgent)
+                                                    <i class="mdi mdi-clock-alert"></i>
+                                                    @else
+                                                    <i class="mdi mdi-calendar-check"></i>
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <h6 class="font-size-13 mb-1 text-dark text-truncate font-weight-bold">
+                                                <a href="{{ url('projects/taskboard/' . base64_encode($task->projectid)) }}" class="text-dark">{{ $task->title }}</a>
+                                                @if($isCompleted)
+                                                <span class="badge badge-success ml-1">COMPLETED</span>
+                                                @else
+                                                <span class="badge badge-info ml-1">{{ $task->status }}</span>
+                                                @endif
+                                            </h6>
+                                            <p class="text-muted font-size-11 mb-0 text-truncate">
+                                                {{ $proj->project_name ?? ($task->project->project_name ?? 'Task Project') }} • Priority: <strong>{{ $task->priority }}</strong>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </li>
+                                @empty
+                                <li class="list-group-item text-center py-4 text-muted">No tasks recorded or worked on today.</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    </div>
+
                     <!-- Active Tasks Tab -->
-                    <div class="tab-pane active" id="active-tasks" role="tabpanel">
+                    <div class="tab-pane" id="active-tasks" role="tabpanel">
                         <div style="max-height: 400px; overflow-y: auto;">
                             <ul class="list-group list-group-flush">
                                 @forelse($adminData['my_tasks'] as $task)
@@ -370,8 +421,20 @@
                         </span>
                     </div>
                     <div class="flex-grow-1 overflow-hidden">
-                        <p class="text-dark font-size-12 mb-0 text-truncate font-weight-medium">{{ $log->log_description }}</p>
-                        <small class="text-muted">{{ $log->created_at->diffForHumans() }} • {{ $log->time_spend }}m</small>
+                        <p class="text-dark font-size-12 mb-0 text-truncate font-weight-medium">
+                            {{ $log->log_description ?: ($log->endtime ? 'Work Logged' : 'Timer Started') }}
+                        </p>
+                        @php
+                        if (is_null($log->time_spend)) {
+                            $timeSpentFormatted = 'Running';
+                        } else {
+                            $totalMinutes = round($log->time_spend * 60);
+                            $h = floor($totalMinutes / 60);
+                            $m = $totalMinutes % 60;
+                            $timeSpentFormatted = $h > 0 ? sprintf('%02d:%02d Hrs', $h, $m) : sprintf('%02d:%02d min', $h, $m);
+                        }
+                        @endphp
+                        <small class="text-muted">{{ $log->created_at->diffForHumans() }} • {{ $timeSpentFormatted }}</small>
                     </div>
                 </div>
                 @empty

@@ -128,7 +128,7 @@ class TargetService
     /**
      * Compute real-time achieved values based on database records.
      */
-    private function calculateAchievedValue(int $userId, string $type, int $month, int $year): float
+    public function calculateAchievedValue(int $userId, string $type, int $month, int $year): float
     {
         if ($type === 'revenue') {
             return (float) ClientPayments::whereHas('clients', function ($q) use ($userId) {

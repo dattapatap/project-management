@@ -47,13 +47,19 @@ class TaskService
 
             UserActivity::log('Task Created', "Added new task '{$task->title}' to project '{$project->project_name}'");
 
-            // If project was completed, revert it to InProgress
-            if ($project && $project->status === 'Completed') {
+            // If project was Completed or ToDo, move it to InProgress automatically
+            if ($project && $project->status !== 'InProgress') {
+                $oldStatus = $project->status;
                 $project->status = 'InProgress';
                 $project->save();
+                
+                $reason = $oldStatus === 'Completed' 
+                    ? "Project reopened automatically due to new task creation: {$task->title}"
+                    : "Project automatically started due to new task creation: {$task->title}";
+
                 DepartmentProjectHistoryController::store(
                     $project,
-                    "Project reopened automatically due to new task creation: {$task->title}",
+                    $reason,
                     $creator->id
                 );
             }
@@ -114,8 +120,42 @@ class TaskService
             return ['success' => false, 'message' => 'Task must be in In Progress status before it can be Completed.'];
         }
 
+        // Rule 5: Project must be started before task can be moved to In Progress
+        if ($newStatus === 'InProgress') {
+            $project = $task->project;
+            if ($project && $project->status === 'ToDo') {
+                if (!$user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader'])) {
+                    return [
+                        'success' => false,
+                        'message' => 'The project is still not started. Please ask your Team Leader to move the project from ToDo to In Progress first.'
+                    ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => 'The project is still in ToDo state. Please move the project from ToDo to In Progress.'
+                    ];
+                }
+            }
+        }
+
         $this->applyStatusTransition($task, $newStatus, $actStartDate);
         $task->save();
+
+        // Auto-start timer when moving to InProgress
+        if ($newStatus === 'InProgress') {
+            $activeTimer = $task->activeTimerForUser($user->id);
+            if (!$activeTimer) {
+                $this->startTimer($task, $user);
+            }
+        }
+
+        // Auto-stop timer when completing
+        if ($newStatus === 'Completed') {
+            $activeTimer = $task->activeTimerForUser($user->id);
+            if ($activeTimer) {
+                $this->pauseTimer($task, $user, 'Auto-stopped on task completion');
+            }
+        }
 
         UserActivity::log('Task Status Updated', "Changed status of task '{$task->title}' to '{$task->status}'");
 
@@ -167,10 +207,44 @@ class TaskService
             return ['success' => false, 'message' => 'Task must be in In Progress status before it can be Completed.'];
         }
 
+        // Rule 5: Project must be started before task can be moved to In Progress
+        if ($newStatus === 'InProgress') {
+            $project = $task->project;
+            if ($project && $project->status === 'ToDo') {
+                if (!$user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader'])) {
+                    return [
+                        'success' => false,
+                        'message' => 'The project is still not started. Please ask your Team Leader to move the project from ToDo to In Progress first.'
+                    ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => 'The project is still in ToDo state. Please move the project from ToDo to In Progress.'
+                    ];
+                }
+            }
+        }
+
         return DB::transaction(function () use ($task, $user, $newStatus) {
             $oldStatus = $task->status;
             $this->applyStatusTransition($task, $newStatus);
             $task->save();
+
+            // Auto-start timer when moving to InProgress
+            if ($newStatus === 'InProgress') {
+                $activeTimer = $task->activeTimerForUser($user->id);
+                if (!$activeTimer) {
+                    $this->startTimer($task, $user);
+                }
+            }
+
+            // Auto-stop timer when completing
+            if ($newStatus === 'Completed') {
+                $activeTimer = $task->activeTimerForUser($user->id);
+                if ($activeTimer) {
+                    $this->pauseTimer($task, $user, 'Auto-stopped on task completion via Kanban');
+                }
+            }
 
             UserActivity::log('Task Moved', "Moved task '{$task->title}' from '{$oldStatus}' to '{$newStatus}' via Kanban");
 
@@ -246,48 +320,144 @@ class TaskService
     }
 
     /* ------------------------------------------------------------------
-     *  WORK LOGGING
+     *  TIMER MANAGEMENT
      * ------------------------------------------------------------------ */
 
     /**
-     * Add a time-tracked work log entry for a task.
+     * Start a timer for a task.
+     *
+     * @return array{success: bool, message: string, timer?: TaskLog}
+     */
+    public function startTimer(Task $task, User $user): array
+    {
+        if (!$this->canModifyTask($task, $user)) {
+            return ['success' => false, 'message' => 'Unauthorized! You can only start timers on your own tasks.'];
+        }
+
+        if ($task->status === 'Completed') {
+            return ['success' => false, 'message' => 'Cannot start a timer on a completed task.'];
+        }
+
+        // Project must be started before starting the timer
+        $project = $task->project;
+        if ($project && $project->status === 'ToDo') {
+            if (!$user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader'])) {
+                return [
+                    'success' => false,
+                    'message' => 'The project is still not started. Please ask your Team Leader to move the project from ToDo to In Progress first.'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'The project is still in ToDo state. Please move the project from ToDo to In Progress.'
+                ];
+            }
+        }
+
+        // Check if there is already an active timer for this user on this task
+        $activeTimer = $task->activeTimerForUser($user->id);
+        if ($activeTimer) {
+            return ['success' => false, 'message' => 'Timer is already running for this task.'];
+        }
+
+        return DB::transaction(function () use ($task, $user) {
+            // Ensure the Global Timer is running
+            app(GlobalTimerService::class)->ensureGlobalTimerIsRunning($user);
+
+            // Auto-pause any other active timer for the same user across all tasks
+            $otherActiveTimer = TaskLog::where('userid', $user->id)
+                ->whereNull('endtime')
+                ->where('taskid', '!=', $task->id)
+                ->first();
+
+            if ($otherActiveTimer) {
+                $otherTask = Task::find($otherActiveTimer->taskid);
+                if ($otherTask) {
+                    $this->pauseTimer($otherTask, $user, 'Auto-paused when another task timer was started');
+                }
+            }
+
+            $now = Carbon::now();
+
+            $taskLog = new TaskLog();
+            $taskLog->taskid = $task->id;
+            $taskLog->userid = $user->id;
+            $taskLog->log_date = $now->format('Y-m-d');
+            $taskLog->starttime = $now->format('H:i:s');
+            $taskLog->endtime = null;
+            $taskLog->time_spend = null;
+            $taskLog->log_description = null;
+            $taskLog->save();
+
+            // Auto-transition task from ToDo to InProgress
+            if ($task->status === 'ToDo') {
+                $this->applyStatusTransition($task, 'InProgress');
+                $task->save();
+
+                UserActivity::log('Task Status Updated', "Changed status of task '{$task->title}' to 'InProgress' automatically via Timer Start");
+                $autoComment = "Task status updated to InProgress automatically by starting timer by {$user->name}";
+                DepartmentProjectHistoryController::store($task, $autoComment, $user->id);
+            }
+
+            UserActivity::log('Timer Started', "Started timer for task '{$task->title}'");
+            DepartmentProjectHistoryController::store($task, "Timer started by {$user->name}", $user->id);
+
+            return ['success' => true, 'message' => 'Timer started', 'timer' => $taskLog];
+        });
+    }
+
+    /**
+     * Pause/Stop a running timer for a task.
      *
      * @return array{success: bool, message: string}
      */
-    public function addWorkLog(array $data, User $user): array
+    public function pauseTimer(Task $task, User $user, ?string $description = null): array
     {
-        $taskLog = new TaskLog();
-        $taskLog->taskid  = $data['task_id'];
-        $taskLog->userid  = $user->id;
-        $taskLog->log_date = Carbon::parse($data['log_date'])->format('Y-m-d');
-        $taskLog->log_description = $data['description'];
-        $taskLog->time_spend = $data['time_spend'];
-
-        // Flexible time parsing
-        try {
-            $taskLog->starttime = Carbon::parse($data['start_time'])->format('H:i:s');
-            $taskLog->endtime   = Carbon::parse($data['end_time'])->format('H:i:s');
-        } catch (\Exception $e) {
-            $taskLog->starttime = Carbon::createFromFormat('h:i A', $data['start_time'])->format('H:i:s');
-            $taskLog->endtime   = Carbon::createFromFormat('h:i A', $data['end_time'])->format('H:i:s');
+        $activeTimer = $task->activeTimerForUser($user->id);
+        if (!$activeTimer) {
+            return ['success' => false, 'message' => 'No active timer found for this task.'];
         }
 
-        $taskLog->save();
+        $now = Carbon::now();
+        $startedAt = Carbon::parse($activeTimer->log_date . ' ' . $activeTimer->starttime);
 
-        $task = Task::find($data['task_id']);
-        UserActivity::log('Task Work Logged', "Logged {$taskLog->time_spend} hours for task '{$task->title}'");
+        // 9:00 PM cap on the starting day
+        $capTime = Carbon::parse($activeTimer->log_date . ' 21:00:00');
 
-        $comment = "Logged {$taskLog->time_spend} hours for task '{$task->title}' by {$user->name}";
-        DepartmentProjectHistoryController::store($task, $comment, $user->id);
+        if ($now->gt($capTime)) {
+            $endTime = $capTime;
+        } else {
+            $endTime = $now;
+        }
+
+        // If the task was started after 9:00 PM, cap the end time to the start time (0 hours spend)
+        if ($startedAt->gt($endTime)) {
+            $endTime = $startedAt;
+        }
+
+        // Calculate duration in hours
+        $durationSeconds = $startedAt->diffInSeconds($endTime);
+        $durationHours = round($durationSeconds / 3600, 2);
+        if ($durationHours < 0.01 && $durationSeconds > 0) {
+            $durationHours = 0.01;
+        }
+
+        $activeTimer->endtime = $endTime->format('H:i:s');
+        $activeTimer->time_spend = $durationHours;
+        $activeTimer->log_description = $description;
+        $activeTimer->save();
+
+        UserActivity::log('Timer Paused', "Paused timer for task '{$task->title}'");
+        DepartmentProjectHistoryController::store($task, "Timer paused by {$user->name}", $user->id);
 
         ProjectNotificationService::notifyTask($task, [
             'category' => 'Log',
-            'header'   => 'New Work Log',
-            'body'     => "{$user->name} logged {$taskLog->time_spend}h on task '{$task->title}'",
+            'header'   => 'Timer Paused',
+            'body'     => "{$user->name} paused timer on task '{$task->title}'",
             'link'     => url('/') . "/projects/taskboard/" . base64_encode($task->projectid) . "?task_id=" . $task->id,
         ]);
 
-        return ['success' => true, 'message' => 'Task Log Added'];
+        return ['success' => true, 'message' => "Timer paused. Logged {$durationHours} hours."];
     }
 
     /* ------------------------------------------------------------------

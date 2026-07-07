@@ -24,7 +24,7 @@ class DepartmentProjects extends Model
         return $this->hasMany(Task::class, 'projectid')->where('status', 'Completed');
     }
 
-    public function category()
+    public function projectCategory()
     {
         return $this->belongsTo(ProjectCategory::class, 'category', 'id');
     }

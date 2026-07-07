@@ -9,6 +9,8 @@ class Task extends Model
 {
     use HasFactory;
 
+    protected $guarded = [];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'assigned_to', 'id');
@@ -39,11 +41,34 @@ class Task extends Model
 
     public function getTotalTimeAttribute()
     {
-        return $this->logs->sum('time_spend');
+        if ($this->relationLoaded('logs')) {
+            return $this->logs->whereNotNull('time_spend')->sum('time_spend');
+        }
+
+        return $this->logs()->whereNotNull('time_spend')->sum('time_spend');
     }
 
+    /**
+     * Get the active (running) timer for the authenticated user.
+     */
+    public function getActiveTimerAttribute()
+    {
+        return $this->logs()
+            ->where('userid', auth()->id())
+            ->whereNull('endtime')
+            ->first();
+    }
 
-
+    /**
+     * Get the active (running) timer for a specific user.
+     */
+    public function activeTimerForUser(int $userId): ?TaskLog
+    {
+        return $this->logs()
+            ->where('userid', $userId)
+            ->whereNull('endtime')
+            ->first();
+    }
     public function documents()
     {
         return $this->morphMany(Document::class, 'documentable');

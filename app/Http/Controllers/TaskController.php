@@ -75,10 +75,16 @@ class TaskController extends Controller
 
     public function edit(Task $task)
     {
-        if ($task)
-            return response()->json(['success' => true, 'task' => $task]);
-        else
+        if ($task) {
+            $isAssignedToTl = $task->user ? $task->user->hasRole('Team-Leader') : false;
+            return response()->json([
+                'success' => true, 
+                'task' => $task,
+                'is_assigned_to_tl' => $isAssignedToTl
+            ]);
+        } else {
             return response()->json(['success' => false, 'message' => "Task not exist"]);
+        }
     }
 
     public function update(TaskUpdate $taskUpdate, Task $task)
@@ -105,41 +111,41 @@ class TaskController extends Controller
         }
     }
 
-    public function addTaskLog(Request $request)
+    public function startTimer(Task $task)
     {
-        $rules = [
-            'log_date'        => 'required|date',
-            'log_start_time'  => 'required',
-            'log_end_time'    => 'required',
-            'log_time_spend'  => 'required',
-            'log_description' => 'required|string|min:15',
-        ];
-        $validator = Validator::make($request->all(), $rules);
-        if ($validator->fails()) {
-            return Response::json(['status' => 400, 'errors' => $validator->getMessageBag()->toArray()], 400);
-        }
-
         try {
-            $result = $this->taskService->addWorkLog([
-                'task_id'     => $request->tasklog,
-                'log_date'    => $request->log_date,
-                'start_time'  => $request->log_start_time,
-                'end_time'    => $request->log_end_time,
-                'time_spend'  => $request->log_time_spend,
-                'description' => $request->log_description,
-            ], Auth::user());
+            $result = $this->taskService->startTimer($task, Auth::user());
+            $response = ['code' => 200, 'success' => $result['success'], 'message' => $result['message']];
 
+            if (isset($result['timer'])) {
+                $response['timer'] = [
+                    'id'        => $result['timer']->id,
+                    'starttime' => $result['timer']->starttime,
+                    'log_date'  => $result['timer']->log_date,
+                ];
+            }
+
+            return response()->json($response, 200);
+        } catch (Exception $ex) {
+            Log::error("Timer Start Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());
+            return response()->json(['code' => 200, 'success' => false, 'message' => 'Failed to start timer: ' . $ex->getMessage()], 200);
+        }
+    }
+
+    public function pauseTimer(Task $task)
+    {
+        try {
+            $result = $this->taskService->pauseTimer($task, Auth::user());
             return response()->json(['code' => 200, 'success' => $result['success'], 'message' => $result['message']], 200);
         } catch (Exception $ex) {
-            Log::error("Task Log Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());
-            return response()->json(['code' => 200, 'success' => false, 'message' => 'Task log not updated: ' . $ex->getMessage()], 200);
+            Log::error("Timer Pause Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());
+            return response()->json(['code' => 200, 'success' => false, 'message' => 'Failed to pause timer: ' . $ex->getMessage()], 200);
         }
     }
 
     public function changestatus(Request $request)
     {
-        $actStartDt = $request->status == 'InProgress' ? 'required' : 'nullable';
-        $rules = ['status' => 'required|string', 'act_start_date' => $actStartDt];
+        $rules = ['status' => 'required|string'];
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return Response::json(['status' => 400, 'errors' => $validator->getMessageBag()->toArray()], 400);
@@ -151,7 +157,7 @@ class TaskController extends Controller
         }
 
         try {
-            $result = $this->taskService->changeStatus($task, Auth::user(), $request->status, $request->act_start_date);
+            $result = $this->taskService->changeStatus($task, Auth::user(), $request->status, null);
             return response()->json(['code' => 200, 'success' => $result['success'], 'message' => $result['message']], 200);
         } catch (Exception $ex) {
             Log::error("Task Updation Error : " . $ex->getMessage() . " @:@ Line - " . $ex->getLine());

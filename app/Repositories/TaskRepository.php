@@ -16,13 +16,6 @@ class TaskRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    /* ------------------------------------------------------------------
-     *  SCOPED QUERIES
-     * ------------------------------------------------------------------ */
-
-    /**
-     * Tasks for a specific project, optionally scoped to a user.
-     */
     public function forProject(int $projectId, ?int $userId = null): Builder
     {
         $query = $this->query()
@@ -135,7 +128,7 @@ class TaskRepository extends BaseRepository
     public function getActiveTasksWithProjects(int $userId): Collection
     {
         return $this->query()
-            ->with(['project.category', 'project.clients'])
+            ->with(['project.projectCategory', 'project.clients'])
             ->where('assigned_to', $userId)
             ->whereIn('status', ['ToDo', 'InProgress'])
             ->orderBy('priority', 'desc')
@@ -148,7 +141,7 @@ class TaskRepository extends BaseRepository
     public function getRecentlyCompleted(int $userId, int $limit = 10): Collection
     {
         return $this->query()
-            ->with(['project.category', 'project.clients'])
+            ->with(['project.projectCategory', 'project.clients'])
             ->where('assigned_to', $userId)
             ->where('status', 'Completed')
             ->orderBy('updated_at', 'desc')

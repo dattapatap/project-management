@@ -8,7 +8,7 @@
     <div class="row">
         <div class="col-12">
             <div class="pb-2 d-flex align-items-center justify-content-between">
-                <a href="{{ url('client/Fresh')  }}" class="btn-back" >
+                <a href="{{ route('clients.index') }}" class="btn-back" >
                     <i class="mdi mdi-keyboard-backspace fs-20"></i>
                 </a>
             </div>

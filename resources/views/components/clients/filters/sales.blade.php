@@ -389,7 +389,7 @@
                                                             <span class="font-weight-700 text-premium-dark">{{ $project->project_name }}</span>
                                                         </td>
                                                         <td>
-                                                            <div class="font-weight-600">{{ $project->category->category ?? 'Service config' }}</div>
+                                                            <div class="font-weight-600">{{ $project->projectCategory->category ?? 'Service config' }}</div>
                                                             @if($project->sub_categories)
                                                             <div class="font-size-11 text-muted">{{ $project->sub_categories->name }}</div>
                                                             @endif

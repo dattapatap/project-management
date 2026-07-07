@@ -22,37 +22,50 @@ class ProjectController extends Controller
     {
         $user = Auth::user();
         $status = $request->status;
+        $department = $request->query('department');
 
         if (is_null($status)) {
             $status = 'Pending';
         }
 
-        $result = $this->projectService->getProjectIndexData($user, $status);
+        if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
+            $department = $user->departments->department ?? null;
+        }
+
+        $result = $this->projectService->getProjectIndexData($user, $status, $department);
         $projects = $result['projects'];
         $stats = $result['stats'];
 
         if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant'])) {
-            return view('components.projects.employee_index', compact('projects', 'stats'));
+            $allTasks = $user->tasks()->with(['project.projectCategory', 'project.clients'])->orderBy('created_at', 'desc')->get();
+            $activeTasks = $allTasks->whereIn('status', ['ToDo', 'InProgress']);
+            $completedTasks = $allTasks->where('status', 'Completed');
+            return view('components.projects.employee_index', compact('projects', 'stats', 'activeTasks', 'completedTasks', 'department'));
         }
 
-        return view('components.projects.index', compact('projects', 'stats'))->with('search', '');
+        return view('components.projects.index', compact('projects', 'stats', 'department'))->with('search', '');
     }
 
     public function search(Request $request)
     {
         $filter = $request->query('search');
+        $department = $request->query('department');
         $user = Auth::user();
 
-        $result = $this->projectService->searchProjects($user, $filter);
+        if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
+            $department = $user->departments->department ?? null;
+        }
+
+        $result = $this->projectService->searchProjects($user, $filter, 50, $department);
         $projects = $result['projects'];
         $stats = $result['stats'];
 
-        return view('components.projects.index', compact('projects', 'stats'))->with('search', $filter);
+        return view('components.projects.index', compact('projects', 'stats', 'department'))->with('search', $filter);
     }
 
     public function create()
     {
-        $clients = Clients::orderBy('name', 'asc')->get();
+        $clients = Clients::where('status', 'Matured')->orderBy('name', 'asc')->get();
         return view('components.projects.create', compact('clients'));
     }
 
@@ -192,7 +205,7 @@ class ProjectController extends Controller
             $id = $projectid;
         }
 
-        $project = DepartmentProjects::with(['histories.user', 'tasks.user', 'tasks.logs.user', 'tasks.histories.user', 'tasks.documents.user', 'clients', 'category', 'documents.user'])->find($id);
+        $project = DepartmentProjects::with(['histories.user', 'tasks.user', 'tasks.logs.user', 'tasks.histories.user', 'tasks.documents.user', 'clients', 'projectCategory', 'documents.user'])->find($id);
 
         if ($project) {
             return view('projects.history', compact('project'));
@@ -256,15 +269,72 @@ class ProjectController extends Controller
 
     public function getEmployeesByProject(Request $request)
     {
+        Log::info("getEmployeesByProject called with parameters:", $request->all());
         try {
+            $interTeam = $request->query('inter_team') == '1';
             $employees = $this->projectService->getEmployeesForProject(
                 $request->project_id,
-                Auth::user()
+                Auth::user(),
+                $interTeam
             );
-
+            Log::info("getEmployeesByProject success, count: " . count($employees));
             return response()->json(['status' => true, 'data' => $employees]);
         } catch (Exception $e) {
+            Log::error("getEmployeesByProject error: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
             return response()->json(['status' => false, 'message' => $e->getMessage()]);
         }
+    }
+
+    public function activeProjectsList()
+    {
+        $user = Auth::user();
+        $query = DepartmentProjects::query();
+
+        if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant']) && !$user->hasRole('Team-Leader')) {
+            $query->whereHas('tasks', fn($q) => $q->where('assigned_to', $user->id));
+        } elseif ($user->hasRole('Team-Leader')) {
+            $teamMember = \App\Models\TeamMembers::where('user', $user->id)->where('status', true)->first();
+            $teamId = $teamMember?->team;
+
+            $query->where(function ($q) use ($user, $teamId) {
+                $q->where('assigned_to', $user->id);
+                if ($teamId) {
+                    $q->orWhereHas('project_team', fn($sq) => $sq->where('teamid', $teamId));
+                }
+                $q->orWhereHas('tasks', function ($sq) use ($user, $teamId) {
+                    $sq->where('assigned_to', $user->id);
+                    if ($teamId) {
+                        $sq->orWhereHas('user.teamMember', fn($ssq) => $ssq->where('team', $teamId));
+                    }
+                });
+            });
+        }
+
+        $projects = $query->with(['clients:id,name', 'projectCategory:id,category'])
+            ->orderBy('project_name', 'asc')
+            ->get();
+
+        $data = [];
+        foreach ($projects as $proj) {
+            $clientName = $proj->clients?->name ?? 'No Client';
+            $categoryName = $proj->projectCategory?->category ?? '';
+
+            // Format: "Client Name | Project Name (Category)"
+            $displayName = "{$clientName} | {$proj->project_name}";
+            if ($categoryName && strtolower($categoryName) !== strtolower($proj->project_name)) {
+                $displayName .= " ({$categoryName})";
+            }
+
+            $data[] = [
+                'id' => $proj->id,
+                'project_name' => $displayName,
+                'status' => $proj->status
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $data
+        ]);
     }
 }

@@ -2,298 +2,337 @@
 
 @section('styles')
 <style>
-    .project-hero-card {
+    .employee-wrapper {
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+    .custom-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 10px 20px;
+        border-radius: 30px;
+        margin-right: 8px;
+        transition: all 0.2s ease;
+    }
+    .custom-tabs .nav-link.active {
+        background-color: #556ee6;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(85, 110, 230, 0.2);
+    }
+    .task-card-trendy {
         background: #ffffff;
-        border-radius: 20px;
-        border: 1.5px solid #eaeaea;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        position: relative;
-        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid #eaeaea;
+        transition: all 0.3s ease;
     }
-    .project-hero-card:hover {
-        transform: translateY(-10px);
+    .task-card-trendy:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
         border-color: #556ee6;
-        box-shadow: 0 20px 40px rgba(85, 110, 230, 0.08) !important;
     }
-    .project-badge {
-        font-size: 10px;
+    .custom-table th {
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-size: 11px;
+        letter-spacing: 0.8px;
+        color: #5c6a7a !important;
+        font-weight: 700 !important;
+        background-color: #f8fafc;
+        border-bottom: 2px solid #edf2f7 !important;
+    }
+    .custom-table td {
+        vertical-align: middle !important;
+        color: #2d3748;
+        font-size: 13.5px;
+    }
+    .badge-priority {
+        font-size: 10px;
         font-weight: 700;
-        padding: 4px 10px;
+        text-transform: uppercase;
+        padding: 4px 8px;
         border-radius: 6px;
     }
-    .progress-bar-trendy {
-        height: 6px;
-        border-radius: 10px;
-        background-color: #f1f1f1;
-    }
-    .task-item-mini {
-        padding: 12px 15px;
-        border-radius: 12px;
-        border: 1px solid #f5f5f5;
-        background: #fafafa;
-        margin-bottom: 10px;
-        transition: all 0.2s ease;
-    }
-    .task-item-mini:hover {
-        background: #ffffff;
-        border-color: #e0e0e0;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-    }
-    .btn-action-trendy {
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 12px;
-        padding: 8px 16px;
-        transition: all 0.2s ease;
-    }
-    .btn-action-trendy:hover {
-        transform: scale(1.05);
-    }
+    .priority-high { background-color: rgba(244, 67, 54, 0.1); color: #f44336; }
+    .priority-medium { background-color: rgba(255, 152, 0, 0.1); color: #ff9800; }
+    .priority-low { background-color: rgba(76, 175, 80, 0.1); color: #4caf50; }
 </style>
 @endsection
 
 @section('content')
-<div class="container-fluid pb-5">
-    <!-- Header Section -->
+<div class="container-fluid employee-wrapper pb-5">
+    
+    <!-- Workspace Header -->
     <div class="row mb-4 align-items-center">
         <div class="col-md-6">
-            <h4 class="mb-0 font-weight-bold text-dark" style="font-size: 1.8rem; letter-spacing: -0.8px;">My <span class="text-primary">Workspace</span></h4>
-            <p class="text-muted mb-0">Manage your assigned projects and track task delivery.</p>
+            <h4 class="mb-0 font-weight-bold text-dark" style="font-size: 1.8rem; letter-spacing: -0.8px;">📁 My <span class="text-primary">Workspace</span></h4>
+            <p class="text-muted mb-0">Track and manage your tasks, timelines, and deliverables.</p>
         </div>
         <div class="col-md-6 text-md-right mt-3 mt-md-0">
-            <div class="d-inline-flex bg-white p-1 rounded-pill shadow-sm border">
-                <a href="{{ request()->fullUrlWithQuery(['view' => 'grid']) }}" class="btn btn-sm px-4 rounded-pill {{ request('view') != 'list' ? 'btn-primary shadow' : 'btn-light' }}">
-                    <i class="mdi mdi-view-grid-outline mr-1"></i> Grid
-                </a>
-                <a href="{{ request()->fullUrlWithQuery(['view' => 'list']) }}" class="btn btn-sm px-4 rounded-pill {{ request('view') == 'list' ? 'btn-primary shadow' : 'btn-light' }}">
-                    <i class="mdi mdi-format-list-bulleted mr-1"></i> List
-                </a>
-            </div>
+            <ul class="nav nav-pills custom-tabs d-inline-flex bg-white p-1 rounded-pill shadow-sm border" id="workspaceTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="tasks-tab" data-toggle="tab" href="#tasks" role="tab" aria-controls="tasks" aria-selected="true">
+                        <i class="mdi mdi-checkbox-marked-circle-outline mr-1"></i> Active Tasks
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="completed-tab" data-toggle="tab" href="#completed-tasks" role="tab" aria-controls="completed-tasks" aria-selected="false">
+                        <i class="mdi mdi-history mr-1"></i> Completed History
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="projects-tab" data-toggle="tab" href="#projects" role="tab" aria-controls="projects" aria-selected="false">
+                        <i class="mdi mdi-briefcase-outline mr-1"></i> My Projects
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 
-    @if(isset($stats))
-    <div class="row mb-4">
-        <div class="col-6 col-md-3">
-            <a href="{{ url('projects?status=ToDo') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #f1b44c !important;">
-                    <div class="card-body py-3">
-                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Not Started</p>
-                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['not_started'] }}</h3>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="{{ url('projects?status=InProgress') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #50a5f1 !important;">
-                    <div class="card-body py-3">
-                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">In Progress</p>
-                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['in_progress'] }}</h3>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="{{ url('projects?status=Completed') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #34c38f !important;">
-                    <div class="card-body py-3">
-                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Completed</p>
-                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['completed'] }}</h3>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="{{ url('projects?status=all') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm" style="border-radius: 16px; border-top: 3px solid #556ee6 !important;">
-                    <div class="card-body py-3">
-                        <p class="text-muted font-size-11 font-weight-bold text-uppercase mb-1">Total Projects</p>
-                        <h3 class="mb-0 font-weight-bold text-dark">{{ $stats['total'] }}</h3>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-    @endif
-
-    @if(request('view') == 'list')
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm border-0" style="border-radius: 20px; overflow: hidden;">
+    <!-- Tabs Content -->
+    <div class="tab-content" id="workspaceTabsContent">
+        
+        <!-- Tab 1: Active Tasks (Default view) -->
+        <div class="tab-pane fade show active" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
+            <div class="card border shadow-sm">
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="bg-light">
-                                <tr class="text-uppercase font-size-11 letter-spacing-1 text-muted">
-                                    <th class="px-4 py-3 border-0">Project Detail</th>
-                                    <th class="py-3 border-0">Client / Org</th>
-                                    <th class="py-3 border-0 text-center">Workload</th>
-                                    <th class="py-3 border-0" style="width: 250px;">Momentum</th>
-                                    <th class="py-3 border-0 text-right pr-4">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($projects as $project)
-                                @php $myTasks = $project->tasks->where('assigned_to', Auth::id()); @endphp
-                                <tr>
-                                    <td class="px-4 py-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-xs mr-3">
-                                                <span class="avatar-title rounded-circle bg-soft-primary text-primary font-weight-bold">
-                                                    {{ substr($project->project_name, 0, 1) }}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <h6 class="font-weight-bold text-dark mb-0">{{ Str::limit($project->project_name, 50) }}</h6>
-                                                <small class="text-muted">{{ $project->category->name ?? 'Internal' }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="py-4">
-                                        <span class="text-dark font-weight-medium">{{ $project->clients->name ?? 'Company Project' }}</span>
-                                    </td>
-                                    <td class="py-4 text-center">
-                                        <span class="badge badge-soft-info px-3 py-2" style="border-radius: 8px;">
-                                            <i class="mdi mdi-checkbox-multiple-marked-outline mr-1"></i> {{ $myTasks->count() }} Tasks
-                                        </span>
-                                    </td>
-                                    <td class="py-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="progress progress-sm flex-grow-1 mr-3" style="height: 8px; border-radius: 10px; background-color: #f1f1f1;">
-                                                <div class="progress-bar bg-primary shadow-none" style="width: {{ $project->progress }}%; border-radius: 10px;"></div>
-                                            </div>
-                                            <span class="font-weight-bold text-dark">{{ $project->progress }}%</span>
-                                        </div>
-                                    </td>
-                                    <td class="py-4 text-right pr-4">
-                                        <div class="btn-group">
-                                            <a href="{{ url('projects/taskboard/'.base64_encode($project->id)) }}" class="btn btn-sm btn-primary px-3 rounded-pill shadow-sm">
-                                                <i class="mdi mdi-view-week-outline mr-1"></i> Board
+                    @if($activeTasks->isEmpty())
+                        <div class="text-center py-5 text-muted">
+                            <i class="mdi mdi-clipboard-text-outline display-4 text-warning mb-2 d-block"></i>
+                            <h5 class="font-weight-bold">No active tasks assigned to you</h5>
+                            <p class="font-size-13 mb-0">You're currently all caught up on your tasks!</p>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table custom-table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="padding-left: 24px;">Task Title</th>
+                                        <th>Project Name</th>
+                                        <th>Status</th>
+                                        <th>Priority</th>
+                                        <th>Time Spent</th>
+                                        <th>Due Date</th>
+                                        <th class="text-right" style="padding-right: 24px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($activeTasks as $task)
+                                    <tr>
+                                        <td style="padding-left: 24px;">
+                                            <a href="{{ url('projects/task/'.base64_encode($task->id).'/history') }}" class="text-dark font-weight-bold">
+                                                {{ Str::limit($task->title, 60) }}
                                             </a>
-                                            <a href="{{ url('projects/'.base64_encode($project->id).'/history') }}" class="btn btn-sm btn-light px-3 rounded-pill ml-2 border">
-                                                <i class="mdi mdi-pulse mr-1 text-primary"></i> Pulse
+                                        </td>
+                                        <td>
+                                            <span class="text-muted font-weight-semibold">
+                                                {{ $task->project->project_name ?? 'Internal Project' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if($task->status === 'ToDo')
+                                                <span class="badge badge-soft-secondary font-size-11 px-2.5 py-0.5">To Do</span>
+                                            @elseif($task->status === 'InProgress')
+                                                <span class="badge badge-soft-warning font-size-11 px-2.5 py-0.5">In Progress</span>
+                                            @else
+                                                <span class="badge badge-soft-info font-size-11 px-2.5 py-0.5">{{ $task->status }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @php 
+                                                $prio = strtolower($task->priority); 
+                                                $class = in_array($prio, ['high', 'medium', 'low']) ? 'priority-' . $prio : 'priority-low';
+                                            @endphp
+                                            <span class="badge-priority {{ $class }}">
+                                                {{ $task->priority }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @php
+                                            $totalMinutes = round(($task->total_time ?? 0) * 60);
+                                            $h = floor($totalMinutes / 60);
+                                            $m = $totalMinutes % 60;
+                                            $timeSpentFormatted = $h > 0 ? sprintf('%02d:%02d Hrs', $h, $m) : sprintf('%02d:%02d min', $h, $m);
+                                            @endphp
+                                            <span class="font-weight-semibold text-dark">{{ $timeSpentFormatted }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">
+                                                {{ $task->enddate ? \Carbon\Carbon::parse($task->enddate)->format('d M Y') : '-' }}
+                                            </span>
+                                        </td>
+                                        <td class="text-right" style="padding-right: 24px;">
+                                            @if($task->project)
+                                                <a href="{{ url('projects/taskboard/'.base64_encode($task->project->id)) }}" class="btn btn-primary btn-sm rounded-pill px-3 mr-1 shadow-sm">
+                                                    <i class="mdi mdi-view-week-outline mr-1"></i> Board
+                                                </a>
+                                            @endif
+                                            <a href="{{ url('projects/task/'.base64_encode($task->id).'/history') }}" class="btn btn-light btn-sm rounded-pill px-3 border">
+                                                <i class="mdi mdi-magnify mr-1"></i> Details
                                             </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-5">
-                                        <img src="{{ asset('assets/images/no-data.png') }}" alt="" style="height: 120px; opacity: 0.5;">
-                                        <h5 class="mt-3 text-muted">No projects found in your workspace</h5>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
-    </div>
-    @else
-    <div class="row">
-        @forelse($projects as $project)
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card project-hero-card h-100 shadow-none">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <span class="project-badge bg-soft-primary text-primary">{{ $project->category->name ?? 'Internal' }}</span>
-                        <div class="dropdown">
-                            <a href="#" class="dropdown-toggle arrow-none text-muted" data-toggle="dropdown">
-                                <i class="mdi mdi-dots-vertical font-size-18"></i>
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-right">
-                                <a class="dropdown-item" href="{{ url('projects/'.base64_encode($project->id).'/history') }}"><i class="mdi mdi-history mr-1"></i> View Pulse</a>
-                                <a class="dropdown-item" href="{{ url('projects/taskboard/'.base64_encode($project->id)) }}"><i class="mdi mdi-view-week-outline mr-1"></i> Open Board</a>
-                            </div>
-                        </div>
-                    </div>
 
-                    <h5 class="font-weight-bold text-dark mb-1">{{ Str::limit($project->project_name, 40) }}</h5>
-                    <p class="text-muted font-size-12 mb-3">
-                        <i class="mdi mdi-account-tie mr-1"></i> {{ $project->clients->name ?? 'Company Project' }}
-                    </p>
+        <!-- Tab 1.5: Completed Task History -->
+        <div class="tab-pane fade" id="completed-tasks" role="tabpanel" aria-labelledby="completed-tab">
+            <div class="card border shadow-sm">
+                <div class="card-body p-0">
+                    @if($completedTasks->isEmpty())
+                        <div class="text-center py-5 text-muted">
+                            <i class="mdi mdi-history display-4 text-secondary mb-2 d-block"></i>
+                            <h5 class="font-weight-bold">No completed tasks yet</h5>
+                            <p class="font-size-13 mb-0">Tasks you complete will show up in this history tab.</p>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table custom-table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="padding-left: 24px;">Task Title</th>
+                                        <th>Project Name</th>
+                                        <th>Status</th>
+                                        <th>Priority</th>
+                                        <th>Time Spent</th>
+                                        <th>Completed Date</th>
+                                        <th class="text-right" style="padding-right: 24px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($completedTasks as $task)
+                                    <tr>
+                                        <td style="padding-left: 24px;">
+                                            <a href="{{ url('projects/task/'.base64_encode($task->id).'/history') }}" class="text-dark font-weight-bold">
+                                                {{ Str::limit($task->title, 60) }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted font-weight-semibold">
+                                                {{ $task->project->project_name ?? 'Internal Project' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-soft-success font-size-11 px-2.5 py-0.5">Completed</span>
+                                        </td>
+                                        <td>
+                                            @php 
+                                                $prio = strtolower($task->priority); 
+                                                $class = in_array($prio, ['high', 'medium', 'low']) ? 'priority-' . $prio : 'priority-low';
+                                            @endphp
+                                            <span class="badge-priority {{ $class }}">
+                                                {{ $task->priority }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @php
+                                            $totalMinutes = round(($task->total_time ?? 0) * 60);
+                                            $h = floor($totalMinutes / 60);
+                                            $m = $totalMinutes % 60;
+                                            $timeSpentFormatted = $h > 0 ? sprintf('%02d:%02d Hrs', $h, $m) : sprintf('%02d:%02d min', $h, $m);
+                                            @endphp
+                                            <span class="font-weight-semibold text-dark">{{ $timeSpentFormatted }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">
+                                                {{ $task->act_enddate ? \Carbon\Carbon::parse($task->act_enddate)->format('d M Y h:i A') : ($task->updated_at ? \Carbon\Carbon::parse($task->updated_at)->format('d M Y') : '-') }}
+                                            </span>
+                                        </td>
+                                        <td class="text-right" style="padding-right: 24px;">
+                                            @if($task->project)
+                                                <a href="{{ url('projects/taskboard/'.base64_encode($task->project->id)) }}" class="btn btn-primary btn-sm rounded-pill px-3 mr-1 shadow-sm">
+                                                    <i class="mdi mdi-view-week-outline mr-1"></i> Board
+                                                </a>
+                                            @endif
+                                            <a href="{{ url('projects/task/'.base64_encode($task->id).'/history') }}" class="btn btn-light btn-sm rounded-pill px-3 border">
+                                                <i class="mdi mdi-magnify mr-1"></i> Details
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
 
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="font-size-12 text-muted font-weight-medium">Delivery Momentum</span>
-                            <span class="font-size-12 font-weight-bold text-dark">{{ $project->progress }}%</span>
-                        </div>
-                        <div class="progress progress-bar-trendy">
-                            <div class="progress-bar bg-primary" style="width: {{ $project->progress }}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
-                        <div class="avatar-group">
-                            @php $myTasks = $project->tasks->where('assigned_to', Auth::id()); @endphp
-                            <span class="badge badge-soft-info px-2 py-1" style="border-radius: 8px;">
-                                <i class="mdi mdi-checkbox-multiple-marked-outline mr-1"></i> {{ $myTasks->count() }} My Tasks
-                            </span>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <a href="{{ url('projects/'.base64_encode($project->id).'/history') }}" class="btn btn-action-trendy btn-soft-secondary mr-2">
-                                <i class="mdi mdi-pulse mr-1"></i> Pulse
-                            </a>
-                            <button class="btn btn-action-trendy btn-primary shadow-sm" type="button" data-toggle="collapse" data-target="#tasks-{{ $project->id }}">
-                                <i class="mdi mdi-layers-outline mr-1"></i> Taskboard
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Collapsible Tasks Section -->
-                    <div class="collapse mt-4" id="tasks-{{ $project->id }}">
-                        <div class="pt-3 border-top">
-                            <h6 class="font-size-12 text-uppercase font-weight-bold text-muted mb-3">My Current Tasks</h6>
-                            @forelse($myTasks->whereIn('status', ['ToDo', 'InProgress']) as $task)
-                            <div class="task-item-mini d-flex align-items-center justify-content-between">
-                                <div class="overflow-hidden mr-3">
-                                    <h6 class="font-size-13 mb-1 text-truncate">
-                                        <a href="{{ url('projects/task/'.base64_encode($task->id).'/history') }}" class="text-dark font-weight-bold">{{ $task->title }}</a>
-                                    </h6>
-                                    <span class="badge badge-soft-{{ $task->status == 'InProgress' ? 'warning' : 'secondary' }} font-size-10">{{ $task->status }}</span>
+        <!-- Tab 2: Projects (Show only if they select it) -->
+        <div class="tab-pane fade" id="projects" role="tabpanel" aria-labelledby="projects-tab">
+            <div class="row">
+                @forelse($projects as $project)
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card task-card-trendy h-100 shadow-none">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="badge badge-soft-primary px-2.5 py-1" style="border-radius: 6px; font-size: 11px;">
+                                    {{ $project->projectCategory->category ?? 'Internal' }}
+                                </span>
+                                <div class="dropdown">
+                                    <a href="#" class="dropdown-toggle arrow-none text-muted" data-toggle="dropdown">
+                                        <i class="mdi mdi-dots-vertical font-size-18"></i>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-right">
+                                        <a class="dropdown-item" href="{{ url('projects/'.base64_encode($project->id).'/history') }}"><i class="mdi mdi-history mr-1"></i> View Pulse</a>
+                                        <a class="dropdown-item" href="{{ url('projects/taskboard/'.base64_encode($project->id)) }}"><i class="mdi mdi-view-week-outline mr-1"></i> Open Board</a>
+                                    </div>
                                 </div>
-                                <a href="{{ url('projects/task/'.base64_encode($task->id).'/history') }}" class="btn btn-sm btn-light rounded-circle">
-                                    <i class="mdi mdi-arrow-right text-primary"></i>
-                                </a>
                             </div>
-                            @empty
-                            <p class="text-center text-muted font-size-12 py-3">No active tasks for you here.</p>
-                            @endforelse
 
-                            @if($myTasks->where('status', 'Completed')->count() > 0)
-                            <div class="text-center mt-2">
-                                <a href="{{ url('projects/taskboard/'.base64_encode($project->id)) }}" class="font-size-11 font-weight-bold text-muted">View {{ $myTasks->where('status', 'Completed')->count() }} Completed Tasks</a>
+                            <h5 class="font-weight-bold text-dark mb-1">{{ Str::limit($project->project_name, 40) }}</h5>
+                            <p class="text-muted font-size-12 mb-3">
+                                <i class="mdi mdi-account-tie mr-1"></i> {{ $project->clients->name ?? 'Company Project' }}
+                            </p>
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="font-size-12 text-muted font-weight-medium">Delivery Momentum</span>
+                                    <span class="font-size-12 font-weight-bold text-dark">{{ $project->progress }}%</span>
+                                </div>
+                                <div class="progress progress-sm" style="height: 6px; border-radius: 10px; background-color: #f1f1f1;">
+                                    <div class="progress-bar bg-primary" style="width: {{ $project->progress }}%"></div>
+                                </div>
                             </div>
-                            @endif
+
+                            <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+                                @php $myTasksCount = $project->tasks->where('assigned_to', Auth::id())->count(); @endphp
+                                <span class="badge badge-soft-info px-2.5 py-1" style="border-radius: 8px;">
+                                    <i class="mdi mdi-checkbox-multiple-marked-outline mr-1"></i> {{ $myTasksCount }} Tasks
+                                </span>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url('projects/'.base64_encode($project->id).'/history') }}" class="btn btn-sm btn-soft-secondary mr-2 rounded-pill px-3">
+                                        <i class="mdi mdi-pulse mr-1"></i> Pulse
+                                    </a>
+                                    <a href="{{ url('projects/taskboard/'.base64_encode($project->id)) }}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+                                        <i class="mdi mdi-layers-outline mr-1"></i> Taskboard
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                @empty
+                <div class="col-12 text-center py-5 text-muted">
+                    <i class="mdi mdi-folder-open-outline display-4 d-block mb-2"></i>
+                    <p class="font-size-13 mb-0">No projects found in your workspace.</p>
+                </div>
+                @endforelse
             </div>
-        </div>
-        @empty
-        <div class="col-12 text-center py-5">
-            <div class="avatar-lg mx-auto mb-4">
-                <span class="avatar-title rounded-circle bg-soft-primary text-primary font-size-24">
-                    <i class="mdi mdi-folder-open-outline"></i>
-                </span>
-            </div>
-            <h5 class="text-dark font-weight-bold">No Projects Assigned Yet</h5>
-            <p class="text-muted">When you're assigned to a project, it will appear here for you to manage.</p>
-        </div>
-        @endforelse
-    </div>
-    @endif
 
-    <!-- Pagination -->
-    <div class="row">
-        <div class="col-12 d-flex justify-content-center">
-            {{ $projects->links() }}
+            <!-- Pagination -->
+            <div class="row">
+                <div class="col-12 d-flex justify-content-center">
+                    {{ $projects->links() }}
+                </div>
+            </div>
         </div>
+
     </div>
 </div>
 @endsection

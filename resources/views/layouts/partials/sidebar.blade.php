@@ -28,6 +28,8 @@ $showReports = $isAdmin || $isPm || $isBm;
         </a>
     </li>
 
+
+
     {{-- ADMINISTRATION / BRANCH MANAGEMENT --}}
     @if ($isAuthority)
     <li class="dept-item dept-item--admin {{ request()->is('users*') || request()->is('departments*') ? 'mm-active' : '' }}">
@@ -124,10 +126,12 @@ $showReports = $isAdmin || $isPm || $isBm;
 
     {{-- OPERATIONS · OD --}}
     @if ($showOdProjects || $showOdEmployee)
+    @if ($isAdmin || $isBm || $isPm)
     <li class="menu-title menu-title-dept">
         <!-- <span class="dept-badge dept-badge--od">OD</span> -->
         <span class="dept-label">Operations</span>
     </li>
+    @endif
     @if ($showOdProjects)
     <li class="dept-item dept-item--od {{ request()->is('projects') || (request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources')) ? 'mm-active' : '' }}">
         <a href="{{ url('/projects') }}" class="waves-effect {{ request()->is('projects') || (request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources')) ? 'active' : '' }}">
@@ -144,19 +148,61 @@ $showReports = $isAdmin || $isPm || $isBm;
             <i class="mdi mdi-account-switch"></i><span>Resource Allocation</span>
         </a>
     </li>
+    <li class="dept-item dept-item--od {{ request()->is('operations/calendar*') ? 'mm-active' : '' }}">
+        <a href="{{ route('operations.calendar.index') }}" class="waves-effect {{ request()->is('operations/calendar*') ? 'active' : '' }}">
+            <i class="mdi mdi-calendar-clock"></i><span>Activity Calendar</span>
+        </a>
+    </li>
     @endif
     @if ($showOdEmployee)
     <li class="dept-item dept-item--od {{ request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources') ? 'mm-active' : '' }}">
         <a href="{{ url('/projects') }}" class="waves-effect {{ request()->is('projects*') && !request()->is('projects/timeline') && !request()->is('projects/resources') ? 'active' : '' }}">
-            <i class="mdi mdi-briefcase-outline"></i><span>My Projects</span>
+            <i class="mdi mdi-checkbox-marked-circle-outline"></i><span>My Tasks</span>
         </a>
     </li>
-    <li class="dept-item dept-item--od {{ request()->is('my-insights*') ? 'mm-active' : '' }}">
+    <li class="dept-item dept-item--od {{ request()->is('operations/calendar*') ? 'mm-active' : '' }}">
+        <a href="{{ route('operations.calendar.index') }}" class="waves-effect {{ request()->is('operations/calendar*') ? 'active' : '' }}">
+            <i class="mdi mdi-calendar-clock"></i><span>Activity Calendar</span>
+        </a>
+    </li>
+    @endif
+    @endif
+
+    {{-- DAY CLOSING & TARGETS --}}
+    @if ($isAdmin || $isBm)
+    <li class="menu-title menu-title-dept">
+        <span class="dept-label">Day Closing & Targets</span>
+    </li>
+    @endif
+
+    <li class="dept-item dept-item--main {{ request()->is('day-closing') ? 'mm-active' : '' }}">
+        <a class="waves-effect {{ request()->is('day-closing') ? 'active' : '' }}" href="{{ route('day-closing.index') }}">
+            <i class="mdi mdi-calendar-check-outline"></i><span>Day Closing</span>
+        </a>
+    </li>
+
+    @if ($user->hasRole(['Admin', 'Branch-Manager', 'Team-Leader']))
+    <li class="dept-item dept-item--main {{ request()->is('day-closing/approvals*') ? 'mm-active' : '' }}">
+        <a class="waves-effect {{ request()->is('day-closing/approvals*') ? 'active' : '' }}" href="{{ route('day-closing.approvals') }}">
+            <i class="mdi mdi-sticker-check-outline"></i><span>Closing Approvals</span>
+        </a>
+    </li>
+    @endif
+
+    @if ($isAdmin || $isBm)
+    <li class="dept-item dept-item--main {{ request()->is('daily-targets*') ? 'mm-active' : '' }}">
+        <a class="waves-effect {{ request()->is('daily-targets*') ? 'active' : '' }}" href="{{ route('daily-targets.index') }}">
+            <i class="mdi mdi-target"></i><span>Daily Targets</span>
+        </a>
+    </li>
+    @endif
+
+    @if ($showOdEmployee || $user->hasRole(['Team-Leader', 'Sales-Executive', 'CSD-Executive', 'Project-Manager']))
+    <li class="dept-item dept-item--main {{ request()->is('my-insights*') ? 'mm-active' : '' }}">
         <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
             <i class="mdi mdi-chart-timeline-variant"></i><span>My Insights</span>
         </a>
     </li>
-    @endif
     @endif
 
     {{-- CUSTOMER SUCCESS · CSD --}}

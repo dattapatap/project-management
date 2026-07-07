@@ -16,39 +16,51 @@ $(document).ready(function () {
                 if (evt.from !== evt.to) {
                     // Rule 1: Once moved to InProgress or Completed, cannot go back to ToDo
                     if ((fromStatus === 'InProgress' || fromStatus === 'Completed') && targetStatus === 'ToDo') {
-                        alertify.error('Task cannot be moved back to ToDo once it is in progress or completed.');
-                        location.reload();
+                        alertify.alert('Validation Error', 'Task cannot be moved back to ToDo once it is in progress or completed.', function() {
+                            location.reload();
+                        });
                         return;
                     }
 
                     // Rule 4: Cannot move directly from ToDo to Completed
                     if (fromStatus === 'ToDo' && targetStatus === 'Completed') {
-                        alertify.error('Task must be in In Progress status before it can be Completed.');
-                        location.reload();
+                        alertify.alert('Validation Error', 'Task must be in In Progress status before it can be Completed.', function() {
+                            location.reload();
+                        });
                         return;
                     }
 
                     // Rule 2: Only Admin, BM, PM, TL can move Completed back to InProgress
                     var isManagement = window.WMS_USER ? window.WMS_USER.is_management : false;
                     if (fromStatus === 'Completed' && targetStatus === 'InProgress' && !isManagement) {
-                        alertify.error('Only administrators and managers can move completed tasks back to In Progress.');
-                        location.reload();
+                        alertify.alert('Access Denied', 'Only administrators and managers can move completed tasks back to In Progress.', function() {
+                            location.reload();
+                        });
                         return;
                     }
 
                     // Rule 3: Before moving to InProgress or Completed, show confirmation warning
                     if (targetStatus === 'InProgress' || targetStatus === 'Completed') {
+                        var title = 'Move Task';
                         var msg = 'Are you sure you want to move this task to ' + targetStatus + '? You will not be able to revert it back to ToDo.';
                         if (targetStatus === 'Completed') {
+                            title = 'Complete Task';
                             msg = 'Are you sure you want to complete this task? You will not be able to revert it back to ToDo.';
                         }
-                        if (!confirm(msg)) {
-                            location.reload();
-                            return;
-                        }
+                        
+                        alertify.confirm(title, msg, 
+                            function() {
+                                // OK button clicked: update task status
+                                updateTaskStatus(taskId, targetStatus);
+                            }, 
+                            function() {
+                                // Cancel button clicked: reload page to revert
+                                location.reload();
+                            }
+                        );
+                    } else {
+                        updateTaskStatus(taskId, targetStatus);
                     }
-
-                    updateTaskStatus(taskId, targetStatus);
                 }
             }
         });
@@ -66,19 +78,19 @@ $(document).ready(function () {
             success: function (response) {
                 if (response.success) {
                     alertify.success(response.message);
-                    // Optionally update progress bar in UI if moved to Completed
-                    if (status === 'Completed') {
-                        $('[data-id="' + taskId + '"] .progress-bar').css('width', '100%').attr('aria-valuenow', 100);
-                        $('[data-id="' + taskId + '"] .project-metrics__metric-group-item__value').text('100 %');
-                    }
+                    setTimeout(function() {
+                        location.reload();
+                    }, 800);
                 } else {
-                    alertify.error(response.message);
-                    location.reload(); // Reload to revert UI state if failed
+                    alertify.alert('Validation Error', response.message, function() {
+                        location.reload(); // Reload to revert UI state if failed
+                    });
                 }
             },
             error: function (xhr) {
-                alertify.error('Something went wrong!');
-                location.reload();
+                alertify.alert('Error', 'Something went wrong!', function() {
+                    location.reload();
+                });
             }
         });
     }

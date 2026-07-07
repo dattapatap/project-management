@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@section('styles')
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+@endsection
+
 @section('content')
 <div class="container-fluid py-4" style="background: #f1f5f9; min-height: 100vh;">
     <!-- 🚀 Premium Employee Dossier Header -->
@@ -8,59 +12,37 @@
             <h1 class="header-glow mb-2">{{ Auth::id() == $employee->id ? 'My Insights' : 'Employee Report' }}</h1>
             <p class="text-muted font-size-15 font-weight-medium">{{ Auth::id() == $employee->id ? 'Track your professional growth and performance metrics.' : 'Deep-dive intelligence for ' . $employee->name . '.' }}</p>
         </div>
-        <div class="col-lg-5 text-center">
+        <div class="col-lg-2 text-center">
             <form action="{{ url()->current() }}" method="GET" id="filterForm" class="d-flex flex-wrap justify-content-center align-items-center gap-2">
                 <input type="hidden" name="preset" id="presetInput" value="{{ $range['preset'] }}">
-                <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ $range['preset'] === 'daily' ? 'active' : '' }}" data-preset="daily">Today</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ $range['preset'] === 'weekly' ? 'active' : '' }}" data-preset="weekly">Week</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ in_array($range['preset'], ['monthly', 'yearly']) ? 'active' : '' }}" data-preset="monthly">Month</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm range-preset {{ $range['preset'] === 'custom' ? 'active' : '' }}" data-preset="custom">Custom</button>
-                </div>
-                <div id="yearMonthFilters" class="d-flex {{ $range['preset'] === 'custom' ? 'd-none' : '' }}">
-                    <select name="year" id="yearSelect" class="year-select mr-2">
-                        @for($y = date('Y'); $y >= date('Y')-5; $y--)
-                        <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>FY {{ $y }}</option>
-                        @endfor
-                    </select>
-                    <select name="month" id="monthSelect" class="year-select">
-                        @foreach($months as $m)
-                        <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ $m }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div id="customRangeFields" class="d-flex align-items-center {{ $range['preset'] === 'custom' ? '' : 'd-none' }}">
-                    <input type="date" name="date_from" id="dateFromInput" class="form-control form-control-sm mr-1" value="{{ request('date_from', $range['from']->toDateString()) }}">
-                    <input type="date" name="date_to" id="dateToInput" class="form-control form-control-sm mr-1" value="{{ request('date_to', $range['to']->toDateString()) }}">
-                    <button type="submit" class="btn btn-primary btn-sm" id="applyCustomRange">Apply</button>
+                <input type="hidden" name="date_from" id="dateFromInput" value="{{ request('date_from', $range['from']->toDateString()) }}">
+                <input type="hidden" name="date_to" id="dateToInput" value="{{ request('date_to', $range['to']->toDateString()) }}">
+                <div id="customRangeFields" class="d-flex align-items-center">
+                    <input type="text" id="dateRangePickerInput" class="form-control form-control-sm" style="width: 210px; height: 36px; border-radius: 8px; cursor: pointer; text-align: center; background: white;" readonly>
                 </div>
             </form>
             <small class="text-muted d-block mt-2">{{ $range['label'] }}</small>
         </div>
-        <div class="col-lg-3 text-right">
+        <div class="col-lg-6 text-right">
             @if(Auth::id() != $employee->id)
+            @if(!Auth::user()->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
             <a href="{{ route('reports.employee.pdf', array_merge(['id' => base64_encode($employee->id)], request()->all())) }}" class="btn btn-primary btn-rounded px-4 mr-2 font-weight-bold">
                 <i class="mdi mdi-download mr-1"></i> Download PDF
             </a>
+            @endif
             <a href="{{ route('reports.employees') }}" class="btn btn-outline-primary btn-rounded px-4 font-weight-bold">
                 <i class="mdi mdi-arrow-left mr-1"></i> Back
             </a>
             @else
             <div class="d-flex justify-content-end align-items-center">
+                @if(!Auth::user()->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
                 <a href="{{ route('reports.employee.pdf', array_merge(['id' => base64_encode($employee->id)], request()->all())) }}" class="btn btn-primary btn-rounded px-4 mr-3 font-weight-bold">
                     <i class="mdi mdi-download mr-1"></i> Download PDF
                 </a>
+                @endif
                 <a href="{{ url('/') }}" class="btn btn-outline-primary btn-rounded px-4 mr-3 font-weight-bold">
                     <i class="mdi mdi-arrow-left mr-1"></i> Back
                 </a>
-                <div class="px-3 py-2 bg-white rounded shadow-sm border border-light text-center mr-3">
-                    <p class="text-muted font-weight-bold mb-0 text-uppercase font-size-10">Last Task Log</p>
-                    <span class="font-weight-bold text-primary">{{ $logs->first() ? $logs->first()->created_at->diffForHumans() : 'No Logs' }}</span>
-                </div>
-                <div class="px-3 py-2 bg-white rounded shadow-sm border border-light text-center">
-                    <p class="text-muted font-weight-bold mb-0 text-uppercase font-size-10">System Access</p>
-                    <span class="font-weight-bold text-success">{{ $employee->last_login_at ? $employee->last_login_at->diffForHumans() : 'Never' }}</span>
-                </div>
             </div>
             @endif
         </div>
@@ -71,7 +53,7 @@
             <!-- 📂 Current Active Deliverables / Leads -->
             <div class="modern-card p-4 mb-4 bg-white shadow-sm border border-light" style="border-radius: 24px;">
                 <h6 class="font-weight-bold text-dark mb-3">
-                    <i class="mdi mdi-folder-clock-outline text-primary mr-2"></i> 
+                    <i class="mdi mdi-folder-clock-outline text-primary mr-2"></i>
                     @if($isSales) Active Working Leads @elseif($isCsd) Active Care Assignments @else Current Active Projects @endif
                 </h6>
                 <div class="active-deliverables-list" style="max-height: 250px; overflow-y: auto;">
@@ -220,26 +202,6 @@
                 </div>
             </div>
             @endif
-
-            <!-- 📈 Multi-Track Trend (Tasks vs Clients) -->
-            <div class="modern-card p-4 mb-4 border-0">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h5 class="font-weight-bold text-dark mb-0">Performance Trend</h5>
-                    <div class="d-flex align-items-center">
-                        @if($isSales)
-                        <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Assigned Leads</small></div>
-                        <div class="d-flex align-items-center"><span class="badge-dot bg-success mr-1"></span> <small class="font-weight-bold">Matured Clients</small></div>
-                        @elseif($isCsd)
-                        <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Communications</small></div>
-                        <div class="d-flex align-items-center"><span class="badge-dot bg-success mr-1"></span> <small class="font-weight-bold">Opportunities Won</small></div>
-                        @else
-                        <div class="mr-3 d-flex align-items-center"><span class="badge-dot bg-primary mr-1"></span> <small class="font-weight-bold">Tasks</small></div>
-                        <div class="d-flex align-items-center"><span class="badge-dot bg-warning mr-1"></span> <small class="font-weight-bold">Input Hours</small></div>
-                        @endif
-                    </div>
-                </div>
-                <div id="individual-delivery-trend" style="height: 280px;"></div>
-            </div>
         </div>
     </div>
 
@@ -301,7 +263,9 @@
                                 <td class="text-right">{{ $taskRow->log_count }}</td>
                             </tr>
                             @empty
-                            <tr><td colspan="5" class="text-center text-muted py-4">No task logs in this period.</td></tr>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No task logs in this period.</td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -312,65 +276,7 @@
 
     @endif
 
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="modern-card p-4 text-left">
-                <h5 class="font-weight-bold text-dark mb-3">Daily Breakdown</h5>
-                <div class="table-responsive">
-                    <table id="daily-breakdown-table" class="table table-sm modern-table mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-left">Date</th>
-                                <th class="text-center">@if($isSales) Matured Convs @elseif($isCsd) Tickets Resolved @else Completed Tasks @endif</th>
-                                <th class="text-center">@if($isSales) Callbacks Logged @elseif($isCsd) Communications @else Log Entries @endif</th>
-                                <th class="text-right">@if($isSales) Estimated Effort @elseif($isCsd) Calculated Effort @else Total Hours @endif</th>
-                                <th class="text-left">@if($isSales || $isCsd) Client Activities @else Tasks Worked (hours) @endif</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($odDailyBreakdown as $day)
-                            @php
-                                if (\Carbon\Carbon::parse($day->date)->isSunday()) {
-                                    continue;
-                                }
-                            @endphp
-                            <tr>
-                                <td class="font-weight-bold text-left">{{ $day->label }}</td>
-                                <td class="text-center">{{ $day->completed_tasks }}</td>
-                                <td class="text-center">{{ $day->log_entries }}</td>
-                                <td class="text-right font-weight-bold text-primary">
-                                    @if($isSales || $isCsd)
-                                    {{ $day->total_hours }} pts
-                                    @else
-                                    {{ $day->total_hours }} hrs
-                                    @endif
-                                </td>
-                                <td class="text-left">
-                                    @if($day->tasks->isEmpty())
-                                    <span class="text-muted">—</span>
-                                    @else
-                                    <div class="d-flex flex-wrap justify-content-start">
-                                        @foreach($day->tasks as $t)
-                                        <span class="badge badge-soft-info mr-1 mb-1" title="{{ $t->task_title }}" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                            {{ Str::limit($t->task_title, 25) }}
-                                            @if($isOd)
-                                            · {{ $t->hours }}h
-                                            @endif
-                                        </span>
-                                        @endforeach
-                                    </div>
-                                    @endif
-                                </td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="5" class="text-center text-muted py-4">No daily activity in this period.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- ☀️ Morning to Evening Activity (Daily Work Rhythm) -->
     <div class="row mt-4">
@@ -383,11 +289,11 @@
                     </div>
                     <div class="text-right">
                         @if($isOd)
-                            <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $odSummary['avg_hours_per_day'] ?? 0 }} Hrs / Day</span>
+                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $odSummary['avg_hours_per_day'] ?? 0 }} Hrs / Day</span>
                         @elseif($isSales)
-                            <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_callbacks_per_day'] ?? 0 }} Callbacks / Day</span>
+                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_callbacks_per_day'] ?? 0 }} Callbacks / Day</span>
                         @elseif($isCsd)
-                            <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_comms_per_day'] ?? 0 }} Comms / Day</span>
+                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_comms_per_day'] ?? 0 }} Comms / Day</span>
                         @endif
                     </div>
                 </div>
@@ -401,11 +307,11 @@
                                 <hr class="flex-grow-1 border-light">
                                 <span class="ml-3 badge badge-soft-secondary">
                                     @if($isOd)
-                                        {{ round($dayLogs->sum('time_spend'), 2) }} Working Hours
+                                    {{ round($dayLogs->sum('time_spend'), 2) }} Working Hours
                                     @elseif($isSales)
-                                        {{ $dayLogs->count() }} Callbacks logged
+                                    {{ $dayLogs->count() }} Callbacks logged
                                     @elseif($isCsd)
-                                        {{ $dayLogs->count() }} Actions logged
+                                    {{ $dayLogs->count() }} Actions logged
                                     @endif
                                 </span>
                             </div>
@@ -418,26 +324,26 @@
                                         <div>
                                             <span class="font-size-13 text-muted font-weight-bold">{{ Carbon\Carbon::parse($log->created_at)->format('h:i A') }}</span>
                                             @if($isOd)
-                                                <h6 class="font-weight-bold text-dark mt-1 mb-1">{{ $log->task->title ?? 'Untitled Task' }}</h6>
-                                                <p class="text-muted small mb-0">{{ $log->log_description }}</p>
+                                            <h6 class="font-weight-bold text-dark mt-1 mb-1">{{ $log->task->title ?? 'Untitled Task' }}</h6>
+                                            <p class="text-muted small mb-0">{{ $log->log_description }}</p>
                                             @elseif($isSales)
-                                                <h6 class="font-weight-bold text-dark mt-1 mb-1">Callback Status: <span class="badge badge-soft-info">{{ $log->status }}</span></h6>
-                                                <p class="text-muted small mb-0">{{ $log->remarks }}</p>
+                                            <h6 class="font-weight-bold text-dark mt-1 mb-1">Callback Status: <span class="badge badge-soft-info">{{ $log->status }}</span></h6>
+                                            <p class="text-muted small mb-0">{{ $log->remarks }}</p>
                                             @elseif($isCsd)
-                                                <h6 class="font-weight-bold text-dark mt-1 mb-1">Comm Channel: <span class="badge badge-soft-info">{{ ucfirst($log->type ?? 'Note') }}</span></h6>
-                                                <p class="text-muted small mb-0">{{ $log->subject ?? $log->remarks }}</p>
+                                            <h6 class="font-weight-bold text-dark mt-1 mb-1">Comm Channel: <span class="badge badge-soft-info">{{ ucfirst($log->type ?? 'Note') }}</span></h6>
+                                            <p class="text-muted small mb-0">{{ $log->subject ?? $log->remarks }}</p>
                                             @endif
                                         </div>
                                         <div class="text-right">
                                             @if($isOd)
-                                                <span class="badge badge-soft-info rounded-pill px-3">{{ $log->time_spend }} hrs</span>
-                                                <div class="small text-muted mt-1">{{ $log->task->project->clients->name ?? ($log->task->project->project_name ?? 'Internal') }}</div>
+                                            <span class="badge badge-soft-info rounded-pill px-3">{{ $log->time_spend }} hrs</span>
+                                            <div class="small text-muted mt-1">{{ $log->task->project->clients->name ?? ($log->task->project->project_name ?? 'Internal') }}</div>
                                             @elseif($isSales)
-                                                <span class="badge badge-soft-success rounded-pill px-3">Sales Action</span>
-                                                <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
+                                            <span class="badge badge-soft-success rounded-pill px-3">Sales Action</span>
+                                            <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
                                             @elseif($isCsd)
-                                                <span class="badge badge-soft-success rounded-pill px-3">CSD Log</span>
-                                                <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
+                                            <span class="badge badge-soft-success rounded-pill px-3">CSD Log</span>
+                                            <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
                                             @endif
                                         </div>
                                     </div>
@@ -459,6 +365,7 @@
         </div>
     </div>
 
+    @if(!$isOd)
     <div class="row mt-4">
         <!-- 📜 Recent Activity/Followup Logs -->
         <div class="col-xl-8">
@@ -631,26 +538,125 @@
             </div>
         </div>
     </div>
+    @endif
 
+
+    <!-- 📅 EOD Target History -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="modern-card p-4 bg-white shadow-sm border border-light" style="border-radius: 24px;">
+                <h5 class="font-weight-bold text-dark mb-3">
+                    <i class="mdi mdi-history text-primary mr-2"></i> Recent Day Closing History (Past 30 Submissions)
+                </h5>
+                <div class="table-responsive">
+                    <table class="table custom-table mb-0 align-middle">
+                        <thead>
+                            <tr class="text-uppercase font-size-11 letter-spacing-1 text-muted">
+                                <th style="padding-left: 20px;">Date</th>
+                                <th>Department</th>
+                                <th>Recorded Metrics</th>
+                                <th>Target Status</th>
+                                <th>Review Status</th>
+                                <th>Remarks & Feedback</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($pastClosings as $closing)
+                            <tr>
+                                <td style="padding-left: 20px;" class="font-weight-bold">
+                                    {{ \Carbon\Carbon::parse($closing->closing_date)->format('d M, Y (D)') }}
+                                </td>
+                                <td>
+                                    <span class="badge badge-soft-primary">{{ $closing->department }}</span>
+                                </td>
+                                <td>
+                                    @if($closing->department === 'NSD')
+                                    <span class="text-muted d-block small">STS: <strong>{{ $closing->achieved_metrics['sts'] ?? 0 }}</strong></span>
+                                    <span class="text-muted d-block small">DSR: <strong>{{ $closing->achieved_metrics['dsr'] ?? 0 }}</strong></span>
+                                    @elseif($closing->department === 'CSD')
+                                    <span class="text-muted d-block small">Daily Work Hours: <strong>{{ $closing->achieved_metrics['global_hours'] ?? 0 }}h</strong></span>
+                                    <span class="text-muted d-block small">Communications: <strong>{{ $closing->achieved_metrics['communications'] ?? 0 }}</strong></span>
+                                    @else
+                                    <span class="text-muted d-block small">Daily Work Hours: <strong>{{ $closing->achieved_metrics['global_hours'] ?? 0 }}h</strong></span>
+                                    <span class="text-muted d-block small">Task Hours: <strong>{{ $closing->achieved_metrics['hours'] ?? 0 }}h</strong></span>
+                                    <span class="text-muted d-block small">Tasks: <strong>{{ $closing->achieved_metrics['tasks'] ?? 0 }}</strong></span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($closing->target_status === 'Met')
+                                    <span class="badge badge-soft-success px-2.5 py-0.5">Target Met</span>
+                                    @elseif($closing->target_status === 'On Leave')
+                                    <span class="badge badge-soft-danger px-2.5 py-0.5">On Leave</span>
+                                    @else
+                                    <span class="badge badge-soft-warning px-2.5 py-0.5">Target Not Met</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($closing->status === 'Pending')
+                                    <span class="badge badge-soft-warning px-2.5 py-0.5">Pending Review</span>
+                                    @elseif($closing->status === 'Approved')
+                                    <span class="badge badge-soft-success px-2.5 py-0.5">Approved</span>
+                                    @else
+                                    <span class="badge badge-soft-danger px-2.5 py-0.5">Rejected</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($closing->tl_remarks)
+                                    <span class="text-dark font-size-12 d-block"><strong>Feedback:</strong> {{ $closing->tl_remarks }}</span>
+                                    @endif
+                                    @if($closing->executive_remarks)
+                                    <span class="text-muted font-size-11 d-block"><strong>My Notes:</strong> {{ $closing->executive_remarks }}</span>
+                                    @endif
+                                    @if(!$closing->tl_remarks && !$closing->executive_remarks)
+                                    <span class="text-muted font-italic font-size-12">—</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No day closing history logged.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 @endsection
 
 @section('scripts')
-<script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
+<script type="text/javascript" src="{{ asset('assets/js/moment.min.js') }}"></script>
+<script type="text/javascript" src="{{ asset('assets/js/datepicket.min.js') }}"></script>
+
 <script>
     $(document).ready(function() {
-        $('.range-preset').on('click', function() {
-            $('.range-preset').removeClass('active');
-            $(this).addClass('active');
-            const preset = $(this).data('preset');
-            $('#presetInput').val(preset);
-            $('#customRangeFields').toggleClass('d-none', preset !== 'custom');
-            $('#yearMonthFilters').toggleClass('d-none', preset === 'custom');
-            if (preset !== 'custom') {
-                $('#filterForm').submit();
+        // Date Range Picker Initialization
+        $('#dateRangePickerInput').daterangepicker({
+            startDate: moment("{{ $range['from']->toDateString() }}"),
+            endDate: moment("{{ $range['to']->toDateString() }}"),
+            locale: {
+                format: 'YYYY-MM-DD'
+            },
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
             }
+        }, function(start, end) {
+            $('#dateFromInput').val(start.format('YYYY-MM-DD'));
+            $('#dateToInput').val(end.format('YYYY-MM-DD'));
+            $('#presetInput').val('custom');
+            $('#filterForm').submit();
         });
+
+        // Set initial display text
+        $('#dateRangePickerInput').val(moment("{{ $range['from']->toDateString() }}").format('YYYY-MM-DD') + ' - ' + moment("{{ $range['to']->toDateString() }}").format('YYYY-MM-DD'));
 
         // 🔄 Filter Change Handlers
         $('#yearSelect').on('change', function() {
@@ -674,110 +680,15 @@
             }
         });
 
-        // Dual-Track Trend Chart for Individual
-        var trendOptions = {
-            series: [
-                @if($isSales)
-                {
-                    name: 'Assigned Leads',
-                    data: [@foreach($monthlyTrend as $m) {{ $m->clients }}, @endforeach]
-                },
-                {
-                    name: 'Matured Clients',
-                    data: [@foreach($monthlyTrend as $m) {{ $m->matured }}, @endforeach]
-                }
-                @elseif($isCsd)
-                {
-                    name: 'Communications',
-                    data: [@foreach($monthlyTrend as $m) {{ $m->communications }}, @endforeach]
-                },
-                {
-                    name: 'Opportunities Won',
-                    data: [@foreach($monthlyTrend as $m) {{ $m->opportunities_won }}, @endforeach]
-                }
-                @else
-                {
-                    name: 'Tasks',
-                    data: [@foreach($monthlyTrend as $m) {{ $m->tasks }}, @endforeach]
-                },
-                {
-                    name: 'Input Hours',
-                    data: [@foreach($monthlyTrend as $m) {{ $m->hours }}, @endforeach]
-                }
-                @endif
-            ],
-            chart: {
-                height: 280,
-                type: 'line',
-                toolbar: {
-                    show: false
-                }
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 4
-            },
-            colors: ['#6366f1', @if($isSales || $isCsd)
-                '#34c38f'
-                @else '#f1b44c'
-                @endif
-            ],
-            xaxis: {
-                categories: [@foreach($monthlyTrend as $m)
-                    "{{ $m->month }}", @endforeach
-                ],
-                labels: {
-                    style: {
-                        colors: '#94a3b8',
-                        fontWeight: 600
-                    }
-                }
-            },
-            yaxis: {
-                labels: {
-                    style: {
-                        colors: '#94a3b8',
-                        fontWeight: 600
-                    }
-                }
-            },
-            grid: {
-                borderColor: '#f1f5f9',
-                strokeDashArray: 5
-            },
-            markers: {
-                size: 5,
-                strokeWidth: 3,
-                hover: {
-                    size: 8
-                }
-            }
-        };
-        new ApexCharts(document.querySelector("#individual-delivery-trend"), trendOptions).render();
-
-        // Daily Breakdown DataTable Pagination
-        $('#daily-breakdown-table').DataTable({
-            pageLength: 10,
-            lengthMenu: [10, 20, 50, 100],
-            ordering: false,
-            dom: 'rtip',
-            language: {
-                paginate: {
-                    previous: "<i class='mdi mdi-chevron-left'>",
-                    next: "<i class='mdi mdi-chevron-right'>"
-                }
-            }
-        });
-
         // Daily Work Rhythm Custom Day-wise Pagination
         const itemsPerPage = 3;
         const $rhythmItems = $('.rhythm-day-item');
         const numItems = $rhythmItems.length;
-        
+
         if (numItems > itemsPerPage) {
             const numPages = Math.ceil(numItems / itemsPerPage);
             const $paginationContainer = $('#rhythm-pagination-container');
-            
+
             let paginationHtml = '<ul class="pagination pagination-rounded mb-0">';
             paginationHtml += '<li class="page-item disabled" id="rhythm-prev"><a class="page-link" href="javascript:void(0);"><i class="mdi mdi-chevron-left"></i></a></li>';
             for (let i = 1; i <= numPages; i++) {
@@ -786,44 +697,46 @@
             paginationHtml += `<li class="page-item" id="rhythm-next"><a class="page-link" href="javascript:void(0);"><i class="mdi mdi-chevron-right"></i></a></li>`;
             paginationHtml += '</ul>';
             $paginationContainer.html(paginationHtml);
-            
+
             let currentPage = 1;
-            
+
             function showPage(page) {
                 currentPage = page;
                 $rhythmItems.hide();
                 $rhythmItems.slice((page - 1) * itemsPerPage, page * itemsPerPage).fadeIn(200);
-                
-                $('.daily-rhythm-timeline-wrapper').animate({ scrollTop: 0 }, 100);
+
+                $('.daily-rhythm-timeline-wrapper').animate({
+                    scrollTop: 0
+                }, 100);
                 $('.rhythm-page-link').removeClass('active');
                 $(`.rhythm-page-link[data-page="${page}"]`).addClass('active');
-                
+
                 if (page === 1) {
                     $('#rhythm-prev').addClass('disabled');
                 } else {
                     $('#rhythm-prev').removeClass('disabled');
                 }
-                
+
                 if (page === numPages) {
                     $('#rhythm-next').addClass('disabled');
                 } else {
                     $('#rhythm-next').removeClass('disabled');
                 }
             }
-            
+
             showPage(1);
-            
+
             $(document).on('click', '.rhythm-page-link', function() {
                 const page = parseInt($(this).data('page'));
                 showPage(page);
             });
-            
+
             $(document).on('click', '#rhythm-prev', function() {
                 if (currentPage > 1) {
                     showPage(currentPage - 1);
                 }
             });
-            
+
             $(document).on('click', '#rhythm-next', function() {
                 if (currentPage < numPages) {
                     showPage(currentPage + 1);
@@ -840,19 +753,23 @@
         border-radius: 50%;
         display: inline-block;
     }
+
     /* Sleek custom scrollbar */
     .table-responsive::-webkit-scrollbar {
         width: 6px;
         height: 6px;
     }
+
     .table-responsive::-webkit-scrollbar-track {
         background: #f1f5f9;
         border-radius: 4px;
     }
+
     .table-responsive::-webkit-scrollbar-thumb {
         background: #cbd5e1;
         border-radius: 4px;
     }
+
     .table-responsive::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
     }
