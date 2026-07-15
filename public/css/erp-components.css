@@ -880,7 +880,7 @@
 .table-premium thead th {
     border: none; color: var(--erp-text-muted); font-weight: 600;
     font-size: var(--erp-font-xs); text-transform: uppercase;
-    padding: 10px 14px; background: #f1f5f9; border-radius: 6px;
+    padding: 10px 14px; background: #f1f5f9; border-radius: 0px;
 }
 .table-premium tbody td { padding: 12px 14px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 
@@ -1158,13 +1158,11 @@
 }
 
 .companies-wrapper #datatable thead th {
-    background: #f8f9fc !important;
     border-bottom: 2px solid var(--erp-border) !important;
     font-weight: 700;
     text-transform: uppercase;
     font-size: var(--erp-font-xs);
     letter-spacing: 0.04em;
-    color: var(--erp-text-muted);
     padding: 12px 14px !important;
 }
 

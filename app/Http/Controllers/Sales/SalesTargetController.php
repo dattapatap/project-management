@@ -33,7 +33,8 @@ class SalesTargetController extends Controller
         $subordinates = collect();
         if ($user->hasRole(['Admin', 'Branch-Manager'])) {
             // NSD: Sales Executives + NSD Team Leaders (dept=1)
-            $nsdUsers = User::where('status', 'Active')
+            $nsdQuery = User::with(['departments.dept', 'roles'])
+                ->where('status', 'Active')
                 ->where('id', '!=', $user->id)
                 ->where(function ($q) {
                     $q->whereHas('roles', function ($r) {
@@ -46,11 +47,11 @@ class SalesTargetController extends Controller
                                 $d->where('department', 1); // NSD
                             });
                         });
-                })
-                ->get();
+                });
 
             // CSD: CSD Executives + CSD Team Leaders (dept=3)
-            $csdUsers = User::where('status', 'Active')
+            $csdQuery = User::with(['departments.dept', 'roles'])
+                ->where('status', 'Active')
                 ->where('id', '!=', $user->id)
                 ->where(function ($q) {
                     $q->whereHas('roles', function ($r) {
@@ -63,37 +64,49 @@ class SalesTargetController extends Controller
                                 $d->where('department', 3); // CSD
                             });
                         });
-                })
-                ->get();
+                });
 
-            $subordinates = $nsdUsers->merge($csdUsers)->unique('id')->values();
+            // Filter by branch if Branch-Manager
+            if ($user->hasRole('Branch-Manager')) {
+                $branchUserIds = app(\App\Services\BranchScopeService::class)->getBranchUserIds($user);
+                $nsdQuery->whereIn('id', $branchUserIds);
+                $csdQuery->whereIn('id', $branchUserIds);
+            }
+
+            $subordinates = $nsdQuery->get()->merge($csdQuery->get())->unique('id')->values();
         }
 
-        $subordinateTargets = [];
+        // Map targets for subordinates for the selected month & year
         if ($subordinates->isNotEmpty()) {
             $subordinateIds = $subordinates->pluck('id')->toArray();
-            $subordinateTargetsRaw = \App\Models\SalesTarget::with('user')->whereIn('user_id', $subordinateIds)
+            $subordinateTargetsRaw = \App\Models\SalesTarget::whereIn('user_id', $subordinateIds)
+                ->where('period_month', $selectedMonth)
                 ->where('period_year', $selectedYear)
-                ->orderBy('period_month', 'desc')
-                ->get();
+                ->get()
+                ->groupBy('user_id');
 
-            foreach ($subordinateTargetsRaw as $tgt) {
-                $tgt->achieved_value = $this->targetService->calculateAchievedValue(
-                    $tgt->user_id,
-                    $tgt->target_type,
-                    $tgt->period_month,
-                    $tgt->period_year
-                );
-                $tgt->save();
-            }
-            $subordinateTargets = $subordinateTargetsRaw;
+            $subordinates = $subordinates->map(function ($sub) use ($subordinateTargetsRaw, $selectedMonth, $selectedYear) {
+                $userTargets = $subordinateTargetsRaw->get($sub->id, collect());
+
+                foreach ($userTargets as $tgt) {
+                    $tgt->achieved_value = $this->targetService->calculateAchievedValue(
+                        $tgt->user_id,
+                        $tgt->target_type,
+                        $tgt->period_month,
+                        $tgt->period_year
+                    );
+                    $tgt->save();
+                }
+
+                $sub->monthly_targets = $userTargets;
+                return $sub;
+            });
         }
 
         return view('sales.targets.index', compact(
             'targets',
             'leaderboard',
             'subordinates',
-            'subordinateTargets',
             'selectedMonth',
             'selectedYear'
         ));

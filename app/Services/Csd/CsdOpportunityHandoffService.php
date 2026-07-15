@@ -11,8 +11,8 @@ class CsdOpportunityHandoffService
     {
     }
 
-    public function notifySalesOnWon(CsdOpportunity $opportunity): void
+    public function notifySalesOnWon(CsdOpportunity $opportunity, ?int $salesRepId = null): void
     {
-        $this->engagements->spawnFromWonOpportunity($opportunity);
+        $this->engagements->spawnFromWonOpportunity($opportunity, $salesRepId);
     }
 }

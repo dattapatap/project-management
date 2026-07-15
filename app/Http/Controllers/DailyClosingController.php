@@ -25,8 +25,11 @@ class DailyClosingController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $todayDate = Carbon::today()->format('Y-m-d');
+        if ($user->hasRole(['Admin', 'Branch-Manager'])) {
+            return redirect()->route('day-closing.approvals');
+        }
 
+        $todayDate = Carbon::today()->format('Y-m-d');
         $performanceService = new UserPerformanceService();
         $deptType = $performanceService->departmentType($user);
 
@@ -201,6 +204,14 @@ class DailyClosingController extends Controller
         $user = Auth::user();
         $submission = DayClosing::findOrFail($id);
 
+        if ($user->hasRole('Team-Leader') && !$user->hasRole(['Admin', 'Branch-Manager'])) {
+            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+            $isMember = DB::table('team_members')->whereIn('team', $teams)->where('status', true)->where('user', $submission->user_id)->exists();
+            if (!$isMember) {
+                return redirect()->route('day-closing.approvals')->with('error', 'Unauthorized. You can only approve day closings for members of your own team.');
+            }
+        }
+
         if ($submission->user->hasRole('Team-Leader')) {
             if (!$user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager'])) {
                 return redirect()->route('day-closing.approvals')->with('error', 'Only Project Managers and Administrators can approve or reject a Team Leader\'s day closing.');
@@ -225,6 +236,14 @@ class DailyClosingController extends Controller
     {
         $user = Auth::user();
         $submission = DayClosing::findOrFail($id);
+
+        if ($user->hasRole('Team-Leader') && !$user->hasRole(['Admin', 'Branch-Manager'])) {
+            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+            $isMember = DB::table('team_members')->whereIn('team', $teams)->where('status', true)->where('user', $submission->user_id)->exists();
+            if (!$isMember) {
+                return redirect()->route('day-closing.approvals')->with('error', 'Unauthorized. You can only reject day closings for members of your own team.');
+            }
+        }
 
         if ($submission->user->hasRole('Team-Leader')) {
             if (!$user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager'])) {

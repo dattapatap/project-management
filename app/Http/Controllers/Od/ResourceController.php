@@ -22,6 +22,12 @@ class ResourceController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $deptId = optional($user->departments)->department;
+
+        // Restriction: Only Admin, BM, PM, or users in OD department (dept 2) can access resource allocation
+        if (!$user->hasRole(['Admin', 'Project-Manager', 'Branch-Manager']) && $deptId != 2) {
+            abort(403, 'Unauthorized action. Resource allocation is strictly for the Operations Department (OD).');
+        }
 
         // Determine team scope & department scope
         $teamId = null;
@@ -30,7 +36,7 @@ class ResourceController extends Controller
         if ($user->hasRole('Team-Leader')) {
             $member = TeamMembers::where('user', $user->id)
                 ->where('status', true)
-                ->whereHas('team', function($q) use ($selectedDeptId) {
+                ->whereHas('team', function ($q) use ($selectedDeptId) {
                     $q->where('department', $selectedDeptId);
                 })
                 ->first();
@@ -64,10 +70,12 @@ class ResourceController extends Controller
             ? $this->projectRepo->getWorkloadByTeamMembers($memberIds)
             : collect();
 
-        // Build list of teams for filter (Admin/PM/BM only)
+        // Build list of teams for filter (Admin/PM/BM only) - strictly belonging to OD (dept 2)
         $teams = [];
         if ($user->hasRole(['Admin', 'Project-Manager', 'Branch-Manager'])) {
-            $teams = Teams::with('teammembers.member')->get();
+            $teams = Teams::with('teammembers.member')
+                ->where('department', $selectedDeptId)
+                ->get();
         }
 
         return view('components.projects.resources', compact(

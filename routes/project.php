@@ -11,6 +11,7 @@ Route::prefix('projects')->middleware(['auth', 'restrict.wms'])->group(function(
     Route::get('/search', [ProjectController::class, 'search']);
     Route::get('/timeline', [ProjectController::class, 'timeline'])->name('projects.timeline');
     Route::get('/resources', [\App\Http\Controllers\Od\ResourceController::class, 'index'])->name('projects.resources');
+    Route::get('/active-list', [ProjectController::class, 'activeProjectsList'])->name('projects.active-list');
 
     Route::get('/taskboard/{project}', [TaskController::class, 'index']);
     Route::get('/taskboard/{task}/edit', [TaskController::class, 'edit']);
@@ -19,7 +20,15 @@ Route::prefix('projects')->middleware(['auth', 'restrict.wms'])->group(function(
     Route::post('/taskboard/move', [TaskController::class, 'moveTask']);
     Route::post('/taskboard/changestatus', [TaskController::class, 'changestatus']);
 
-    Route::post('/taskboard/addLog', [TaskController::class, 'addTaskLog']);
+    // Task Timer Routes
+    Route::post('/tasks/{task}/timer/start', [TaskController::class, 'startTimer'])->name('tasks.timer.start');
+    Route::post('/tasks/{task}/timer/pause', [TaskController::class, 'pauseTimer'])->name('tasks.timer.pause');
+
+    // Global Shift Timer Routes
+    Route::get('/global-timer/status', [\App\Http\Controllers\GlobalTimerController::class, 'status'])->name('global-timer.status');
+    Route::post('/global-timer/start', [\App\Http\Controllers\GlobalTimerController::class, 'start'])->name('global-timer.start');
+    Route::post('/global-timer/pause', [\App\Http\Controllers\GlobalTimerController::class, 'pause'])->name('global-timer.pause');
+    Route::post('/global-timer/stop', [\App\Http\Controllers\GlobalTimerController::class, 'stop'])->name('global-timer.stop');
 
     Route::get('/task/{taskid}/history', [TaskController::class, 'show']);
     Route::post('/task/progress', [TaskController::class, 'updateProgress']);

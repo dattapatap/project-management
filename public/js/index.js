@@ -1,13 +1,6 @@
 let base_url = $('meta[name="app_url"]').attr('content')
 
-let local = localStorage.getItem("vertical-menu");
-if(local == 'true' ){
-    $("body").removeClass("vertical-collpsed");
-    local =!local
-}else{
-    $("body").toggleClass("vertical-collpsed");
-    local =!local
-}
+$("body").removeClass("vertical-collpsed");
 
 $(document).ready(function(){
 
@@ -23,19 +16,5 @@ $(document).ready(function(){
                 },
             });
     });
-
-    $("#vertical-menu-btn").on("click", function() {
-        let local = localStorage.getItem("vertical-menu");
-        if(local == 'true' ){
-            localStorage.setItem("vertical-menu", "false");
-            $("body").toggleClass("sidebar-enable")
-            $("body").toggleClass("vertical-collpsed");
-        }else{
-            localStorage.setItem("vertical-menu", "true");
-            $("body").toggleClass("sidebar-enable")
-            $("body").removeClass("vertical-collpsed");
-
-        }
-    })
 
 });

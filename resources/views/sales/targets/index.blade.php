@@ -44,10 +44,10 @@
                         <i class="mdi mdi-account-group mr-2 text-primary"></i>Team Targets ({{ $selectedYear }})
                     </h5>
 
-                    @if(empty($subordinateTargets) || count($subordinateTargets) == 0)
+                    @if(empty($subordinates) || $subordinates->isEmpty())
                     <div class="text-center py-5 text-muted">
                         <i class="mdi mdi-alert-circle-outline display-4 text-warning"></i>
-                        <p class="mt-2 font-weight-semibold font-size-13">No team member targets configured for {{ $selectedYear }} yet.</p>
+                        <p class="mt-2 font-weight-semibold font-size-13">No team members available under your branch.</p>
                     </div>
                     @else
                     <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
@@ -55,52 +55,67 @@
                             <thead class="thead-light" style="position: sticky; top: 0; z-index: 1; background: #f8fafc;">
                                 <tr>
                                     <th>Member</th>
-                                    <th>Type</th>
-                                    <th>Month</th>
-                                    <th>Target</th>
-                                    <th>Achieved</th>
-                                    <th class="text-center">Progress</th>
+                                    <th>Monthly Targets details ({{ date('F', mktime(0, 0, 0, $selectedMonth, 1)) }})</th>
                                 </tr>
                             </thead>
                             <tbody class="text-dark">
-                                @foreach($subordinateTargets as $subTgt)
-                                @php
-                                $percent = $subTgt->target_value > 0 ? min(100, round(($subTgt->achieved_value / $subTgt->target_value) * 100)) : 0;
-                                $monthName = date('F', mktime(0, 0, 0, $subTgt->period_month, 1));
-                                $typeLabel = [
-                                    'revenue' => 'Revenue (₹)',
-                                    'conversions' => 'Conversions',
-                                    'meetings' => 'Meetings'
-                                ][$subTgt->target_type] ?? $subTgt->target_type;
-
-                                $progressColor = 'bg-primary';
-                                if ($percent >= 100) $progressColor = 'bg-success';
-                                elseif ($percent >= 50) $progressColor = 'bg-warning';
-                                else $progressColor = 'bg-danger';
-                                @endphp
+                                @foreach($subordinates as $sub)
                                 <tr>
-                                    <td style="padding: 10px;">
-                                        <h6 class="font-size-13 font-weight-bold mb-0">{{ optional($subTgt->user)->name }}</h6>
+                                    <td style="padding: 10px; width: 35%; vertical-align: top;">
+                                        <h6 class="font-size-13 font-weight-bold mb-0 text-dark">{{ $sub->name }}</h6>
+                                        <small class="text-muted d-block mt-1">
+                                            @if($sub->departments && $sub->departments->dept)
+                                                <span class="badge badge-soft-primary text-uppercase">{{ $sub->departments->dept->name }}</span>
+                                            @endif
+                                            {{ $sub->getRoleNames()->first() ?? '' }}
+                                        </small>
                                     </td>
-                                    <td style="padding: 10px;">
-                                        <span class="badge badge-soft-info">{{ $typeLabel }}</span>
-                                    </td>
-                                    <td style="padding: 10px;">
-                                        <span class="text-muted font-weight-semibold">{{ $monthName }}</span>
-                                    </td>
-                                    <td style="padding: 10px;" class="font-weight-semibold">
-                                        {{ $subTgt->target_type == 'revenue' ? '₹' : '' }}{{ number_format($subTgt->target_value) }}
-                                    </td>
-                                    <td style="padding: 10px;" class="font-weight-semibold text-success">
-                                        {{ $subTgt->target_type == 'revenue' ? '₹' : '' }}{{ number_format($subTgt->achieved_value) }}
-                                    </td>
-                                    <td style="padding: 10px; min-width: 120px;">
-                                        <div class="d-flex align-items-center">
-                                            <span class="mr-2 font-weight-bold text-dark font-size-11">{{ $percent }}%</span>
-                                            <div class="progress flex-grow-1" style="height: 6px; background: #e2e8f0; border-radius: 3px;">
-                                                <div class="progress-bar {{ $progressColor }}" role="progressbar" style="width: {{ $percent }}%"></div>
-                                            </div>
+                                    <td style="padding: 10px; vertical-align: top;">
+                                        @if(!isset($sub->monthly_targets) || $sub->monthly_targets->isEmpty())
+                                        <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+                                            <span class="text-muted font-size-12 font-italic"><i class="mdi mdi-information-outline mr-1"></i>No targets set for this month</span>
+                                            <button class="btn btn-soft-primary btn-xs font-weight-bold px-2 py-0.5 rounded" onclick="openSetTargetModal({{ $sub->id }}, '{{ $sub->name }}')">
+                                                <i class="mdi mdi-plus mr-0.5"></i>Set Target
+                                            </button>
                                         </div>
+                                        @else
+                                        <table class="table table-sm mb-0 table-borderless">
+                                            <tbody>
+                                                @foreach($sub->monthly_targets as $tgt)
+                                                @php
+                                                $percent = $tgt->target_value > 0 ? min(100, round(($tgt->achieved_value / $tgt->target_value) * 100)) : 0;
+                                                $typeLabel = [
+                                                    'revenue' => 'Revenue',
+                                                    'conversions' => 'Conversions',
+                                                    'meetings' => 'Meetings'
+                                                ][$tgt->target_type] ?? $tgt->target_type;
+
+                                                $progressColor = 'bg-primary';
+                                                if ($percent >= 100) $progressColor = 'bg-success';
+                                                elseif ($percent >= 50) $progressColor = 'bg-warning';
+                                                else $progressColor = 'bg-danger';
+                                                @endphp
+                                                <tr style="background: transparent;">
+                                                    <td style="width: 25%; font-size: 11.5px; font-weight: 600; padding: 3px 0;">{{ $typeLabel }}</td>
+                                                    <td style="width: 30%; font-size: 11.5px; font-weight: 600; padding: 3px 0;" class="text-muted">
+                                                        Tgt: {{ $tgt->target_type == 'revenue' ? '₹' : '' }}{{ number_format($tgt->target_value) }}
+                                                    </td>
+                                                    <td style="width: 25%; font-size: 11.5px; font-weight: 600; padding: 3px 0;" class="text-success">
+                                                        Ach: {{ $tgt->target_type == 'revenue' ? '₹' : '' }}{{ number_format($tgt->achieved_value) }}
+                                                    </td>
+                                                    <td style="width: 20%; padding: 3px 0; text-align: right;">
+                                                        <div class="d-flex align-items-center justify-content-end">
+                                                            <span class="mr-1.5 font-weight-bold text-dark font-size-10">{{ $percent }}%</span>
+                                                            <div class="progress" style="height: 4px; background: #e2e8f0; border-radius: 2px; width: 45px; margin-bottom: 0;">
+                                                                <div class="progress-bar {{ $progressColor }}" role="progressbar" style="width: {{ $percent }}%"></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
                                     </td>
                                 </tr>
                                 @endforeach
@@ -306,6 +321,11 @@
 
 @section('scripts')
 <script>
+    function openSetTargetModal(userId, userName) {
+        $('#setTargetForm select[name="user_id"]').val(userId);
+        $('#setTargetModal').modal('show');
+    }
+
     $(document).ready(function() {
         $('#setTargetForm').on('submit', function(e) {
             e.preventDefault();

@@ -28,9 +28,12 @@ use App\Http\Controllers\Csd\CsdTeamReportController;
 use App\Http\Controllers\Reports\AdvancedReportController;
 use App\Http\Controllers\Reports\EmployeeReportController;
 use App\Http\Controllers\Reports\OperationsReportController;
+use App\Http\Controllers\DailyClosingController;
+use App\Http\Controllers\DailyTargetController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
 
 
 
@@ -40,13 +43,17 @@ Route::get('/cache-clear', function () {
     Artisan::call('view:clear');
     Artisan::call('route:clear');
     Artisan::call('optimize:clear');
+
+    Artisan::call('config:cache');
+    Artisan::call('view:cache');
+
     return "All Laravel caches and configurations cleared successfully!";
 });
 
-Route::get('/storage-link', function () {
-    Artisan::call('storage:link');
-    return "Storage folder symlink created successfully on the server!";
-});
+// Route::get('/storage-link', function () {
+//     Artisan::call('storage:link');
+//     return "Storage folder symlink created successfully on the server!";
+// });
 
 
 
@@ -166,10 +173,7 @@ Route::group(['middleware' => ['auth', 'restrict.sales']], function () {
     Route::put('sales/catalog/{id}', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'update'])->name('sales.catalog.update');
     Route::post('sales/catalog/{id}/toggle', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'toggleStatus'])->name('sales.catalog.toggle');
 
-    // Sales Target Planner & Leaderboards
-    Route::get('sales/targets', [\App\Http\Controllers\Sales\SalesTargetController::class, 'index'])->name('sales.targets.index');
-    Route::post('sales/targets', [\App\Http\Controllers\Sales\SalesTargetController::class, 'store'])->name('sales.targets.store');
-    Route::get('sales/leaderboard', [\App\Http\Controllers\Sales\SalesTargetController::class, 'leaderboard'])->name('sales.targets.leaderboard');
+
 
     // Sales Activity Calendar
     Route::get('sales/calendar', [\App\Http\Controllers\Sales\SalesActivityController::class, 'index'])->name('sales.calendar.index');
@@ -200,6 +204,10 @@ Route::group(['middleware' => ['auth', 'restrict.wms']], function () {
     Route::get('/payments', [ClientPaymentsController::class, 'index']);
     Route::get('/payments/getallpayments', [ClientPaymentsController::class, 'getallpayments']);
     Route::get('/payments/getpayments-by-package', [ClientPaymentsController::class, 'getPaymentsByPackage']);
+
+    // Operations Task Calendar
+    Route::get('/operations/calendar', [\App\Http\Controllers\OperationsCalendarController::class, 'index'])->name('operations.calendar.index');
+    Route::get('/operations/calendar/events', [\App\Http\Controllers\OperationsCalendarController::class, 'events'])->name('operations.calendar.events');
 });
 
 // 🔒 CSD / Customer Service Department Protected Routes
@@ -313,4 +321,37 @@ Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
     // Legacy domains URL → CSD Renewals
     Route::redirect('/domains', '/csd/renewals');
     Route::redirect('/domains/getalldomains', '/csd/renewals');
+});
+
+Route::group(['middleware' => ['auth']], function () {
+    // Day Closing Routes for Employees
+    Route::get('/day-closing', [DailyClosingController::class, 'index'])->name('day-closing.index');
+    Route::post('/day-closing', [DailyClosingController::class, 'submit'])->name('day-closing.submit');
+
+    // Day Closing Approval Routes for Team Leaders & Admins
+    Route::group(['middleware' => ['role:Admin|Branch-Manager|Team-Leader']], function () {
+        Route::get('/day-closing/approvals', [DailyClosingController::class, 'approvals'])->name('day-closing.approvals');
+        Route::post('/day-closing/submit-leave-on-behalf', [DailyClosingController::class, 'submitLeaveOnBehalf'])->name('day-closing.submit-leave-on-behalf');
+        Route::post('/day-closing/{id}/approve', [DailyClosingController::class, 'approve'])->name('day-closing.approve');
+        Route::post('/day-closing/{id}/reject', [DailyClosingController::class, 'reject'])->name('day-closing.reject');
+    });
+
+    // Manage Daily Targets (Restricted to Admins and Branch-Managers only)
+    Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
+        Route::get('/daily-targets', [DailyTargetController::class, 'index'])->name('daily-targets.index');
+        Route::get('/daily-targets/configure', [DailyTargetController::class, 'configure'])->name('daily-targets.configure');
+        Route::post('/daily-targets/store', [DailyTargetController::class, 'store'])->name('daily-targets.store');
+        Route::get('/daily-targets/data', [DailyTargetController::class, 'getData'])->name('daily-targets.data');
+    });
+
+    // Sales Target Planner & Leaderboards (viewable by Sales, CSD, Admin, Branch-Manager, Team-Leaders)
+    Route::group(['middleware' => ['role:Admin|Branch-Manager|Sales-Executive|CSD-Executive|Team-Leader']], function () {
+        Route::get('sales/targets', [\App\Http\Controllers\Sales\SalesTargetController::class, 'index'])->name('sales.targets.index');
+        Route::get('sales/leaderboard', [\App\Http\Controllers\Sales\SalesTargetController::class, 'leaderboard'])->name('sales.targets.leaderboard');
+    });
+
+    // Sales Target Creation (Restricted to Admins and Branch-Managers only)
+    Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
+        Route::post('sales/targets', [\App\Http\Controllers\Sales\SalesTargetController::class, 'store'])->name('sales.targets.store');
+    });
 });

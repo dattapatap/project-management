@@ -25,6 +25,7 @@ class DepartmentProjectsController extends Controller
     public function createNewProject(Request $request){
 
         $rules = array(
+            'project_name'  => 'required|string',
             'department'    => 'required|numeric',
             'category'      => 'required|numeric',
             'package'       => 'nullable|numeric',
@@ -58,8 +59,6 @@ class DepartmentProjectsController extends Controller
                     ]);
                 }
 
-                $projectnm   = DB::table('project_sub_categories')->where('id', $request->category )->first();
-
                 // Assign Project to Department
                 $dept   = new DepartmentProjects();
                 $dept->client           =   $request->post('clientsid');
@@ -69,7 +68,7 @@ class DepartmentProjectsController extends Controller
                 $dept->assigned_by      =   $userid;
                 $dept->assigned_to      =   $request->team_leader;
                 $dept->created_date     =   Carbon::now();
-                $dept->project_name     =   $projectnm->name;
+                $dept->project_name     =   $request->project_name;
                 $dept->start_date       =   Carbon::parse($request->start_date)->format('Y-m-d h:i');
                 $dept->end_date         =   Carbon::parse($request->end_date)->format('Y-m-d h:i');
                 $dept->status           =   "ToDo";

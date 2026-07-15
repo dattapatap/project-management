@@ -158,18 +158,15 @@ $(document).ready(function () {
             columns: [
                 { data: 'DT_RowIndex', name: 'id', orderable: true, searchable: false, className: 'text-center' },
                 { data: 'name', name: 'name', orderable: true, searchable: true },
-                ...(isPM !== 'true' && isPM !== true ? [{ data: 'contactinfo', name: 'cont_person', orderable: false, searchable: true, className: 'text-center' }] : []),
                 { data: 'mobile', name: 'mobile', orderable: false, searchable: true, className: 'text-center' },
-                { data: 'city', name: 'city', orderable: true, searchable: true, className: 'text-center' },
                 ...(isAuthority === 'true' || isAuthority === true ? [
-                    { data: 'created_by_name', name: 'creator.name', orderable: true, searchable: true, className: 'text-center' },
-                    { data: 'following_by_name', name: 'referral.name', orderable: true, searchable: true, className: 'text-center' }
+                    { data: 'attribution', name: 'creator.name', orderable: true, searchable: true, className: 'text-center' }
                 ] : []),
-                { data: 'status', name: 'status', orderable: true, searchable: true, className: 'text-center' },
+                { data: 'status_source', name: 'status', orderable: true, searchable: true, className: 'text-center' },
                 { data: 'created_at', name: 'created_at', orderable: true, searchable: true, className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' },
             ],
-            order: [[isAuthority === 'true' || isAuthority === true ? 8 : 6, 'desc']], // Dynamic Sort index
+            order: [[isAuthority === 'true' || isAuthority === true ? 5 : 4, 'desc']], // Dynamic Sort index
             drawCallback: function () {
                 $('[data-toggle="tooltip"]').tooltip();
             }
@@ -214,7 +211,7 @@ $(document).ready(function () {
                         }
                         let creatorName = h.referel ? h.referel.name : 'System';
                         let remarks = h.remarks ? h.remarks : 'N/A';
-                        
+
                         let dateStr = h.created_at ? new Date(h.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
                         let timeCreated = h.created_at ? ' ' + new Date(h.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
 

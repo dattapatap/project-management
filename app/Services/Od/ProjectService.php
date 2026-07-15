@@ -27,13 +27,13 @@ class ProjectService
     ) {
     }
 
-    public function getProjectIndexData(User $user, ?string $status = null, ?int $department = null, int $perPage = 50): array
+    public function getProjectIndexData(User $user, ?string $status = null, ?int $department = null, int $perPage = 50, ?int $team = null): array
     {
-        $query = $this->projectRepo->buildIndexQuery($user, $status, $department);
+        $query = $this->projectRepo->buildIndexQuery($user, $status, $department, $team);
         $projects = $this->projectRepo->paginate($query, $perPage);
 
         // Compute stats using same user scope and department filter
-        $statsQuery = $this->projectRepo->buildIndexQuery($user, null, $department);
+        $statsQuery = $this->projectRepo->buildIndexQuery($user, null, $department, $team);
         $stats = $this->projectRepo->computeStats($statsQuery);
 
         return [
@@ -45,7 +45,7 @@ class ProjectService
     /**
      * Search projects by query and compute stats.
      */
-    public function searchProjects(User $user, ?string $filter, int $perPage = 50, ?int $department = null): array
+    public function searchProjects(User $user, ?string $filter, int $perPage = 50, ?int $department = null, ?int $team = null): array
     {
         $query = $this->projectRepo->withStandardRelations();
 
@@ -58,6 +58,12 @@ class ProjectService
         if ($department) {
             $query->whereHas('projectCategory', function ($q) use ($department) {
                 $q->where('dept_id', $department);
+            });
+        }
+
+        if ($team) {
+            $query->whereHas('project_team', function ($q) use ($team) {
+                $q->where('teamid', $team);
             });
         }
 

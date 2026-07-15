@@ -798,3 +798,24 @@ body {
     border-color: #378276 !important;
     box-shadow: 0 0 0 3px rgba(55, 130, 118, 0.2) !important;
 }
+
+/* ── Global table header custom styling ── */
+.thead-custom-teal th,
+.thead-custom-teal td,
+.thead-custom-teal > tr > th {
+    background: #48A596 !important;
+    background-color: #48A596 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 2px solid #2a6b62 !important;
+    vertical-align: middle !important;
+}
+
+.thead-custom-teal th *,
+.thead-custom-teal td * {
+    color: #ffffff !important;
+}

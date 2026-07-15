@@ -49,7 +49,7 @@ class ClientEngagementService
     /**
      * CSD opportunity marked won → child engagement for NSD commercial closure.
      */
-    public function spawnFromWonOpportunity(CsdOpportunity $opportunity): ClientEngagement
+    public function spawnFromWonOpportunity(CsdOpportunity $opportunity, ?int $salesRepId = null): ClientEngagement
     {
         if ($opportunity->engagement_id) {
             return ClientEngagement::findOrFail($opportunity->engagement_id);
@@ -59,7 +59,7 @@ class ClientEngagementService
         $client = Clients::findOrFail($clientId);
         $parent = $this->resolveParentEngagement($clientId);
 
-        $engagement = DB::transaction(function () use ($opportunity, $client, $parent, $clientId) {
+        $engagement = DB::transaction(function () use ($opportunity, $client, $parent, $clientId, $salesRepId) {
             $engagement = ClientEngagement::create([
                 'engagement_no' => $this->nextEngagementNo(),
                 'client_id' => $clientId,
@@ -75,7 +75,7 @@ class ClientEngagementService
                 'description' => $opportunity->description,
                 'status' => ClientEngagement::STATUS_WON_PENDING_COMMERCIAL,
                 'estimated_value' => $opportunity->estimated_value,
-                'sales_owner_id' => $client->ref_user,
+                'sales_owner_id' => $salesRepId ?? $client->ref_user,
                 'csd_owner_id' => $opportunity->assigned_to,
                 'won_at' => now(),
                 'created_by' => Auth::id() ?? $opportunity->created_by,

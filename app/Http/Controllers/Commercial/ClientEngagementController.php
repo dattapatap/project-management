@@ -36,10 +36,49 @@ class ClientEngagementController extends Controller
 
         return DataTables::of($this->service->listQuery(Auth::user()))
             ->addIndexColumn()
-            ->addColumn('client_name', fn ($row) => e($row->clients?->name ?? '—'))
-            ->editColumn('engagement_type', fn ($row) => ucfirst(str_replace('_', ' ', $row->engagement_type)))
-            ->editColumn('estimated_value', fn ($row) => $row->estimated_value ? '₹ ' . number_format($row->estimated_value, 2) : '—')
-            ->editColumn('closed_value', fn ($row) => $row->closed_value ? '₹ ' . number_format($row->closed_value, 2) : '—')
+            ->addColumn('client_order', function ($row) {
+                $client = e($row->clients?->name ?? '—');
+                $order = e($row->engagement_no ?? '—');
+                $parent = $row->parent?->engagement_no;
+                $parentBadge = $parent ? ' <span class="badge badge-soft-info font-size-10 ml-1">Parent: ' . e($parent) . '</span>' : '';
+                return '<div>
+                            <span class="font-weight-bold text-dark">' . $client . '</span>
+                        </div>
+                        <div class="mt-1">
+                            <small class="text-muted font-weight-semibold">' . $order . '</small>' . $parentBadge . '
+                        </div>';
+            })
+            ->addColumn('engagement_info', function ($row) {
+                $title = e($row->title ?? '—');
+                $type = ucfirst(str_replace('_', ' ', $row->engagement_type));
+                return '<div>
+                            <span class="font-weight-semibold text-premium-dark">' . $title . '</span>
+                        </div>
+                        <div>
+                            <small class="text-muted">' . $type . '</small>
+                        </div>';
+            })
+            ->addColumn('attribution', function ($row) {
+                $csd = e($row->csdOwner?->name ?? 'Unassigned');
+                $sales = e($row->salesOwner?->name ?? '—');
+                return '<div class="text-muted font-size-12">
+                            <div><i class="mdi mdi-account text-primary mr-1"></i>Csd: <strong class="text-premium-dark">' . $csd . '</strong></div>
+                            <div><i class="mdi mdi-account-star text-success mr-1"></i>Sales: <strong class="text-premium-dark">' . $sales . '</strong></div>
+                        </div>';
+            })
+            ->addColumn('value_date', function ($row) {
+                $est = $row->estimated_value ? '₹ ' . number_format($row->estimated_value, 2) : '—';
+                $closed = $row->closed_value ? '₹ ' . number_format($row->closed_value, 2) : null;
+                $date = $row->created_at ? $row->created_at->format('d M Y h:i A') : '—';
+                
+                $closedHtml = $closed ? '<div class="text-success font-size-11 mt-0.5">Closed: <strong>' . $closed . '</strong></div>' : '';
+                return '<div>
+                            <span class="text-primary font-weight-bold">Est: ' . $est . '</span>
+                        </div>' . $closedHtml . '
+                        <div class="mt-1">
+                            <small class="text-muted"><i class="mdi mdi-clock-outline"></i> ' . $date . '</small>
+                        </div>';
+            })
             ->editColumn('status', function ($row) {
                 $class = match ($row->status) {
                     ClientEngagement::STATUS_WON_PENDING_COMMERCIAL => 'warning',
@@ -51,10 +90,6 @@ class ClientEngagementController extends Controller
 
                 return '<span class="badge badge-' . $class . '">' . e($row->statusLabel()) . '</span>';
             })
-            ->addColumn('parent_no', fn ($row) => e($row->parent?->engagement_no ?? '—'))
-            ->addColumn('csd_owner', fn ($row) => e($row->csdOwner?->name ?? 'Unassigned'))
-            ->addColumn('sales_owner', fn ($row) => e($row->salesOwner?->name ?? '—'))
-            ->addColumn('assigned_at', fn ($row) => $row->created_at ? $row->created_at->format('M d, Y H:i') : '—')
             ->addColumn('action', function ($row) {
                 $btn = '<a href="' . route('commercial.engagements.show', $row->id) . '" class="btn btn-sm btn-outline-primary"><i class="mdi mdi-eye"></i></a>';
                 if (in_array($row->status, [
@@ -66,7 +101,7 @@ class ClientEngagementController extends Controller
 
                 return $btn;
             })
-            ->rawColumns(['status', 'action'])
+            ->rawColumns(['client_order', 'engagement_info', 'attribution', 'value_date', 'status', 'action'])
             ->make(true);
     }
 

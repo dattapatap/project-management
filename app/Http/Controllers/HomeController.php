@@ -16,6 +16,8 @@ use Carbon\Carbon;
 use App\Models\Teams;
 use App\Models\TeamMembers;
 use App\Models\TaskLog;
+use App\Models\DayClosing;
+use App\Models\CsdClientAssignment;
 
 class HomeController extends Controller
 {
@@ -37,6 +39,9 @@ class HomeController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        if ($user) {
+            $user->loadMissing('departments');
+        }
         $todayDate = Carbon::today()->format('Y-m-d');
         $hasSubmittedClosingToday = \App\Models\DayClosing::where('user_id', $user->id)
             ->where('closing_date', $todayDate)
@@ -76,7 +81,7 @@ class HomeController extends Controller
         } elseif ($user->hasRole('Team-Leader')) {
             // 💻 WMS Department Team Leader Dashboard
             $adminData = $this->getWmsTLDashboardData($user, $request, $selectedYear);
-            
+
             if ($departmentId == 2) {
                 $personalData = $this->getWmsEmployeeDashboardData($user, $selectedYear);
                 $adminData = array_merge($adminData, $personalData);
@@ -205,6 +210,63 @@ class HomeController extends Controller
         $adminData['csd_healthy'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'healthy')->count();
         $adminData['csd_at_risk'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'at_risk')->count();
         $adminData['csd_churning'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'churning')->count();
+
+        // ── Extra KPI counters ──────────────────────────────────────────────────
+        $adminData['total_matured_clients'] = Clients::where('status', 'Matured')->count();
+        $adminData['total_active_tasks']    = Task::where('status', 'InProgress')->count();
+        $adminData['pending_approvals']     = DayClosing::where('status', 'pending')->count();
+        $adminData['csd_active_count']      = CsdClientAssignment::where('status', 'active')->count();
+
+        // ── 12-month task completion trend ─────────────────────────────────────
+        $taskTrend = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = Carbon::now()->subMonths($i);
+            $taskTrend[] = [
+                'month' => $month->format('M Y'),
+                'count' => Task::where('status', 'Completed')
+                    ->whereYear('updated_at', $month->year)
+                    ->whereMonth('updated_at', $month->month)
+                    ->count(),
+            ];
+        }
+        $adminData['task_completion_trend'] = $taskTrend;
+
+        // ── Category-wise project distribution ────────────────────────────────
+        $adminData['dept_project_distribution'] = DB::table('department_projects')
+            ->join('project_category', 'department_projects.category', '=', 'project_category.id')
+            ->whereNull('department_projects.deleted_at')
+            ->select('project_category.category as name', DB::raw('count(*) as projects_count'))
+            ->groupBy('project_category.category')
+            ->orderByDesc('projects_count')
+            ->get();
+
+        // ── Today's pending day-closings ───────────────────────────────────────
+        $todayDate = Carbon::today()->toDateString();
+        $submittedUserIds = DayClosing::where('closing_date', $todayDate)->pluck('user_id')->toArray();
+        $adminData['pending_day_closings'] = User::whereNotIn('id', $submittedUserIds)
+            ->where('id', '!=', 1)
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'email')
+            ->get();
+
+        // ── CSD at-risk / churning alerts ──────────────────────────────────────
+        $adminData['csd_alerts'] = CsdClientAssignment::with(['client', 'assignee'])
+            ->where('status', 'active')
+            ->whereIn('health_status', ['at_risk', 'churning'])
+            ->latest('updated_at')
+            ->take(5)
+            ->get();
+
+        // ── Top performers this month ──────────────────────────────────────────
+        $adminData['top_sales_performer'] = User::whereHas('departments', fn($q) => $q->where('department', 1))
+            ->withCount(['clients as this_month_matured' => fn($q) => $q->where('status', 'Matured')->where('created_at', '>=', $startOfMonth)])
+            ->orderByDesc('this_month_matured')
+            ->first();
+
+        $adminData['top_od_performer'] = User::whereHas('departments', fn($q) => $q->where('department', 2))
+            ->withCount(['tasks as this_month_completed' => fn($q) => $q->where('status', 'Completed')->where('updated_at', '>=', $startOfMonth)])
+            ->orderByDesc('this_month_completed')
+            ->first();
 
         return $adminData;
     }
@@ -516,9 +578,9 @@ class HomeController extends Controller
             ->toArray();
 
         $todaysCreatedOrUpdatedTaskIds = Task::where('assigned_to', $user->id)
-            ->where(function($q) use ($startOfToday) {
+            ->where(function ($q) use ($startOfToday) {
                 $q->where('created_at', '>=', $startOfToday)
-                  ->orWhere('updated_at', '>=', $startOfToday);
+                    ->orWhere('updated_at', '>=', $startOfToday);
             })
             ->pluck('id')
             ->toArray();
@@ -549,4 +611,3 @@ class HomeController extends Controller
         return $adminData;
     }
 }
-

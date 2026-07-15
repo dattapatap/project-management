@@ -22,8 +22,7 @@ class CsdClientController extends Controller
         private CsdClientService $service,
         private CsdClientResolverService $resolver,
         private CsdTeamScopeService $scope
-    ) {
-    }
+    ) {}
 
     public function index()
     {
@@ -31,7 +30,8 @@ class CsdClientController extends Controller
 
         return view('components.csd.clients.index', [
             'executives' => $this->scope->getAllocatableExecutives($user),
-            'canAssign' => $this->scope->canAssignClients($user),
+            'canAssign'  => $this->scope->canAssignClients($user),
+            'canDelete'  => $this->scope->canAssignClients($user), // same gate: Admin, BM, CSD-TL
         ]);
     }
 
@@ -54,14 +54,14 @@ class CsdClientController extends Controller
 
                 return e($assignee?->name ?? 'Unassigned');
             })
-            ->editColumn('handoff_date', fn ($row) => $row->handoff_date?->format('d M Y') ?? '-')
+            ->editColumn('handoff_date', fn($row) => $row->handoff_date?->format('d M Y') ?? '-')
             ->editColumn('health_status', function ($row) {
                 $badges = ['healthy' => 'success', 'at_risk' => 'warning', 'churning' => 'danger'];
                 $class = $badges[$row->health_status] ?? 'secondary';
 
                 return '<span class="badge badge-' . $class . '">' . ucfirst(str_replace('_', ' ', $row->health_status)) . '</span>';
             })
-            ->editColumn('satisfaction_score', fn ($row) => $row->satisfaction_score ? $row->satisfaction_score . '/10' : '-')
+            ->editColumn('satisfaction_score', fn($row) => $row->satisfaction_score ? $row->satisfaction_score . '/10' : '-')
             ->addColumn('upsell_track', function ($row) {
                 $eng = $row->relationLoaded('latestOpenUpsellEngagement')
                     ? $row->getRelation('latestOpenUpsellEngagement')
@@ -80,7 +80,16 @@ class CsdClientController extends Controller
                 return '<a href="' . $url . '" class="font-weight-bold">' . e($eng->engagement_no) . '</a>'
                     . ' <span class="badge badge-soft-' . $badge . '">' . e($eng->statusLabel()) . '</span>';
             })
-            ->addColumn('action', fn ($row) => '<button type="button" class="btn btn-sm btn-outline-primary editAssignment" data-id="' . $row->id . '"><i class="mdi mdi-pencil-outline"></i> Update</button>')
+            ->addColumn('action', function ($row) {
+                $user = Auth::user();
+                $btns = '<button type="button" class="btn btn-sm btn-outline-primary editAssignment mr-1" data-id="' . $row->id . '"><i class="mdi mdi-pencil-outline"></i> Update</button>';
+
+                if ($this->scope->canAssignClients($user)) {
+                    $btns .= '<button type="button" class="btn btn-sm btn-outline-danger deleteAssignment" data-id="' . $row->id . '" data-client="' . e($row->client_name ?? '') . '"><i class="mdi mdi-delete-outline"></i> Remove</button>';
+                }
+
+                return $btns;
+            })
             ->rawColumns(['health_status', 'action', 'upsell_track'])
             ->make(true);
     }
@@ -126,6 +135,19 @@ class CsdClientController extends Controller
         $this->service->update($assignment, $validator->validated(), Auth::user());
 
         return response()->json(['code' => 200, 'success' => true, 'message' => 'Assignment updated successfully.']);
+    }
+
+    public function destroy(CsdClientAssignment $assignment)
+    {
+        $user = Auth::user();
+
+        if (!$this->scope->canAssignClients($user)) {
+            return response()->json(['code' => 403, 'success' => false, 'message' => 'You do not have permission to remove CSD client assignments.'], 403);
+        }
+
+        $assignment->delete();
+
+        return response()->json(['code' => 200, 'success' => true, 'message' => 'Client assignment removed successfully.']);
     }
 
     public function show(CsdClientAssignment $assignment)

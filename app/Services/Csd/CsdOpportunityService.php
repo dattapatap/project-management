@@ -58,6 +58,21 @@ class CsdOpportunityService
         return $fresh;
     }
 
+    public function assignToSales(CsdOpportunity $opportunity, int $salesRepId, User $user): CsdOpportunity
+    {
+        if ($opportunity->status === 'won') {
+            throw new \InvalidArgumentException('This opportunity is already assigned to Sales (Won).');
+        }
+
+        $opportunity->status = 'won';
+        $opportunity->save();
+
+        $fresh = $opportunity->fresh(['clients', 'assignee']);
+        app(CsdOpportunityHandoffService::class)->notifySalesOnWon($fresh, $salesRepId);
+
+        return $fresh;
+    }
+
     private function resolveAssignee(User $user, ?int $assignedTo): int
     {
         if (!$this->scope->canAssignToOthers($user)) {

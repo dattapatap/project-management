@@ -30,6 +30,17 @@ class CsdClientService
             throw new \InvalidArgumentException('You cannot assign this client.');
         }
 
+        $clientId = (int) $data['client'];
+        $existing = CsdClientAssignment::where('client', $clientId)
+            ->where('status', 'active')
+            ->first();
+            
+        if ($existing) {
+            $existing->load('assignee');
+            $assigneeName = $existing->assignee?->name ?? 'another executive';
+            throw new \InvalidArgumentException("This client is already actively assigned to {$assigneeName}.");
+        }
+
         return CsdClientAssignment::create([
             ...$data,
             'assigned_to' => $data['assigned_to'] ?? $user->id,

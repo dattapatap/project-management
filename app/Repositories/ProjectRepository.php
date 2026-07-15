@@ -61,7 +61,7 @@ class ProjectRepository extends BaseRepository
         });
     }
 
-    public function buildIndexQuery(User $user, ?string $status = null, ?int $department = null): Builder
+    public function buildIndexQuery(User $user, ?string $status = null, ?int $department = null, ?int $team = null): Builder
     {
         $query = $this->withStandardRelations();
 
@@ -90,6 +90,12 @@ class ProjectRepository extends BaseRepository
         if ($department) {
             $query->whereHas('projectCategory', function ($q) use ($department) {
                 $q->where('dept_id', $department);
+            });
+        }
+
+        if ($team) {
+            $query->whereHas('project_team', function ($q) use ($team) {
+                $q->where('teamid', $team);
             });
         }
 

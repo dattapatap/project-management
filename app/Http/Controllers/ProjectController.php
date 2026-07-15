@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Clients;
 use App\Models\DepartmentProjects;
+use App\Models\Teams;
 use App\Services\Od\ProjectService;
 use Auth;
 use Exception;
@@ -22,7 +23,8 @@ class ProjectController extends Controller
     {
         $user = Auth::user();
         $status = $request->status;
-        $department = $request->query('department');
+        $department = null;
+        $team = $request->query('team');
 
         if (is_null($status)) {
             $status = 'Pending';
@@ -32,9 +34,14 @@ class ProjectController extends Controller
             $department = $user->departments->department ?? null;
         }
 
-        $result = $this->projectService->getProjectIndexData($user, $status, $department);
+        $result = $this->projectService->getProjectIndexData($user, $status, $department, 50, $team);
         $projects = $result['projects'];
         $stats = $result['stats'];
+
+        $teams = [];
+        if ($user->hasRole(['Admin', 'Branch-Manager'])) {
+            $teams = Teams::where('department', 2)->where('status', true)->get();
+        }
 
         if ($user->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant'])) {
             $allTasks = $user->tasks()->with(['project.projectCategory', 'project.clients'])->orderBy('created_at', 'desc')->get();
@@ -43,24 +50,30 @@ class ProjectController extends Controller
             return view('components.projects.employee_index', compact('projects', 'stats', 'activeTasks', 'completedTasks', 'department'));
         }
 
-        return view('components.projects.index', compact('projects', 'stats', 'department'))->with('search', '');
+        return view('components.projects.index', compact('projects', 'stats', 'department', 'teams', 'team'))->with('search', '');
     }
 
     public function search(Request $request)
     {
         $filter = $request->query('search');
-        $department = $request->query('department');
+        $team = $request->query('team');
         $user = Auth::user();
+        $department = null;
 
         if (!$user->hasRole(['Admin', 'Branch-Manager'])) {
             $department = $user->departments->department ?? null;
         }
 
-        $result = $this->projectService->searchProjects($user, $filter, 50, $department);
+        $result = $this->projectService->searchProjects($user, $filter, 50, $department, $team);
         $projects = $result['projects'];
         $stats = $result['stats'];
 
-        return view('components.projects.index', compact('projects', 'stats', 'department'))->with('search', $filter);
+        $teams = [];
+        if ($user->hasRole(['Admin', 'Branch-Manager'])) {
+            $teams = Teams::where('department', 2)->where('status', true)->get();
+        }
+
+        return view('components.projects.index', compact('projects', 'stats', 'department', 'teams', 'team'))->with('search', $filter);
     }
 
     public function create()

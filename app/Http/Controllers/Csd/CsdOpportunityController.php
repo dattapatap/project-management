@@ -21,17 +21,33 @@ class CsdOpportunityController extends Controller
         private CsdOpportunityService $service,
         private CsdClientResolverService $resolver,
         private CsdTeamScopeService $scope
-    ) {
-    }
+    ) {}
 
     public function index()
     {
         $user = Auth::user();
 
+        $nsdReps = \App\Models\User::where('status', 'Active')
+            ->where(function ($q) {
+                $q->whereHas('roles', function ($r) {
+                    $r->where('name', 'Sales-Executive');
+                })
+                    ->orWhere(function ($q2) {
+                        $q2->whereHas('roles', function ($r) {
+                            $r->where('name', 'Team-Leader');
+                        })->whereHas('departments', function ($d) {
+                            $d->where('department', 1); // NSD
+                        });
+                    });
+            })
+            ->orderBy('name', 'asc')
+            ->get();
+
         return view('components.csd.opportunities.index', [
             'clients' => $this->resolver->getSelectableClients($user),
             'executives' => $this->scope->getAllocatableExecutives($user),
             'canAssignToOthers' => $this->scope->canAssignToOthers($user),
+            'nsdReps' => $nsdReps,
         ]);
     }
 
@@ -44,17 +60,38 @@ class CsdOpportunityController extends Controller
         return $this->withCsdClientName(
             DataTables::of($this->service->listQuery(Auth::user()))->addIndexColumn()
         )
-            ->editColumn('type', fn ($row) => ucfirst(str_replace('_', ' ', $row->type)))
-            ->editColumn('estimated_value', fn ($row) => $row->estimated_value ? '₹ ' . number_format($row->estimated_value, 2) : '-')
-            ->editColumn('status', fn ($row) => '<span class="badge badge-info">' . ucfirst($row->status) . '</span>')
-            ->addColumn('assignee_name', fn ($row) => e($row->assignee->name ?? 'Unassigned'))
-            ->addColumn('engagement_no', fn ($row) => $row->engagement_id
+            ->editColumn('type', fn($row) => ucfirst(str_replace('_', ' ', $row->type)))
+            ->editColumn('estimated_value', fn($row) => $row->estimated_value ? '₹ ' . number_format($row->estimated_value, 2) : '-')
+            ->editColumn('status', function ($row) {
+                if ($row->status === 'won_pending_assignment') {
+                    return '<span class="badge badge-warning">Awaiting Sales Assignment</span>';
+                }
+                $badgeClass = $row->status === 'won' ? 'success' : ($row->status === 'lost' ? 'danger' : 'info');
+                return '<span class="badge badge-' . $badgeClass . '">' . ucfirst(str_replace('_', ' ', $row->status)) . '</span>';
+            })
+            ->addColumn('assignee_name', fn($row) => e($row->assignee->name ?? 'Unassigned'))
+            ->addColumn('engagement_no', fn($row) => $row->engagement_id
                 ? '<a href="' . route('commercial.engagements.show', $row->engagement_id) . '">' . e($row->engagement?->engagement_no ?? 'View') . '</a>'
                 : '—')
             ->addColumn('action', function ($row) {
+                $user = Auth::user();
+                if ($user) {
+                    $user->loadMissing('departments');
+                }
+                $isManagerOrTL = $user->hasRole(['Admin', 'Branch-Manager']) ||
+                    ($user->hasRole('Team-Leader') && optional($user->departments)->department == 3);
+
                 if ($row->status === 'won' && $row->engagement_id) {
                     return '<a href="' . route('commercial.engagements.show', $row->engagement_id) . '" class="btn btn-sm btn-outline-success">'
                         . '<i class="mdi mdi-file-tree"></i> View Order</a>';
+                }
+
+                if ($row->status === 'won_pending_assignment') {
+                    if ($isManagerOrTL) {
+                        return '<button type="button" class="btn btn-sm btn-primary btnAssignNsd" data-id="' . $row->id . '" data-title="' . e($row->title) . '" data-client="' . e($row->clients->name ?? '') . '">'
+                            . '<i class="mdi mdi-account-arrow-right"></i> Assign to NSD</button>';
+                    }
+                    return '<span class="text-muted font-italic small">Awaiting allocation</span>';
                 }
 
                 if ($row->status === 'lost') {
@@ -76,7 +113,7 @@ class CsdOpportunityController extends Controller
             'description' => 'nullable|string',
             'type' => 'required|in:upsell,cross_sell',
             'estimated_value' => 'nullable|numeric|min:0',
-            'status' => 'required|in:identified,proposed,won,lost',
+            'status' => 'required|in:identified,proposed,won,lost,won_pending_assignment',
             'followup_date' => 'nullable|date',
             'assigned_to' => 'nullable|exists:users,id',
         ]);
@@ -86,7 +123,11 @@ class CsdOpportunityController extends Controller
         }
 
         try {
-            $this->service->create($validator->validated(), Auth::user());
+            $data = $validator->validated();
+            if ($data['status'] === 'won') {
+                $data['status'] = 'won_pending_assignment';
+            }
+            $this->service->create($data, Auth::user());
         } catch (\InvalidArgumentException $e) {
             return response()->json(['code' => 403, 'success' => false, 'message' => $e->getMessage()], 403);
         }
@@ -101,7 +142,7 @@ class CsdOpportunityController extends Controller
             'description' => 'nullable|string',
             'type' => 'required|in:upsell,cross_sell',
             'estimated_value' => 'nullable|numeric|min:0',
-            'status' => 'required|in:identified,proposed,won,lost',
+            'status' => 'required|in:identified,proposed,won,lost,won_pending_assignment',
             'followup_date' => 'nullable|date',
             'assigned_to' => 'nullable|exists:users,id',
         ]);
@@ -111,7 +152,11 @@ class CsdOpportunityController extends Controller
         }
 
         try {
-            $this->service->update($opportunity, $validator->validated(), Auth::user());
+            $data = $validator->validated();
+            if ($data['status'] === 'won') {
+                $data['status'] = 'won_pending_assignment';
+            }
+            $this->service->update($opportunity, $data, Auth::user());
         } catch (\InvalidArgumentException $e) {
             return response()->json(['code' => 403, 'success' => false, 'message' => $e->getMessage()], 403);
         }
@@ -124,5 +169,40 @@ class CsdOpportunityController extends Controller
         $opportunity->load(['clients', 'assignee']);
 
         return response()->json(['success' => true, 'data' => $opportunity]);
+    }
+
+    public function assignNsd(Request $request, CsdOpportunity $opportunity)
+    {
+        $user = Auth::user();
+        if ($user) {
+            $user->loadMissing('departments');
+        }
+        $isManagerOrTL = $user->hasRole(['Admin', 'Branch-Manager']) ||
+            ($user->hasRole('Team-Leader') && optional($user->departments)->department == 3);
+
+        if (!$isManagerOrTL) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only Admin, Branch Manager, or CSD Team Leader can assign to NSD.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'sales_rep_id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()->all()], 400);
+        }
+
+        $salesRepId = (int) $request->input('sales_rep_id');
+        $salesRep = \App\Models\User::where('id', $salesRepId)->where('status', 'Active')->first();
+        if (!$salesRep) {
+            return response()->json(['success' => false, 'message' => 'Selected Sales Representative is inactive or invalid.'], 400);
+        }
+
+        try {
+            $this->service->assignToSales($opportunity, $salesRepId, $user);
+            return response()->json(['success' => true, 'message' => 'CSD Opportunity successfully assigned to NSD Representative.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

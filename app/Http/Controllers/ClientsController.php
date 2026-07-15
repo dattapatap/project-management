@@ -99,8 +99,23 @@ class ClientsController extends Controller
 
                 return $action;
             })
-            ->editColumn('contactinfo', function ($data) {
-                return $data->cont_person . '<br><small class="text-muted">' . $data->designation . '</small>';
+            ->editColumn('name', function ($data) {
+                $html = '<div class="font-weight-semibold text-dark">' . $data->name . '</div>';
+
+                $user = Auth::user();
+                if ($user && !$user->hasRole('Project-Manager')) {
+                    $contactInfo = [];
+                    if ($data->cont_person) {
+                        $contactInfo[] = $data->cont_person;
+                    }
+                    if ($data->designation) {
+                        $contactInfo[] = '(' . $data->designation . ')';
+                    }
+                    if (!empty($contactInfo)) {
+                        $html .= '<small class="text-muted d-block mt-1"><i class="mdi mdi-account-outline mr-1"></i>' . implode(' ', $contactInfo) . '</small>';
+                    }
+                }
+                return $html;
             })
             ->editColumn('active_from', function ($data) {
                 return $data->active_from ? Carbon::parse($data->active_from)->format('d M Y') : '-';
@@ -108,11 +123,15 @@ class ClientsController extends Controller
             ->editColumn('telereferral', function ($data) {
                 return $data->telereferral ? $data->telereferral->name : '-';
             })
-            ->addColumn('created_by_name', function ($data) {
-                return $data->creator ? $data->creator->name : 'System';
-            })
-            ->addColumn('following_by_name', function ($data) {
-                return $data->referral ? $data->referral->name : '-';
+            ->addColumn('attribution', function ($data) {
+                $creator = $data->creator ? $data->creator->name : 'System';
+                $referral = $data->referral ? $data->referral->name : '-';
+
+                $html = '<div class="text-center font-size-12">';
+                $html .= '<span class="text-muted font-weight-medium">Creator:</span> <span class="text-dark">' . $creator . '</span><br>';
+                $html .= '<span class="text-muted font-weight-medium">Follow:</span> <span class="text-dark">' . $referral . '</span>';
+                $html .= '</div>';
+                return $html;
             })
             ->addColumn('created_at', function ($data) {
                 return Carbon::parse($data->created_at)->format('d M Y');
@@ -120,24 +139,26 @@ class ClientsController extends Controller
             ->filterColumn('created_at', function ($query, $keyword) {
                 $query->whereRaw("DATE_FORMAT(created_at,'%d/%m/%Y') LIKE ?", ["%$keyword%"]);
             })
-            ->editColumn('status', function ($data) {
-                $class = 'badge-soft-primary';
-                if ($data->status == 'Matured') $class = 'badge-soft-success';
-                if ($data->status == 'Fresh') $class = 'badge-soft-info';
-                if ($data->status == 'Not Interested') $class = 'badge-soft-danger';
+            ->addColumn('status_source', function ($data) {
+                $statusClass = 'badge-soft-primary';
+                if ($data->status == 'Matured') $statusClass = 'badge-soft-success';
+                if ($data->status == 'Fresh') $statusClass = 'badge-soft-info';
+                if ($data->status == 'Not Interested') $statusClass = 'badge-soft-danger';
 
-                $html = '<div class="status-trigger-wrapper text-center" style="cursor: pointer;" data-client-id="' . $data->id . '" title="Click to view full touchpoint history">';
-                $html .= '<span class="badge ' . $class . ' font-size-12 px-2 py-1">' . $data->status . '</span>';
-                if ($data->status != 'Fresh' && $data->status != 'Matured' && $data->status != 'Not Interested') {
-                    if ($data->history && $data->history->tbro) {
-                        $html .= '<br><small class="text-danger font-weight-bold d-block mt-1"><i class="mdi mdi-calendar mr-1"></i>' . Carbon::parse($data->history->tbro)->format('d M Y') . '</small>';
-                    }
+                $statusHtml = '<span class="badge ' . $statusClass . ' font-size-11 px-2 py-1 mb-1 d-inline-block">' . $data->status . '</span>';
+
+                $source = $data->lead_source ?? 'Sales';
+                $sourceClass = 'badge-soft-primary';
+                if (strtolower($source) === 'manual') {
+                    $sourceClass = 'badge-soft-success';
+                } elseif (strtolower($source) === 'bulk') {
+                    $sourceClass = 'badge-soft-purple';
                 }
-                $html .= '<span class="text-muted font-size-10 d-block mt-1 toggle-history-text" style="opacity: 0.8;"><i class="mdi mdi-chevron-down mr-1 text-primary"></i>History</span>';
-                $html .= '</div>';
-                return $html;
+                $sourceHtml = '<span class="badge ' . $sourceClass . ' font-size-10 px-2 py-0.5 d-inline-block" style="opacity: 0.85;">' . ucfirst($source) . '</span>';
+
+                return '<div class="text-center">' . $statusHtml . '<br>' . $sourceHtml . '</div>';
             })
-            ->rawColumns(['action', 'status', 'contactinfo'])
+            ->rawColumns(['action', 'status_source', 'name', 'attribution'])
             ->make(true);
     }
 
@@ -171,6 +192,7 @@ class ClientsController extends Controller
             $client->created_by    = $userid;
             $client->tele_ref_user = $userid;
             $client->updated_by    = $userid;
+            $client->lead_source   = 'Sales';
             $client->save();
 
             $client->histories()->create([
@@ -195,12 +217,12 @@ class ClientsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'contact_person' => 'required|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
             'designation' => 'nullable|string|max:255',
             'email' => 'required|email|max:255',
-            'mobile' => 'required|string|max:20',
-            'city' => 'required|string|max:255',
-            'address' => 'required|string|max:500',
+            'mobile' => 'nullable|string|max:20',
+            'city' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -219,12 +241,12 @@ class ClientsController extends Controller
 
             if ($existingClient) {
                 if ($existingClient->status === 'Matured') {
-                    // Client already exists and is Matured - block duplicate creation
+                    // Client already exists and is Matured - return status true with search hint
                     DB::rollBack();
                     return response()->json([
-                        'status' => false,
-                        'message' => 'Client "' . $existingClient->name . '" added.'
-                    ], 409);
+                        'status' => true,
+                        'message' => 'This client is already exist in the database, please search as the "' . $existingClient->name . '"'
+                    ], 200);
                 }
 
                 // Client exists but is NOT Matured - update to Matured
@@ -269,6 +291,7 @@ class ClientsController extends Controller
             $admin = User::role('Admin')->where('status', 'Active')->first();
             $client->ref_user = $admin ? $admin->id : $userid;
 
+            $client->lead_source = 'Manual';
             $client->save();
 
             // Add Initial Client History
@@ -294,12 +317,12 @@ class ClientsController extends Controller
 
     private function assignClientData(Clients $client, Request $request)
     {
-        $client->name          = ucfirst($request->name);
-        $client->cont_person   = ucfirst($request->contact_person);
-        $client->designation   = ucfirst($request->designation);
+        $client->name          = $request->name ? ucfirst($request->name) : null;
+        $client->cont_person   = $request->contact_person ? ucfirst($request->contact_person) : null;
+        $client->designation   = $request->designation ? ucfirst($request->designation) : null;
         $client->email         = $request->email;
         $client->mobile        = $request->mobile;
-        $client->city          = ucfirst($request->city);
+        $client->city          = $request->city ? ucfirst($request->city) : null;
         $client->website_link  = $request->website_link;
         $client->address       = $request->address ?? $request->address1;
         $client->description   = $request->remarks ?? $client->description;
@@ -513,6 +536,7 @@ class ClientsController extends Controller
                         $client->created_by    = $userId;
                         $client->tele_ref_user = $userId;
                         $client->updated_by    = $userId;
+                        $client->lead_source   = 'Bulk';
                         $client->save();
 
                         $client->histories()->create([
@@ -611,6 +635,7 @@ class ClientsController extends Controller
                         $client->created_by    = $userId;
                         $client->tele_ref_user = $userId;
                         $client->updated_by    = $userId;
+                        $client->lead_source   = 'Bulk';
                         $client->save();
 
                         $client->histories()->create([
