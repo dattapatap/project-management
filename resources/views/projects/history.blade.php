@@ -287,15 +287,15 @@
                             <i class="mdi mdi-format-list-bulleted text-primary mr-2"></i> Task Analytics
                         </h6>
                     </div>
-                    <div class="card-body p-0">
+                    <div class="card-body p-1">
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
-                                <thead class="bg-light">
+                                <thead class="thead-custom-teal">
                                     <tr class="text-uppercase font-weight-bold text-muted" style="font-size: 10px;">
                                         <th class="border-0 px-4">Task Information</th>
                                         <th class="border-0">Assignee</th>
                                         <th class="border-0">Timeline</th>
-                                        <th class="border-0">Time Spend on that task</th>
+                                        <th class="border-0">Time Spend</th>
                                         <th class="border-0">Status</th>
                                         <th class="border-0 text-right">Progress</th>
                                         <th class="border-0 text-center pr-4">Action</th>
@@ -307,17 +307,9 @@
                                     <tr class="{{ $isTOverdue ? 'table-danger' : '' }}">
                                         <td class="px-4">
                                             <div class="font-weight-bold text-dark">{{ $task->title }}</div>
-                                            @php
-                                            $tpColor = 'secondary';
-                                            if(strtolower($task->priority) == 'high') $tpColor = 'danger';
-                                            elseif(strtolower($task->priority) == 'medium') $tpColor = 'warning';
-                                            elseif(strtolower($task->priority) == 'low') $tpColor = 'success';
-                                            @endphp
-                                            <span class="badge badge-soft-{{ $tpColor }} font-size-10">{{ $task->priority ?? 'Medium' }}</span>
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($task->user->name ?? 'U') }}&background=556ee6&color=fff" class="avatar-xs rounded-circle mr-2">
                                                 <span class="font-size-12 text-muted">{{ $task->user->name ?? 'Unassigned' }}</span>
                                             </div>
                                         </td>
@@ -328,14 +320,14 @@
                                                 <div class="text-success">End: {{ \Carbon\Carbon::parse($task->act_enddate)->format('d M') }}</div>
                                                 @endif
                                             </div>
-                                        </td>
+                                        <td>
                                             @php
                                             $totalMinutes = round(($task->total_time ?? 0) * 60);
                                             $h = floor($totalMinutes / 60);
                                             $m = $totalMinutes % 60;
                                             $timeSpentFormatted = $h > 0 ? sprintf('%02d:%02d Hrs', $h, $m) : sprintf('%02d:%02d min', $h, $m);
                                             @endphp
-                                            <div class="font-weight-bold">{{ $timeSpentFormatted }}</div>
+                                            <div class="">{{ $timeSpentFormatted }}</div>
                                         </td>
                                         <td>
                                             @php
@@ -348,9 +340,6 @@
                                         <td class="text-right">
                                             <div class="d-flex align-items-center justify-content-end">
                                                 <span class="font-weight-bold mr-2">{{ $task->progress }}%</span>
-                                                <div class="progress progress-sm" style="width: 50px;">
-                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $task->progress }}%"></div>
-                                                </div>
                                             </div>
                                         </td>
                                         <td class="text-center pr-4">
@@ -486,9 +475,11 @@
             </div>
         `;
 
-        // Append after the vertical menu button if it exists
+        // Append after the vertical menu button or brand box
         if ($('#vertical-menu-btn').length) {
             $('#vertical-menu-btn').after(titleHtml);
+        } else if ($('.navbar-brand-box').length) {
+            $('.navbar-brand-box').after(titleHtml);
         }
 
         // Nudge functionality

@@ -27,7 +27,7 @@
             <div class="card bg-white border shadow-sm">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table id="catalog-table" class="table table-centered table-nowrap table-hover mb-0">
+                        <table id="catalog-table" class="table table-premium table-centered table-striped table-nowrap table-hover mb-0">
                             <thead class="thead-light">
                                 <tr>
                                     <th>Name</th>
@@ -42,39 +42,39 @@
                             </thead>
                             <tbody>
                                 @foreach($catalogs as $item)
-                                    <tr>
-                                        <td class="font-weight-semibold text-dark">{{ $item->name }}</td>
-                                        <td>
-                                            <span class="badge badge-pill badge-soft-primary font-weight-semibold px-2.5 py-1">{{ $item->category }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="text-muted font-weight-medium"><i class="mdi mdi-sync mr-1"></i>{{ ucfirst($item->billing_cycle) }}</span>
-                                        </td>
-                                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="text-muted font-weight-medium" title="{{ $item->description }}">
-                                            {{ $item->description ?? 'No description' }}
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-pill {{ $item->is_active ? 'bg-soft-success text-success' : 'bg-soft-danger text-danger' }} font-weight-bold px-2.5 py-1">
-                                                {{ $item->is_active ? 'Active' : 'Inactive' }}
-                                            </span>
-                                        </td>
-                                        @if(Auth::user()->hasRole(['Admin', 'Project-Manager', 'Branch-Manager', 'Team-Leader']))
-                                        <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-info edit-btn mr-1" 
-                                                    data-id="{{ $item->id }}"
-                                                    data-name="{{ $item->name }}"
-                                                    data-category="{{ $item->category }}"
-                                                    data-billing_cycle="{{ $item->billing_cycle }}"
-                                                    data-description="{{ $item->description }}">
-                                                <i class="mdi mdi-pencil-outline"></i>
-                                            </button>
-                                            <button class="btn btn-sm {{ $item->is_active ? 'btn-outline-warning' : 'btn-outline-success' }} toggle-status-btn"
-                                                    data-id="{{ $item->id }}">
-                                                <i class="mdi {{ $item->is_active ? 'mdi-close-circle-outline' : 'mdi-checkbox-marked-circle-outline' }}"></i>
-                                            </button>
-                                        </td>
-                                        @endif
-                                    </tr>
+                                <tr>
+                                    <td class="font-weight-semibold text-dark">{{ $item->name }}</td>
+                                    <td>
+                                        <span class="badge badge-pill badge-soft-primary font-weight-semibold px-2.5 py-1">{{ $item->category }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted font-weight-medium"><i class="mdi mdi-sync mr-1"></i>{{ ucfirst($item->billing_cycle) }}</span>
+                                    </td>
+                                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="text-muted font-weight-medium" title="{{ $item->description }}">
+                                        {{ $item->description ?? 'No description' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-pill {{ $item->is_active ? 'bg-soft-success text-success' : 'bg-soft-danger text-danger' }} font-weight-bold px-2.5 py-1">
+                                            {{ $item->is_active ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    @if(Auth::user()->hasRole(['Admin', 'Project-Manager', 'Branch-Manager', 'Team-Leader']))
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-info edit-btn mr-1"
+                                            data-id="{{ $item->id }}"
+                                            data-name="{{ $item->name }}"
+                                            data-category="{{ $item->category }}"
+                                            data-billing_cycle="{{ $item->billing_cycle }}"
+                                            data-description="{{ $item->description }}">
+                                            <i class="mdi mdi-pencil-outline"></i>
+                                        </button>
+                                        <button class="btn btn-sm {{ $item->is_active ? 'btn-outline-warning' : 'btn-outline-success' }} toggle-status-btn"
+                                            data-id="{{ $item->id }}">
+                                            <i class="mdi {{ $item->is_active ? 'mdi-close-circle-outline' : 'mdi-checkbox-marked-circle-outline' }}"></i>
+                                        </button>
+                                    </td>
+                                    @endif
+                                </tr>
                                 @endforeach
                             </tbody>
                         </table>
@@ -254,7 +254,7 @@
         // Toggle active status
         $('.toggle-status-btn').click(function() {
             const id = $(this).data('id');
-            alertify.confirm("Confirm Status Change", "Are you sure you want to toggle this catalog item status?", 
+            alertify.confirm("Confirm Status Change", "Are you sure you want to toggle this catalog item status?",
                 function() {
                     $.ajax({
                         url: "{{ url('/') }}/sales/catalog/" + id + "/toggle",

@@ -136,23 +136,23 @@
                             <tbody>
                                 @forelse($adminData['team_performance_matrix'] ?? [] as $emp)
                                 @php
-                                    $activeCount = $emp->active_leads_count;
-                                    $overdueCount = $emp->overdue_callbacks_count;
+                                $activeCount = $emp->active_leads_count;
+                                $overdueCount = $emp->overdue_callbacks_count;
 
-                                    // Workload analysis logic
-                                    if ($activeCount >= 5) {
-                                        $workloadLabel = 'Overloaded';
-                                        $workloadBadge = 'badge-soft-danger';
-                                        $hasFlame = true;
-                                    } elseif ($activeCount >= 3) {
-                                        $workloadLabel = 'Busy';
-                                        $workloadBadge = 'badge-soft-warning';
-                                        $hasFlame = false;
-                                    } else {
-                                        $workloadLabel = 'Optimal';
-                                        $workloadBadge = 'badge-soft-success';
-                                        $hasFlame = false;
-                                    }
+                                // Workload analysis logic
+                                if ($activeCount >= 5) {
+                                $workloadLabel = 'Overloaded';
+                                $workloadBadge = 'badge-soft-danger';
+                                $hasFlame = true;
+                                } elseif ($activeCount >= 3) {
+                                $workloadLabel = 'Busy';
+                                $workloadBadge = 'badge-soft-warning';
+                                $hasFlame = false;
+                                } else {
+                                $workloadLabel = 'Optimal';
+                                $workloadBadge = 'badge-soft-success';
+                                $hasFlame = false;
+                                }
                                 @endphp
                                 <tr>
                                     <td class="pl-4 py-3">
@@ -206,9 +206,9 @@
                     <h5 class="font-size-15 mb-3 text-dark font-weight-bold">
                         <i class="mdi mdi-chart-donut-variant mr-1 text-primary"></i> Team Conversion Ratio
                     </h5>
-                    
+
                     <div id="sales-team-distribution-donut" class="apex-charts flex-grow-1" style="min-height: 250px;" dir="ltr"></div>
-                    
+
                     <div class="mt-auto border-top pt-3">
                         <div class="row text-center small">
                             <div class="col-4">
@@ -320,23 +320,23 @@
                             <tbody>
                                 @forelse($adminData['todays_callbacks'] ?? [] as $callback)
                                 @php
-                                    // 1. Find the scheduled history entry for today's date
-                                    $scheduledEntry = $callback->histories->first(function($h) {
-                                        return $h->tbro == \Carbon\Carbon::today()->toDateString();
-                                    });
+                                // 1. Find the scheduled history entry for today's date
+                                $scheduledEntry = $callback->histories->first(function($h) {
+                                return $h->tbro == \Carbon\Carbon::today()->toDateString();
+                                });
 
-                                    // 2. Find any newer history entry created today that is newer than the scheduling entry
-                                    $followupEntry = null;
-                                    if ($scheduledEntry) {
-                                        $followupEntry = $callback->histories->first(function($h) use ($scheduledEntry) {
-                                            return $h->id > $scheduledEntry->id && $h->created_at->isToday();
-                                        });
-                                    } else {
-                                        // Fallback: check if any history was created today
-                                        $followupEntry = $callback->histories->first(function($h) {
-                                            return $h->created_at->isToday() && $h->tbro != \Carbon\Carbon::today()->toDateString();
-                                        });
-                                    }
+                                // 2. Find any newer history entry created today that is newer than the scheduling entry
+                                $followupEntry = null;
+                                if ($scheduledEntry) {
+                                $followupEntry = $callback->histories->first(function($h) use ($scheduledEntry) {
+                                return $h->id > $scheduledEntry->id && $h->created_at->isToday();
+                                });
+                                } else {
+                                // Fallback: check if any history was created today
+                                $followupEntry = $callback->histories->first(function($h) {
+                                return $h->created_at->isToday() && $h->tbro != \Carbon\Carbon::today()->toDateString();
+                                });
+                                }
                                 @endphp
                                 <tr style="{{ $followupEntry ? 'background-color: rgba(52, 195, 143, 0.03);' : '' }}">
                                     <td>
@@ -344,13 +344,13 @@
                                             {{ $callback->name }}
                                         </a>
                                         @if($followupEntry)
-                                            <span class="d-block text-success font-size-11 font-weight-bold mt-1">
-                                                <i class="mdi mdi-checkbox-marked-circle-outline mr-1"></i> Followed Up
-                                            </span>
+                                        <span class="d-block text-success font-size-11 font-weight-bold mt-1">
+                                            <i class="mdi mdi-checkbox-marked-circle-outline mr-1"></i> Followed Up
+                                        </span>
                                         @else
-                                            <span class="d-block text-warning font-size-11 font-weight-bold mt-1">
-                                                <i class="mdi mdi-clock-outline mr-1"></i> Pending Callback
-                                            </span>
+                                        <span class="d-block text-warning font-size-11 font-weight-bold mt-1">
+                                            <i class="mdi mdi-clock-outline mr-1"></i> Pending Callback
+                                        </span>
                                         @endif
                                     </td>
                                     <td>
@@ -360,26 +360,26 @@
                                     </td>
                                     <td>
                                         @if($followupEntry)
-                                            <span class="badge badge-soft-success font-weight-bold px-2 py-1" style="font-size: 11px;">
-                                                <i class="mdi mdi-calendar-check mr-1"></i>
-                                                {{ $followupEntry->created_at ? $followupEntry->created_at->format('h:i A') : ($followupEntry->time ?? 'N/A') }}
-                                            </span>
+                                        <span class="badge badge-soft-success font-weight-bold px-2 py-1" style="font-size: 11px;">
+                                            <i class="mdi mdi-calendar-check mr-1"></i>
+                                            {{ $followupEntry->created_at ? $followupEntry->created_at->format('h:i A') : ($followupEntry->time ?? 'N/A') }}
+                                        </span>
                                         @else
-                                            <span class="text-primary font-weight-bold small">
-                                                <i class="mdi mdi-clock-outline mr-1"></i>
-                                                {{ $scheduledEntry && $scheduledEntry->time ? \Carbon\Carbon::parse($scheduledEntry->time)->format('h:i A') : 'N/A' }}
-                                            </span>
+                                        <span class="text-primary font-weight-bold small">
+                                            <i class="mdi mdi-clock-outline mr-1"></i>
+                                            {{ $scheduledEntry && $scheduledEntry->time ? \Carbon\Carbon::parse($scheduledEntry->time)->format('h:i A') : 'N/A' }}
+                                        </span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($followupEntry)
-                                            <span class="badge badge-success px-3 py-1 font-weight-bold text-white shadow-sm" style="border-radius: 20px; background-color: #34c38f; font-size: 11px;">
-                                                <i class="mdi mdi-check-all mr-1"></i> Completed
-                                            </span>
+                                        <span class="badge badge-success px-3 py-1 font-weight-bold text-white shadow-sm" style="border-radius: 20px; background-color: #34c38f; font-size: 11px;">
+                                            <i class="mdi mdi-check-all mr-1"></i> Completed
+                                        </span>
                                         @else
-                                            <button class="btn btn-sm btn-soft-danger px-2 py-1 nudge-lead-specific-btn" data-lead-id="{{ $callback->id }}" data-lead-name="{{ $callback->name }}" data-exec-name="{{ $callback->referral->name ?? 'Executive' }}" style="border-radius: 12px; font-size: 11px;">
-                                                <i class="mdi mdi-bell-ring-outline"></i> Nudge
-                                            </button>
+                                        <button class="btn btn-sm btn-soft-danger px-2 py-1 nudge-lead-specific-btn" data-lead-id="{{ $callback->id }}" data-lead-name="{{ $callback->name }}" data-exec-name="{{ $callback->referral->name ?? 'Executive' }}" style="border-radius: 12px; font-size: 11px;">
+                                            <i class="mdi mdi-bell-ring-outline"></i> Nudge
+                                        </button>
                                         @endif
                                     </td>
                                 </tr>
@@ -412,30 +412,30 @@
                 <div class="card-body">
                     <div class="row">
                         @foreach(array_slice($adminData['leaderboard'], 0, 3) as $index => $rep)
-                            @php
-                                $rank = $index + 1;
-                                $color = $rank == 1 ? 'text-warning' : ($rank == 2 ? 'text-secondary' : 'text-orange');
-                                $crown = $rank == 1 ? '<i class="mdi mdi-crown font-size-22"></i>' : '<i class="mdi mdi-medal font-size-20"></i>';
-                            @endphp
-                            <div class="col-md-4">
-                                <div class="p-3 mb-3 rounded border text-center" style="background: rgba(255, 255, 255, 0.05); position: relative;">
-                                    <div style="position: absolute; top: 10px; right: 15px;" class="{{ $color }}">
-                                        {!! $crown !!}
-                                    </div>
-                                    <h2 class="font-weight-bold text-dark mb-1">{{ $rank }}</h2>
-                                    <h6 class="font-weight-bold text-dark">{{ $rep['name'] }}</h6>
-                                    <div class="text-success font-weight-bold font-size-14 my-2">₹{{ number_format($rep['revenue']) }}</div>
-                                    <div class="font-size-12 text-muted">
-                                        {{ $rep['conversions'] }} Conversions · {{ $rep['meetings'] }} Meetings
-                                    </div>
-                                    @if($rep['target'] > 0)
-                                        <div class="progress progress-sm mt-3" style="height: 6px;">
-                                            <div class="progress-bar bg-success" style="width: {{ $rep['progress_percent'] }}%"></div>
-                                        </div>
-                                        <small class="text-muted mt-1 d-block">{{ $rep['progress_percent'] }}% of Target</small>
-                                    @endif
+                        @php
+                        $rank = $index + 1;
+                        $color = $rank == 1 ? 'text-warning' : ($rank == 2 ? 'text-secondary' : 'text-orange');
+                        $crown = $rank == 1 ? '<i class="mdi mdi-crown font-size-22"></i>' : '<i class="mdi mdi-medal font-size-20"></i>';
+                        @endphp
+                        <div class="col-md-4">
+                            <div class="p-3 mb-3 rounded border text-center" style="background: rgba(255, 255, 255, 0.05); position: relative;">
+                                <div style="position: absolute; top: 10px; right: 15px;" class="{{ $color }}">
+                                    {!! $crown !!}
                                 </div>
+                                <h2 class="font-weight-bold text-dark mb-1">{{ $rank }}</h2>
+                                <h6 class="font-weight-bold text-dark">{{ $rep['name'] }}</h6>
+                                <div class="text-success font-weight-bold font-size-14 my-2">₹{{ number_format($rep['revenue']) }}</div>
+                                <div class="font-size-12 text-muted">
+                                    {{ $rep['conversions'] }} Conversions · {{ $rep['meetings'] }} Meetings
+                                </div>
+                                @if($rep['target'] > 0)
+                                <div class="progress progress-sm mt-3" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: {{ $rep['progress_percent'] }}%"></div>
+                                </div>
+                                <small class="text-muted mt-1 d-block">{{ $rep['progress_percent'] }}% of Target</small>
+                                @endif
                             </div>
+                        </div>
                         @endforeach
                     </div>
                 </div>

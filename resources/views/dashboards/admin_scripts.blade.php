@@ -2,17 +2,21 @@
 <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
 <script>
     $(document).ready(function() {
-        // Sales Chart
-        var salesOptions = {
+
+        // ── Global Sales Trend (12 months, AJAX) ─────────────────────────────────
+        var adminSalesChart = new ApexCharts(document.querySelector("#admin-sales-chart"), {
             series: [{
                 name: "Matured Clients",
                 data: []
             }],
             chart: {
-                height: 270,
+                height: 330,
                 type: "area",
                 toolbar: {
                     show: false
+                },
+                sparkline: {
+                    enabled: false
                 }
             },
             colors: ["#3b5de7"],
@@ -33,10 +37,31 @@
                 }
             },
             xaxis: {
-                categories: []
+                categories: [],
+                labels: {
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
             },
-        };
-        var adminSalesChart = new ApexCharts(document.querySelector("#admin-sales-chart"), salesOptions);
+            yaxis: {
+                labels: {
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            grid: {
+                borderColor: '#f1f1f1'
+            },
+            tooltip: {
+                y: {
+                    formatter: function(v) {
+                        return v + ' closures';
+                    }
+                }
+            }
+        });
         adminSalesChart.render();
 
         $.ajax({
@@ -45,11 +70,11 @@
             url: '/home/chartdata',
             success: function(response) {
                 if (response.status == true) {
-                    var labels = [];
-                    var totals = [];
-                    response.sales.forEach(element => {
-                        totals.push(parseInt(element.total));
-                        labels.push(element.month);
+                    var labels = [],
+                        totals = [];
+                    response.sales.forEach(function(el) {
+                        totals.push(parseInt(el.total));
+                        labels.push(el.month);
                     });
                     adminSalesChart.updateSeries([{
                         data: totals
@@ -63,17 +88,76 @@
             }
         });
 
-        // Admin Project Health Chart
+        // ── Task Completion Trend (12 months, server-rendered) ────────────────────
+        var taskTrendData = @json($adminData['task_completion_trend']);
+        var taskLabels = taskTrendData.map(function(d) {
+            return d.month;
+        });
+        var taskCounts = taskTrendData.map(function(d) {
+            return d.count;
+        });
+
+        var adminTaskChart = new ApexCharts(document.querySelector("#admin-task-trend-chart"), {
+            series: [{
+                name: "Tasks Completed",
+                data: taskCounts
+            }],
+            chart: {
+                height: 330,
+                type: "bar",
+                toolbar: {
+                    show: false
+                }
+            },
+            colors: ["#34c38f"],
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    columnWidth: '55%'
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            xaxis: {
+                categories: taskLabels,
+                labels: {
+                    style: {
+                        fontSize: '9px'
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            grid: {
+                borderColor: '#f1f1f1'
+            },
+            tooltip: {
+                y: {
+                    formatter: function(v) {
+                        return v + ' tasks';
+                    }
+                }
+            }
+        });
+        adminTaskChart.render();
+
+        // ── Project Health Donut ──────────────────────────────────────────────────
         var projSeries = [
             Number('{{ $adminData["proj_todo"] ?? 0 }}'),
             Number('{{ $adminData["proj_in_progress"] ?? 0 }}'),
             Number('{{ $adminData["proj_completed"] ?? 0 }}')
         ];
-        var projOptions = {
+        var projChart = new ApexCharts(document.querySelector("#admin-project-chart"), {
             series: projSeries,
             chart: {
                 type: 'donut',
-                height: 300,
+                height: 200,
                 dropShadow: {
                     enabled: true,
                     color: '#000',
@@ -87,7 +171,7 @@
             colors: ['#adb5bd', '#f1b44c', '#34c38f'],
             stroke: {
                 show: true,
-                width: 5,
+                width: 4,
                 colors: ['#fff']
             },
             dataLabels: {
@@ -96,27 +180,30 @@
             legend: {
                 position: 'bottom',
                 offsetY: 0,
-                height: 30,
+                height: 28,
+                fontSize: '11px'
             },
             plotOptions: {
                 pie: {
                     donut: {
-                        size: '72%',
+                        size: '70%',
                         labels: {
                             show: true,
                             total: {
                                 show: true,
-                                label: 'Total Projects',
-                                fontSize: '14px',
+                                label: 'Total',
+                                fontSize: '12px',
                                 fontWeight: 600,
                                 color: '#9599ad',
                                 formatter: function(w) {
-                                    return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                                    return w.globals.seriesTotals.reduce(function(a, b) {
+                                        return a + b;
+                                    }, 0);
                                 }
                             },
                             value: {
                                 show: true,
-                                fontSize: '24px',
+                                fontSize: '20px',
                                 fontWeight: 700,
                                 color: '#343a40',
                                 offsetY: 5
@@ -125,21 +212,19 @@
                     }
                 }
             }
-        };
-        var projChart = new ApexCharts(document.querySelector("#admin-project-chart"), projOptions);
+        });
         projChart.render();
 
-        // Admin CSD Client Health Donut Chart
-        var csdHealthSeries = [
-            Number('{{ $adminData["csd_healthy"] ?? 0 }}'),
-            Number('{{ $adminData["csd_at_risk"] ?? 0 }}'),
-            Number('{{ $adminData["csd_churning"] ?? 0 }}')
-        ];
-        var csdHealthOptions = {
-            series: csdHealthSeries,
+        // ── CSD Client Health Donut ───────────────────────────────────────────────
+        var csdHealthChart = new ApexCharts(document.querySelector("#admin-csd-health-chart"), {
+            series: [
+                Number('{{ $adminData["csd_healthy"] ?? 0 }}'),
+                Number('{{ $adminData["csd_at_risk"] ?? 0 }}'),
+                Number('{{ $adminData["csd_churning"] ?? 0 }}')
+            ],
             chart: {
                 type: 'donut',
-                height: 300,
+                height: 200,
                 dropShadow: {
                     enabled: true,
                     color: '#000',
@@ -153,7 +238,7 @@
             colors: ['#34c38f', '#f1b44c', '#f46a6a'],
             stroke: {
                 show: true,
-                width: 5,
+                width: 4,
                 colors: ['#fff']
             },
             dataLabels: {
@@ -162,27 +247,30 @@
             legend: {
                 position: 'bottom',
                 offsetY: 0,
-                height: 30,
+                height: 28,
+                fontSize: '11px'
             },
             plotOptions: {
                 pie: {
                     donut: {
-                        size: '72%',
+                        size: '70%',
                         labels: {
                             show: true,
                             total: {
                                 show: true,
-                                label: 'Total Clients',
-                                fontSize: '14px',
+                                label: 'Clients',
+                                fontSize: '12px',
                                 fontWeight: 600,
                                 color: '#9599ad',
                                 formatter: function(w) {
-                                    return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                                    return w.globals.seriesTotals.reduce(function(a, b) {
+                                        return a + b;
+                                    }, 0);
                                 }
                             },
                             value: {
                                 show: true,
-                                fontSize: '24px',
+                                fontSize: '20px',
                                 fontWeight: 700,
                                 color: '#343a40',
                                 offsetY: 5
@@ -191,8 +279,75 @@
                     }
                 }
             }
-        };
-        var csdHealthChart = new ApexCharts(document.querySelector("#admin-csd-health-chart"), csdHealthOptions);
+        });
         csdHealthChart.render();
+
+        // ── Project Category Distribution Bar Chart ───────────────────────────────
+        var deptDistData = @json($adminData['dept_project_distribution']);
+        var deptLabels = deptDistData.map(function(d) {
+            return d.name;
+        });
+        var deptCounts = deptDistData.map(function(d) {
+            return d.projects_count;
+        });
+
+        var adminDeptChart = new ApexCharts(document.querySelector("#admin-dept-projects-chart"), {
+            series: [{
+                name: "Projects",
+                data: deptCounts
+            }],
+            chart: {
+                type: 'bar',
+                height: 260,
+                toolbar: {
+                    show: false
+                }
+            },
+            colors: ["#556ee6"],
+            plotOptions: {
+                bar: {
+                    borderRadius: 5,
+                    horizontal: true,
+                    barHeight: '55%'
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                style: {
+                    fontSize: '10px'
+                }
+            },
+            xaxis: {
+                categories: deptLabels,
+                labels: {
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            grid: {
+                borderColor: '#f1f1f1',
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(v) {
+                        return v + ' project(s)';
+                    }
+                }
+            }
+        });
+        adminDeptChart.render();
     });
 </script>

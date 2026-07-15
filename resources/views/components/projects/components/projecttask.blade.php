@@ -6,25 +6,30 @@
         overflow: hidden;
         font-family: 'Outfit', 'Inter', sans-serif;
     }
+
     #mdlTask .modal-header {
         background: linear-gradient(135deg, #f8fafd 0%, #edf2f9 100%);
         border-bottom: 1px solid #edf2f7;
         padding: 20px 24px;
     }
+
     #mdlTask .modal-title {
         font-weight: 700;
         color: #1e293b;
         font-size: 1.15rem;
     }
+
     #mdlTask .modal-body {
         padding: 24px;
     }
+
     #mdlTask label {
         font-weight: 600;
         font-size: 13px;
         color: #475569;
         margin-bottom: 6px;
     }
+
     #mdlTask .form-control {
         height: 44px;
         border-radius: 10px;
@@ -36,15 +41,18 @@
         background-color: #f8fafc;
         transition: all 0.2s ease-in-out;
     }
+
     #mdlTask .form-control:focus {
         background-color: #ffffff;
         border-color: #3b82f6;
         box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         outline: none;
     }
+
     #mdlTask textarea.form-control {
         height: auto;
     }
+
     #mdlTask .creatBtn {
         background: linear-gradient(135deg, #34c38f 0%, #2ca97b 100%);
         border: none;
@@ -55,10 +63,12 @@
         transition: all 0.2s ease;
         box-shadow: 0 4px 12px rgba(52, 195, 143, 0.25);
     }
+
     #mdlTask .creatBtn:hover {
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(52, 195, 143, 0.35);
     }
+
     #mdlTask .select2-container--default .select2-selection--single {
         height: 44px !important;
         border-radius: 10px !important;
@@ -66,9 +76,11 @@
         background-color: #f8fafc !important;
         padding-top: 7px !important;
     }
+
     #mdlTask .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 42px !important;
     }
+
     .bootstrap-datetimepicker-widget {
         z-index: 99999 !important;
     }
@@ -123,7 +135,7 @@
                             <div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="task_est_start_date" id="task_est_start_date"
-                                         placeholder="DD-MM-YYYY hh:mm AM/PM" tabindex="3" autocomplete="off">
+                                        placeholder="DD-MM-YYYY hh:mm AM/PM" tabindex="3" autocomplete="off">
                                     <div class="input-group-append task_est_start_date_icon" style="cursor: pointer;">
                                         <span class="input-group-text"><i class="mdi mdi-calendar text-primary"></i></span>
                                     </div>
@@ -136,7 +148,7 @@
                             <div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="task_est_end_date" id="task_est_end_date"
-                                         placeholder="DD-MM-YYYY hh:mm AM/PM" tabindex="4" autocomplete="off">
+                                        placeholder="DD-MM-YYYY hh:mm AM/PM" tabindex="4" autocomplete="off">
                                     <div class="input-group-append task_est_end_date_icon" style="cursor: pointer;">
                                         <span class="input-group-text"><i class="mdi mdi-calendar text-primary"></i></span>
                                     </div>
@@ -150,11 +162,11 @@
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <label class="mb-0"> Assign To <span class="text_required">*</span></label>
                                     @if(Auth::user()->hasRole('Team-Leader'))
-                                     <div class="custom-control custom-checkbox">
-                                         <input type="checkbox" class="custom-control-input" id="delegate_task_check" name="is_inter_team" value="1">
-                                         <label class="custom-control-label font-size-11 text-warning font-weight-bold" for="delegate_task_check" style="cursor: pointer;">Delegate</label>
-                                     </div>
-                                     @endif
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" id="delegate_task_check" name="is_inter_team" value="1">
+                                        <label class="custom-control-label font-size-11 text-warning font-weight-bold" for="delegate_task_check" style="cursor: pointer;">Delegate</label>
+                                    </div>
+                                    @endif
                                 </div>
                                 <select class="form-control select2" name="task_user" id="task_user" tabindex="5">
                                     <option value="" selected>Loading Employees...</option>
@@ -213,7 +225,7 @@
             }
             var status = $(option.element).data('status');
             var iconHtml = '';
-            
+
             if (status === 'ToDo') {
                 iconHtml = '<i class="mdi mdi-checkbox-blank-circle text-danger" style="margin-right: 8px;" title="ToDo"></i>';
             } else if (status === 'InProgress') {
@@ -221,7 +233,7 @@
             } else if (status === 'Completed') {
                 iconHtml = '<i class="mdi mdi-checkbox-blank-circle text-success" style="margin-right: 8px;" title="Completed"></i>';
             }
-            
+
             return '<span class="d-inline-flex align-items-center">' + iconHtml + option.text + '</span>';
         }
 
@@ -250,7 +262,7 @@
             }
         });
 
-        $("#task_est_start_date").on("dp.change", function (e) {
+        $("#task_est_start_date").on("dp.change", function(e) {
             $('#task_est_end_date').data("DateTimePicker").minDate(e.date || moment().startOf('day'));
         });
 
@@ -262,7 +274,7 @@
             $.ajax({
                 type: 'GET',
                 url: '/projects/get-employees',
-                data: { 
+                data: {
                     'project_id': projectId,
                     'inter_team': interTeam ? 1 : 0
                 },
@@ -293,7 +305,7 @@
                 tinymce.get("task_description").setContent('');
             }
             $('#delegate_task_check').prop('checked', false);
-            
+
             let projectId = $(this).attr('projectid');
             if (projectId) {
                 // Opened from project page
@@ -314,7 +326,7 @@
                 $('#task_user').select2({
                     dropdownParent: $('#mdlTask')
                 });
-                
+
                 // Load projects list
                 if ($('#shortcut_project_select').hasClass("select2-hidden-accessible")) {
                     $('#shortcut_project_select').select2('destroy');
@@ -336,7 +348,9 @@
                                 dropdownParent: $('#mdlTask'),
                                 templateResult: formatProjectOption,
                                 templateSelection: formatProjectOption,
-                                escapeMarkup: function(m) { return m; }
+                                escapeMarkup: function(m) {
+                                    return m;
+                                }
                             });
                         }
                     },
@@ -344,7 +358,7 @@
                         alertify.error('Failed to load active projects');
                     }
                 });
-                
+
                 $('#mdlTask').modal('show');
             }
         });

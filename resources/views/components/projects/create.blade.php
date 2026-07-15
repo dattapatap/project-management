@@ -5,12 +5,14 @@
     .project-create-container {
         font-family: 'Outfit', 'Inter', sans-serif;
     }
+
     .project-create-container .card {
         border: none;
         border-radius: 16px;
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
         background: #ffffff;
     }
+
     .project-create-container .card-header {
         background: linear-gradient(135deg, #f8fafd 0%, #edf2f9 100%);
         border-bottom: 1px solid #edf2f7;
@@ -18,24 +20,29 @@
         border-top-left-radius: 16px;
         border-top-right-radius: 16px;
     }
+
     .project-create-container .card-header h4 {
         font-weight: 700;
         color: #1e293b;
         margin: 0;
         font-size: 1.15rem;
     }
+
     .project-create-container .card-body {
         padding: 30px 24px;
     }
+
     .project-create-container label {
         font-weight: 600;
         font-size: 13px;
         color: #475569;
         margin-bottom: 6px;
     }
+
     .project-create-container label span.text_required {
         color: #ef4444;
     }
+
     .project-create-container .form-control {
         height: 44px;
         border-radius: 10px;
@@ -47,15 +54,18 @@
         background-color: #f8fafc;
         transition: all 0.2s ease-in-out;
     }
+
     .project-create-container .form-control:focus {
         background-color: #ffffff;
         border-color: #3b82f6;
         box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         outline: none;
     }
+
     .project-create-container textarea.form-control {
         height: auto;
     }
+
     .project-create-container .btn-primary {
         background: linear-gradient(135deg, #556ee6 0%, #3b82f6 100%);
         border: none;
@@ -66,11 +76,13 @@
         transition: all 0.2s ease;
         box-shadow: 0 4px 12px rgba(85, 110, 230, 0.25);
     }
+
     .project-create-container .btn-primary:hover {
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(85, 110, 230, 0.35);
         background: linear-gradient(135deg, #4458cc 0%, #2563eb 100%);
     }
+
     .project-create-container .select2-container--default .select2-selection--single {
         height: 44px !important;
         border-radius: 10px !important;
@@ -78,6 +90,7 @@
         background-color: #f8fafc !important;
         padding-top: 7px !important;
     }
+
     .project-create-container .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 42px !important;
     }
@@ -118,7 +131,12 @@
                     <form id="frm_create_new_project" class="custom-validation" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="row">
-                            <div class="col-4">
+                            <div class="col-6">
+                                <label> Project Name <span class="text_required">*</span></label>
+                                <input type="text" class="form-control" name="project_name" id="project_name" placeholder="Enter Project Name" required tabindex="1">
+                                <span class="invalid-feedback" id="project_name-input-error" role="alert"> <strong></strong></span>
+                            </div>
+                            <div class="col-6">
                                 <label class="d-flex justify-content-between align-items-center mb-1">
                                     <span>Client <span class="text_required">*</span></span>
                                     <button type="button" class="btn btn-sm btn-success py-0 px-2" data-toggle="modal" data-target="#addClientModal" title="Add New Client">
@@ -135,7 +153,9 @@
                                 </select>
                                 <span class="invalid-feedback" id="clientsid-input-error" role="alert"> <strong></strong></span>
                             </div>
+                        </div>
 
+                        <div class="row mt-3">
                             <div class="col-4">
                                 <label> Project Department( Category ) <span class="text_required">*</span></label>
                                 @php
@@ -149,6 +169,16 @@
                                     @endforeach
                                 </select>
                                 <span class="invalid-feedback" id="department-input-error" role="alert"><strong></strong></span>
+                            </div>
+
+                            <div class="col-4">
+                                <label> Sub Category </label>
+                                <div class="form-group">
+                                    <select class="form-control select2" name="category" id="category" style="width:100%" tabindex="3">
+                                        <option selected value> Select Sub Category</option>
+                                    </select>
+                                    <span class="invalid-feedback" id="category-input-error" role="alert"><strong></strong></span>
+                                </div>
                             </div>
 
                             <div class="col-4">
@@ -168,16 +198,7 @@
                         </div>
 
                         <div class="row mt-3">
-                            <div class="col-4">
-                                <label> Sub Category </label>
-                                <div class="form-group">
-                                    <select class="form-control select2" name="category" id="category" style="width:100%" tabindex="3">
-                                        <option selected value> Select Sub Category</option>
-                                    </select>
-                                    <span class="invalid-feedback" id="category-input-error" role="alert"><strong></strong></span>
-                                </div>
-                            </div>
-                            <div class="col-4">
+                            <div class="col-6">
                                 <label> Package </label>
                                 <div class="form-group">
                                     <input type="number" class="form-control" name="package" id="package" placeholder="Package" tabindex="4"
@@ -187,7 +208,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-6">
                                 <label> Reference Link</label>
                                 <div class="form-group">
                                     <input type="url" class="form-control" name="referel_link" id="referel_link" placeholder="Referel Link" tabindex="7">
@@ -268,8 +289,8 @@
                                 <span class="invalid-feedback error-name"></span>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label>Contact Person <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="contact_person" required placeholder="Name">
+                                <label>Contact Person</label>
+                                <input type="text" class="form-control" name="contact_person" placeholder="Name">
                                 <span class="invalid-feedback error-contact_person"></span>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -283,18 +304,18 @@
                                 <span class="invalid-feedback error-email"></span>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label>Mobile <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="mobile" required placeholder="Phone Number">
+                                <label>Mobile</label>
+                                <input type="text" class="form-control" name="mobile" placeholder="Phone Number">
                                 <span class="invalid-feedback error-mobile"></span>
                             </div>
                             <div class="col-md-12 mb-3">
-                                <label>City <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="city" required placeholder="City">
+                                <label>City</label>
+                                <input type="text" class="form-control" name="city" placeholder="City">
                                 <span class="invalid-feedback error-city"></span>
                             </div>
                             <div class="col-md-12 mb-3">
-                                <label>Address <span class="text-danger">*</span></label>
-                                <textarea class="form-control" name="address" required rows="2" placeholder="Enter Full Address"></textarea>
+                                <label>Address</label>
+                                <textarea class="form-control" name="address" rows="2" placeholder="Enter Full Address"></textarea>
                                 <span class="invalid-feedback error-address"></span>
                             </div>
                         </div>
@@ -381,6 +402,31 @@
             $('#department').trigger('change');
         }
 
+        function updateProjectName() {
+            let clientText = $("#clientsid option:selected").text().trim();
+            let categoryText = $("#category option:selected").text().trim();
+
+            if (clientText && clientText !== 'Select Client' && categoryText && categoryText !== 'Select Sub Category') {
+                let currentProjName = $('#project_name').val();
+                if (!currentProjName || currentProjName.includes(' - ') || currentProjName === clientText || currentProjName === categoryText) {
+                    $('#project_name').val(clientText + ' - ' + categoryText);
+                }
+            } else if (clientText && clientText !== 'Select Client') {
+                let currentProjName = $('#project_name').val();
+                if (!currentProjName || currentProjName.includes(' - ')) {
+                    $('#project_name').val(clientText);
+                }
+            } else if (categoryText && categoryText !== 'Select Sub Category') {
+                let currentProjName = $('#project_name').val();
+                if (!currentProjName || currentProjName.includes(' - ')) {
+                    $('#project_name').val(categoryText);
+                }
+            }
+        }
+
+        $(document).on('change', '#clientsid', updateProjectName);
+        $(document).on('change', '#category', updateProjectName);
+
         $('#frm_create_new_project').submit(function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
@@ -447,11 +493,15 @@
                         // Close modal
                         $('#addClientModal').modal('hide');
 
-                        alertify.success(response.message);
                         form[0].reset();
 
-                        var newOption = new Option(response.client.name, response.client.id, true, true);
-                        $('#clientsid').append(newOption).trigger('change');
+                        if (response.client) {
+                            alertify.success(response.message);
+                            var newOption = new Option(response.client.name, response.client.id, true, true);
+                            $('#clientsid').append(newOption).trigger('change');
+                        } else {
+                            alertify.error(response.message);
+                        }
                     }
                     $(".btn-save-client").html('Save Client').prop('disabled', false);
                 },

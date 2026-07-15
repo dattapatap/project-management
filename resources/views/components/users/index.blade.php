@@ -86,8 +86,8 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-centered mb-0 table-hover table-premium erp-table--users" id="userListingTable">
-                        <thead>
+                    <table class="table table-striped mb-0 table-hover table-premium erp-table--users" id="userListingTable">
+                        <thead class="thead-custom-teal">
                             <tr>
                                 <th scope="col" class="col-sl">Sl No</th>
                                 <th scope="col" class="col-name">Name</th>

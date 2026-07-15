@@ -46,16 +46,12 @@ $showReports = $isAdmin || $isPm || $isBm;
     </li>
 
     {{-- 2. Sales (NSD) --}}
-    <li class="dept-item dept-item--nsd {{ is_client_list_route() || request()->is('sales/catalog*') || request()->is('sales/targets*') || request()->is('sales/leaderboard*') || request()->is('commercial/engagements*') ? 'mm-active' : '' }}">
-        <a href="javascript:void(0);" class="has-arrow waves-effect {{ is_client_list_route() || request()->is('sales/catalog*') || request()->is('sales/targets*') || request()->is('sales/leaderboard*') || request()->is('commercial/engagements*') ? 'active' : '' }}">
+    <li class="dept-item dept-item--nsd {{ request()->is('clients*') || is_client_list_route() || request()->is('sales/catalog*') || request()->is('sales/targets*') || request()->is('sales/leaderboard*') || request()->is('commercial/engagements*') ? 'mm-active' : '' }}">
+        <a href="javascript:void(0);" class="has-arrow waves-effect {{ request()->is('clients*') || is_client_list_route() || request()->is('sales/catalog*') || request()->is('sales/targets*') || request()->is('sales/leaderboard*') || request()->is('commercial/engagements*') ? 'active' : '' }}">
             <i class="mdi mdi-trending-up"></i><span>Sales (NSD)</span>
         </a>
-        <ul class="sub-menu" aria-expanded="{{ is_client_list_route() || request()->is('sales/catalog*') || request()->is('sales/targets*') || request()->is('sales/leaderboard*') || request()->is('commercial/engagements*') ? 'true' : 'false' }}">
-            <li class="{{ client_category_active('fresh') ? 'mm-active' : '' }}"><a href="{{ client_list_url('Fresh') }}">Fresh Companies</a></li>
-            <li class="{{ client_category_active('matured') ? 'mm-active' : '' }}"><a href="{{ client_list_url('Matured') }}">Matured Companies</a></li>
-            <li class="{{ client_category_active('followup') ? 'mm-active' : '' }}"><a href="{{ client_list_url('followup') }}">Follow-up Companies</a></li>
-            <li class="{{ client_category_active('not-interested') ? 'mm-active' : '' }}"><a href="{{ client_list_url('Not Interested') }}">Not Interested Companies</a></li>
-            <li class="{{ request()->is('sales/catalog*') ? 'mm-active' : '' }}"><a href="{{ route('sales.catalog.index') }}">Service Catalog</a></li>
+        <ul class="sub-menu" aria-expanded="{{ request()->is('clients*') || is_client_list_route() || request()->is('sales/catalog*') || request()->is('sales/targets*') || request()->is('sales/leaderboard*') || request()->is('commercial/engagements*') ? 'true' : 'false' }}">
+            <li class="{{ request()->is('clients*') || is_client_list_route() ? 'mm-active' : '' }}"><a href="{{ route('clients.index') }}">Companies</a></li>
             <li class="{{ request()->is('sales/targets*') || request()->is('sales/leaderboard*') ? 'mm-active' : '' }}"><a href="{{ route('sales.targets.index') }}">Target & Leaderboard</a></li>
             <li class="{{ request()->is('commercial/engagements*') ? 'mm-active' : '' }}"><a href="{{ route('commercial.engagements.index') }}">Commercial Orders</a></li>
         </ul>
@@ -162,54 +158,16 @@ $showReports = $isAdmin || $isPm || $isBm;
             <i class="mdi mdi-ray-start-arrow"></i><span>Sales Pipeline</span>
         </a>
     </li>
-    <li class="dept-item dept-item--nsd {{ request()->is('sales/catalog*') ? 'mm-active' : '' }}">
-        <a href="{{ route('sales.catalog.index') }}" class="waves-effect {{ request()->is('sales/catalog*') ? 'active' : '' }}">
-            <i class="mdi mdi-book-open-outline"></i><span>Service Catalog</span>
-        </a>
-    </li>
     <li class="dept-item dept-item--nsd {{ request()->is('sales/targets*') || request()->is('sales/leaderboard*') ? 'mm-active' : '' }}">
         <a href="{{ route('sales.targets.index') }}" class="waves-effect {{ request()->is('sales/targets*') || request()->is('sales/leaderboard*') ? 'active' : '' }}">
             <i class="mdi mdi-trophy-outline"></i><span>Target & Leaderboard</span>
         </a>
-    </li>
-    <li class="dept-item dept-item--nsd {{ request()->is('sales/calendar*') ? 'mm-active' : '' }}">
-        <a href="{{ route('sales.calendar.index') }}" class="waves-effect {{ request()->is('sales/calendar*') ? 'active' : '' }}">
-            <i class="mdi mdi-calendar-clock"></i><span>Activity Calendar</span>
-        </a>
-    </li>
-    <li class="dept-item dept-item--nsd {{ request()->is('mysts/searchsts*') ? 'mm-active' : '' }}">
-        <a href="{{ url('mysts/searchsts') }}" class="waves-effect {{ request()->is('mysts/searchsts*') ? 'active' : '' }}">
-            <i class="mdi mdi-magnify"></i><span>Search STS</span>
-        </a>
-    </li>
-    <li class="dept-item dept-item--nsd {{ request()->is('reports/dsr/*') ? 'mm-active' : '' }}">
-        <a href="javascript:void(0);" class="has-arrow waves-effect {{ request()->is('reports/dsr/*') ? 'active' : '' }}">
-            <i class="mdi mdi-clipboard-text-outline"></i><span>DSR Reports</span>
-        </a>
-        <ul class="sub-menu {{ request()->is('reports/dsr/*') ? 'mm-show' : '' }}">
-            <li class="{{ request()->is('reports/dsr/searchdsr*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/searchdsr') }}">DSR Search</a></li>
-            <li class="{{ request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/salesreports') }}">Sales Report</a></li>
-        </ul>
     </li>
     <li class="dept-item dept-item--nsd {{ request()->is('commercial/engagements*') ? 'mm-active' : '' }}">
         <a href="{{ route('commercial.engagements.index') }}" class="waves-effect {{ request()->is('commercial/engagements*') ? 'active' : '' }}">
             <i class="mdi mdi-file-tree"></i><span>Commercial Orders</span>
         </a>
     </li>
-    @if ($user->hasRole('Sales-Executive') || ($user->hasRole('Team-Leader') && $deptId == 1))
-    <li class="dept-item dept-item--nsd {{ request()->is('my-insights*') ? 'mm-active' : '' }}">
-        <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
-            <i class="mdi mdi-chart-line"></i><span>My Insights</span>
-        </a>
-    </li>
-    @endif
-    @if (($user->hasRole('Team-Leader') && $deptId == 1) || $isBm || $isAdmin)
-    <li class="dept-item dept-item--nsd {{ request()->is('reports/employees*') ? 'mm-active' : '' }}">
-        <a href="{{ route('reports.employees') }}" class="waves-effect {{ request()->is('reports/employees*') ? 'active' : '' }}">
-            <i class="mdi mdi-account-supervisor"></i><span>NSD Team Report</span>
-        </a>
-    </li>
-    @endif
     @endif
 
     {{-- OPERATIONS · OD --}}
@@ -286,13 +244,7 @@ $showReports = $isAdmin || $isPm || $isBm;
     </li>
     @endif
 
-    @if ($showOdEmployee || $user->hasRole(['Team-Leader', 'Sales-Executive', 'CSD-Executive', 'Project-Manager']))
-    <li class="dept-item dept-item--main {{ request()->is('my-insights*') ? 'mm-active' : '' }}">
-        <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
-            <i class="mdi mdi-chart-timeline-variant"></i><span>My Insights</span>
-        </a>
-    </li>
-    @endif
+
 
     {{-- CUSTOMER SUCCESS · CSD --}}
     @if ($showCsd)
@@ -350,19 +302,39 @@ $showReports = $isAdmin || $isPm || $isBm;
             <i class="mdi mdi-trophy-outline"></i><span>Target & Leaderboard</span>
         </a>
     </li>
-    <li class="dept-item dept-item--csd {{ request()->is('my-insights*') ? 'mm-active' : '' }}">
-        <a href="{{ route('my-insights') }}" class="waves-effect {{ request()->is('my-insights*') ? 'active' : '' }}">
-            <i class="mdi mdi-chart-areaspline"></i><span>My Insights</span>
-        </a>
-    </li>
     @endif
-    @if (($user->hasRole('Team-Leader') && $deptId == 3) || $isBm)
-    <li class="dept-item dept-item--csd {{ request()->is('csd/reports*') ? 'mm-active' : '' }}">
-        <a href="{{ route('csd.reports.team') }}" class="waves-effect {{ request()->is('csd/reports*') ? 'active' : '' }}">
-            <i class="mdi mdi-account-group"></i><span>CSD Team Report</span>
-        </a>
-    </li>
     @endif
+
+    {{-- 5. Analytics & Reports for Employees --}}
+    @php
+    $showEmployeeAnalytics = !$isAdmin && !$isBm && ($showOdEmployee || $user->hasRole(['Team-Leader', 'Sales-Executive', 'CSD-Executive', 'Project-Manager']));
+    @endphp
+
+    @if ($showEmployeeAnalytics)
+    <li class="dept-item dept-item--reports {{ request()->is('my-insights*') || request()->is('mysts/searchsts*') || request()->is('reports/dsr*') || request()->is('reports/employees*') || request()->is('csd/reports*') || request()->is('sales/calendar*') ? 'mm-active' : '' }}">
+        <a href="javascript:void(0);" class="has-arrow waves-effect {{ request()->is('my-insights*') || request()->is('mysts/searchsts*') || request()->is('reports/dsr*') || request()->is('reports/employees*') || request()->is('csd/reports*') || request()->is('sales/calendar*') ? 'active' : '' }}">
+            <i class="mdi mdi-chart-bar"></i><span>Analytics & Reports</span>
+        </a>
+        <ul class="sub-menu" aria-expanded="{{ request()->is('my-insights*') || request()->is('mysts/searchsts*') || request()->is('reports/dsr*') || request()->is('reports/employees*') || request()->is('csd/reports*') || request()->is('sales/calendar*') ? 'true' : 'false' }}">
+            <li class="{{ request()->is('my-insights*') ? 'mm-active' : '' }}"><a href="{{ route('my-insights') }}">My Insights</a></li>
+
+            @if ($deptId == 1)
+            <li class="{{ request()->is('sales/calendar*') ? 'mm-active' : '' }}"><a href="{{ route('sales.calendar.index') }}">Activity Calendar</a></li>
+            <li class="{{ request()->is('mysts/searchsts*') ? 'mm-active' : '' }}"><a href="{{ url('mysts/searchsts') }}">Search STS</a></li>
+            <li class="{{ request()->is('reports/dsr/searchdsr*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/searchdsr') }}">DSR Search</a></li>
+            <li class="{{ request()->is('reports/dsr/salesreports*') ? 'mm-active' : '' }}"><a href="{{ url('reports/dsr/salesreports') }}">Sales Analytics</a></li>
+            @if ($user->hasRole('Team-Leader'))
+            <li class="{{ request()->is('reports/employees*') ? 'mm-active' : '' }}"><a href="{{ route('reports.employees') }}">NSD Team Report</a></li>
+            @endif
+            @endif
+
+            @if ($deptId == 3)
+            @if ($user->hasRole('Team-Leader'))
+            <li class="{{ request()->is('csd/reports*') ? 'mm-active' : '' }}"><a href="{{ route('csd.reports.team') }}">CSD Team Report</a></li>
+            @endif
+            @endif
+        </ul>
+    </li>
     @endif
 
     {{-- REPORTS --}}

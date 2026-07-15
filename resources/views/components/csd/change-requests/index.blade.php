@@ -7,18 +7,24 @@
 @section('content')
 <div class="container-fluid erp-page erp-page--csd">
     @include('layouts.partials.erp-page-header', [
-        'title' => 'Change Requests',
-        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAdd"><i class="mdi mdi-plus"></i> New Request</button>',
+    'title' => 'Change Requests',
+    'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAdd"><i class="mdi mdi-plus"></i> New Request</button>',
     ])
     <div class="card erp-table-card">
         <div class="card-body">
-            <table id="dataTable" class="table table-bordered table-hover w-100">
-                <thead>
-                    <tr>
-                        <th>#</th><th>Client</th><th>Title</th><th>Status</th><th>Action</th>
-                    </tr>
-                </thead>
-            </table>
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-premium table-centered table-striped table-hover w-100">
+                    <thead class="thead-custom-teal">
+                        <tr>
+                            <th>#</th>
+                            <th>Client</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -110,19 +116,60 @@
 <script src="{{ asset('assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('js/csd-common.js') }}"></script>
 <script>
-$(function(){
-    var table = $('#dataTable').DataTable({processing:true,serverSide:true,ajax:'{{ route('csd.change-requests.data') }}',
-        columns:[{data:'DT_RowIndex',orderable:false},{data:'client_name'},{data:'title'},{data:'status'},{data:'action',orderable:false}]});
-    $('#frmAdd').on('submit',function(e){e.preventDefault();csdApi.post('{{ route('csd.change-requests.store') }}',$(this).serialize(),function(){csdApi.closeModal('#mdlAdd','#frmAdd');table.ajax.reload();});});
-    $(document).on('click','.editChangeRequest',function(){
-        csdApi.get('/csd/change-requests/'+$(this).data('id'),function(r){
-            if(!r.success)return; var d=r.data;
-            $('#editId').val(d.id); $('#editTitle').val(d.title); $('#editDescription').val(d.description);
-            $('#editStatus').val(d.status); $('#mdlEdit').modal('show');
+    $(function() {
+        var table = $('#dataTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('csd.change-requests.data') }}",
+            columns: [{
+                data: 'DT_RowIndex',
+                orderable: false
+            }, {
+                data: 'client_name'
+            }, {
+                data: 'title'
+            }, {
+                data: 'status'
+            }, {
+                data: 'action',
+                orderable: false
+            }]
+        });
+        $('#frmAdd').on('submit', function(e) {
+            e.preventDefault();
+            csdApi.post("{{ route('csd.change-requests.store') }}", $(this).serialize(),
+                function() {
+                    csdApi.closeModal('#mdlAdd', '#frmAdd');
+                    table.ajax.reload();
+                });
+        });
+        $(document).on('click', '.editChangeRequest', function() {
+            csdApi.get('/csd/change-requests/' + $(this).data('id'), function(r) {
+                if (!r.success) return;
+                var d = r.data;
+                $('#editId').val(d.id);
+                $('#editTitle').val(d.title);
+                $('#editDescription').val(d.description);
+                $('#editStatus').val(d.status);
+                $('#mdlEdit').modal('show');
+            });
+        });
+        $('#frmEdit').on('submit', function(e) {
+            e.preventDefault();
+            csdApi.put('/csd/change-requests/' + $('#editId').val(), $(this).serializeArray().reduce((o, i) => {
+                o[i.name] = i.value;
+                return o;
+            }, {}), function() {
+                csdApi.closeModal('#mdlEdit', '#frmEdit');
+                table.ajax.reload();
+            });
+        });
+        $(document).on('click', '.transferToOd', function() {
+            var id = $(this).data('id');
+            csdApi.post('/csd/change-requests/' + id + '/transfer-to-od', {}, function() {
+                table.ajax.reload();
+            });
         });
     });
-    $('#frmEdit').on('submit',function(e){e.preventDefault();csdApi.put('/csd/change-requests/'+$('#editId').val(),$(this).serializeArray().reduce((o,i)=>{o[i.name]=i.value;return o;},{}),function(){csdApi.closeModal('#mdlEdit','#frmEdit');table.ajax.reload();});});
-    $(document).on('click','.transferToOd',function(){var id=$(this).data('id');csdApi.post('/csd/change-requests/'+id+'/transfer-to-od',{},function(){table.ajax.reload();});});
-});
 </script>
 @endsection

@@ -88,23 +88,23 @@
     <div class="row departments-grid-row">
         @forelse ($departments as $item)
         @php
-            // Assign custom accent stripes based on department name
-            $stripeColor = '#4f46e5';
-            $lowerName = strtolower($item->name);
-            if (str_contains($lowerName, 'sales')) $stripeColor = '#3b82f6';
-            else if (str_contains($lowerName, 'design')) $stripeColor = '#a855f7';
-            else if (str_contains($lowerName, 'dev') || str_contains($lowerName, 'tech')) $stripeColor = '#6366f1';
-            else if (str_contains($lowerName, 'seo')) $stripeColor = '#10b981';
-            else if (str_contains($lowerName, 'account') || str_contains($lowerName, 'finance')) $stripeColor = '#06b6d4';
+        // Assign custom accent stripes based on department name
+        $stripeColor = '#4f46e5';
+        $lowerName = strtolower($item->name);
+        if (str_contains($lowerName, 'sales')) $stripeColor = '#3b82f6';
+        else if (str_contains($lowerName, 'design')) $stripeColor = '#a855f7';
+        else if (str_contains($lowerName, 'dev') || str_contains($lowerName, 'tech')) $stripeColor = '#6366f1';
+        else if (str_contains($lowerName, 'seo')) $stripeColor = '#10b981';
+        else if (str_contains($lowerName, 'account') || str_contains($lowerName, 'finance')) $stripeColor = '#06b6d4';
         @endphp
         <div class="col-lg-4 col-md-6 dept-card-col">
             <div class="dept-card dept-card-clickable"
-                 style="--dept-stripe: {{ $stripeColor }};"
-                 data-dept-url="{{ route('departments.show', $item->name) }}"
-                 data-teams-url="{{ url('departments/'.$item->name.'/teams') }}"
-                 role="button"
-                 tabindex="0"
-                 title="Open {{ $item->name }}">
+                style="--dept-stripe: {{ $stripeColor }};"
+                data-dept-url="{{ route('departments.show', $item->name) }}"
+                data-teams-url="{{ url('departments/'.$item->name.'/teams') }}"
+                role="button"
+                tabindex="0"
+                title="Open {{ $item->name }}">
                 <!-- Header -->
                 <div class="dept-card-header">
                     <div class="dept-title-link">
@@ -137,24 +137,24 @@
                             <ul class="avatar-stack">
                                 @php $stackedCount = 0; @endphp
                                 @foreach ($item->users as $members)
-                                    @if($stackedCount < 6)
+                                @if($stackedCount < 6)
                                     <li>
-                                        @if ($members->userdetail->profile)
-                                            <img title="{{ $members->userdetail->name }}" src="{{ asset('storage/'. $members->userdetail->profile )}}">
-                                        @else
-                                            <img title="{{ $members->userdetail->name }}" src="{{ Avatar::create($members->userdetail->name)->toBase64() }}">
-                                        @endif
+                                    @if ($members->userdetail->profile)
+                                    <img title="{{ $members->userdetail->name }}" src="{{ asset('storage/'. $members->userdetail->profile )}}">
+                                    @else
+                                    <img title="{{ $members->userdetail->name }}" src="{{ Avatar::create($members->userdetail->name)->toBase64() }}">
+                                    @endif
                                     </li>
                                     @php $stackedCount++; @endphp
                                     @endif
-                                @endforeach
-                                
-                                @php $totalMembers = $item->users()->count(); @endphp
-                                @if($totalMembers > 6)
+                                    @endforeach
+
+                                    @php $totalMembers = $item->users()->count(); @endphp
+                                    @if($totalMembers > 6)
                                     <li>
                                         <span class="stack-count">+{{ $totalMembers - 6 }}</span>
                                     </li>
-                                @endif
+                                    @endif
                             </ul>
                             @else
                             <span class="text-muted font-size-12"><i class="mdi mdi-account-off mr-1"></i>No Members</span>
@@ -167,9 +167,9 @@
                                 <i class="mdi mdi-account-group-outline"></i> Teams
                             </a>
                             @if ($item->status == true)
-                                <span class="status-badge status-active">Active</span>
+                            <span class="status-badge status-active">Active</span>
                             @else
-                                <span class="status-badge status-inactive">In Active</span>
+                            <span class="status-badge status-inactive">In Active</span>
                             @endif
                         </div>
                     </div>
@@ -243,7 +243,7 @@
                         <select name="branch" id="branch" class="form-control select-premium" required>
                             <option value selected>Select Branch</option>
                             @foreach ($branches as $item)
-                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                            <option value="{{ $item->id }}">{{ $item->name }}</option>
                             @endforeach
                         </select>
                         <span class="invalid-feedback" id="branch-input-error" role="alert">
@@ -279,7 +279,7 @@
 
 @section('scripts')
 <script>
-    $(document).ready(function(){
+    $(document).ready(function() {
         // Open department on card click (exclude action controls)
         $(document).on('click', '.dept-card-clickable', function(e) {
             if ($(e.target).closest('.dept-card-actions, .dropdown, .dropdown-menu').length) {
@@ -296,7 +296,7 @@
         });
 
         // Trigger modal on add department click
-        $('.btnAddDepartment').click(function(){
+        $('.btnAddDepartment').click(function() {
             $('#frm_department')[0].reset();
             $('#department_id').val('');
             $('#mdlDepartment').modal('show');
@@ -307,23 +307,23 @@
         });
 
         // Close modal
-        $('.btnmdlclose').click(function(){
+        $('.btnmdlclose').click(function() {
             $('#mdlDepartment').modal('hide');
         });
 
         // Live Grid Search Filter on cards
         $('#deptSearchInput').on('keyup', function() {
             let value = $(this).val().toLowerCase().trim();
-            
+
             $('.departments-grid-row .dept-card-col').filter(function() {
                 let text = $(this).find('.dept-card').text().toLowerCase();
                 $(this).toggle(text.indexOf(value) > -1);
             });
-            
+
             // Displays empty display filter search is too matching
             let visibleCards = $('.departments-grid-row .dept-card-col:visible').length;
             let noMatchCard = $('#noMatchCard');
-            
+
             if (visibleCards === 0 && $('.departments-grid-row').children('.dept-card-col').length > 0) {
                 if (noMatchCard.length === 0) {
                     $('.departments-grid-row').append(`
@@ -339,7 +339,7 @@
         });
 
         // AJAX submit form
-        $('#frm_department').submit(function(e){
+        $('#frm_department').submit(function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
@@ -347,7 +347,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: '{{ route('departments.store') }}',
+                url: "{{ route('departments.store') }}",
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -387,7 +387,7 @@
         });
 
         // Fetch department and trigger edit
-        $(document).on('click', '.btn_edit_department', function(e){
+        $(document).on('click', '.btn_edit_department', function(e) {
             let dept_name = $(this).attr('dept_name');
             $.ajax({
                 type: 'GET',
@@ -397,7 +397,7 @@
                     $(".input-premium, .select-premium").removeClass("is-invalid");
                 },
                 success: function(response) {
-                    if(response.status == true){
+                    if (response.status == true) {
                         let dept = response.data;
                         $('.modal-title').text('Edit Department Details');
                         $('.creatBtn').text('Update Details');
@@ -407,7 +407,7 @@
                         $('#description').val(dept.description);
                         $('#branch').val(dept.branchid);
                         $('#mdlDepartment').modal('show');
-                    }else{
+                    } else {
                         alertify.error(response.message);
                     }
                 },

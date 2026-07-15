@@ -8,33 +8,35 @@
 @section('content')
 <div class="container-fluid erp-page erp-page--csd">
     @php
-        $backBtn = '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>';
-        $headerActions = $backBtn . ($canAssign
-            ? '<button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAddAssignment"><i class="mdi mdi-plus"></i> Assign Client</button>'
-            : '');
+    $backBtn = '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>';
+    $headerActions = $backBtn . ($canAssign
+    ? '<button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#mdlAddAssignment"><i class="mdi mdi-plus"></i> Assign Client</button>'
+    : '');
     @endphp
     @include('layouts.partials.erp-page-header', [
-        'title' => 'CSD Client Management',
-        'subtitle' => 'Track health, satisfaction, and ownership of your portfolio.',
-        'actions' => $headerActions,
+    'title' => 'CSD Client Management',
+    'subtitle' => 'Track health, satisfaction, and ownership of your portfolio.',
+    'actions' => $headerActions,
     ])
     <div class="card erp-table-card">
         <div class="card-body">
-            <table id="csdClientsTable" class="table table-bordered table-hover dt-responsive nowrap w-100">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Client</th>
-                        <th>Project</th>
-                        <th>Assigned To</th>
-                        <th>Handoff</th>
-                        <th>Health</th>
-                        <th>Satisfaction</th>
-                        <th>Open Upsell Order</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-            </table>
+            <div class="table-responsive">
+                <table id="csdClientsTable" class="table table-premium table-centered table-striped dt-responsive nowrap w-100">
+                    <thead class="thead-custom-teal">
+                        <tr>
+                            <th>#</th>
+                            <th>Client</th>
+                            <th>Project</th>
+                            <th>Assigned To</th>
+                            <th>Handoff</th>
+                            <th>Health</th>
+                            <th>Satisfaction</th>
+                            <th>Open Upsell Order</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -121,70 +123,134 @@
 <script src="{{ asset('assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js')}}"></script>
 <script src="{{ asset('js/csd-common.js') }}"></script>
 <script>
-$(function() {
-    var table = $('#csdClientsTable').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: '{{ route('csd.clients.data') }}',
-        columns: [
-            { data: 'DT_RowIndex', orderable: false, searchable: false },
-            { data: 'client_name', name: 'client_name' },
-            { data: 'project_name', orderable: false },
-            { data: 'assignee_name', orderable: false },
-            { data: 'handoff_date' },
-            { data: 'health_status', orderable: false },
-            { data: 'satisfaction_score' },
-            { data: 'upsell_track', orderable: false, searchable: false },
-            { data: 'action', orderable: false, searchable: false }
-        ]
-    });
+    $(function() {
+        var table = $('#csdClientsTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('csd.clients.data') }}",
+            columns: [{
+                    data: 'DT_RowIndex',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'client_name',
+                    name: 'client_name'
+                },
+                {
+                    data: 'project_name',
+                    orderable: false
+                },
+                {
+                    data: 'assignee_name',
+                    orderable: false
+                },
+                {
+                    data: 'handoff_date'
+                },
+                {
+                    data: 'health_status',
+                    orderable: false
+                },
+                {
+                    data: 'satisfaction_score'
+                },
+                {
+                    data: 'upsell_track',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'action',
+                    orderable: false,
+                    searchable: false
+                }
+            ]
+        });
 
-    @if($canAssign)
-    $.get('{{ route('csd.clients.active') }}', function(res) {
-        if (res.success && res.data.length) {
-            $('#csdClientSelect').html('<option value="">Select client…</option>' + res.data.map(function(c) {
-                return '<option value="' + c.id + '">' + c.name + '</option>';
-            }).join(''));
-        } else {
-            $('#csdClientSelect').html('<option value="">No eligible clients</option>');
-        }
-    });
-    $('#frmCsdAssignment').on('submit', function(e) {
-        e.preventDefault();
-        csdApi.post('{{ route('csd.clients.store') }}', $(this).serialize(), function() {
-            csdApi.closeModal('#mdlAddAssignment', '#frmCsdAssignment');
-            table.ajax.reload();
+        @if($canAssign)
+        $.get("{{ route('csd.clients.active') }}",
+            function(res) {
+                if (res.success && res.data.length) {
+                    $('#csdClientSelect').html('<option value="">Select client…</option>' + res.data.map(function(c) {
+                        return '<option value="' + c.id + '">' + c.name + '</option>';
+                    }).join(''));
+                } else {
+                    $('#csdClientSelect').html('<option value="">No eligible clients</option>');
+                }
+            });
+        $('#frmCsdAssignment').on('submit', function(e) {
+            e.preventDefault();
+            csdApi.post("{{ route('csd.clients.store') }}", $(this).serialize(),
+                function() {
+                    csdApi.closeModal('#mdlAddAssignment', '#frmCsdAssignment');
+                    table.ajax.reload();
+                });
+        });
+        @endif
+
+        $(document).on('click', '.editAssignment', function() {
+            var id = $(this).data('id');
+            csdApi.get('/csd/clients/' + id, function(res) {
+                if (!res.success) return;
+                var a = res.assignment;
+                $('#editAssignmentId').val(a.id);
+                $('#editClientName').text(a.client ? a.client.name : 'Update Assignment');
+                if ($('#editAssignedTo').length) {
+                    $('#editAssignedTo').val(a.assigned_to || '');
+                }
+                $('#editHealthStatus').val(a.health_status);
+                $('#editStatus').val(a.status);
+                $('#editSatisfaction').val(a.satisfaction_score || '');
+                $('#editNotes').val(a.notes || '');
+                $('#mdlEditAssignment').modal('show');
+            });
+        });
+
+        @if($canDelete)
+        $(document).on('click', '.deleteAssignment', function() {
+            var id = $(this).data('id');
+            var clientName = $(this).data('client') || 'this client';
+            if (!confirm('Remove "' + clientName + '" from CSD assignments?\nThis cannot be undone.')) {
+                return;
+            }
+            var $btn = $(this).prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i> Removing…');
+            $.ajax({
+                url: '/csd/clients/' + id,
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(res) {
+                    if (res.success) {
+                        table.ajax.reload(null, false);
+                        if (window.alertify) alertify.success(res.message || 'Client assignment removed.');
+                    } else {
+                        if (window.alertify) alertify.error(res.message || 'Failed to remove assignment.');
+                        $btn.prop('disabled', false).html('<i class="mdi mdi-delete-outline"></i> Remove');
+                    }
+                },
+                error: function(xhr) {
+                    var msg = xhr.responseJSON ? xhr.responseJSON.message : 'An error occurred.';
+                    if (window.alertify) alertify.error(msg);
+                    $btn.prop('disabled', false).html('<i class="mdi mdi-delete-outline"></i> Remove');
+                }
+            });
+        });
+        @endif
+
+        $('#frmEditAssignment').on('submit', function(e) {
+            e.preventDefault();
+            var id = $('#editAssignmentId').val();
+            csdApi.put('/csd/clients/' + id, $(this).serializeArray().reduce(function(o, i) {
+                o[i.name] = i.value;
+                return o;
+            }, {}), function() {
+                csdApi.closeModal('#mdlEditAssignment', '#frmEditAssignment');
+                table.ajax.reload();
+            });
         });
     });
-    @endif
-
-    $(document).on('click', '.editAssignment', function() {
-        var id = $(this).data('id');
-        csdApi.get('/csd/clients/' + id, function(res) {
-            if (!res.success) return;
-            var a = res.assignment;
-            $('#editAssignmentId').val(a.id);
-            $('#editClientName').text(a.client ? a.client.name : 'Update Assignment');
-            if ($('#editAssignedTo').length) { $('#editAssignedTo').val(a.assigned_to || ''); }
-            $('#editHealthStatus').val(a.health_status);
-            $('#editStatus').val(a.status);
-            $('#editSatisfaction').val(a.satisfaction_score || '');
-            $('#editNotes').val(a.notes || '');
-            $('#mdlEditAssignment').modal('show');
-        });
-    });
-
-    $('#frmEditAssignment').on('submit', function(e) {
-        e.preventDefault();
-        var id = $('#editAssignmentId').val();
-        csdApi.put('/csd/clients/' + id, $(this).serializeArray().reduce(function(o, i) {
-            o[i.name] = i.value;
-            return o;
-        }, {}), function() {
-            csdApi.closeModal('#mdlEditAssignment', '#frmEditAssignment');
-            table.ajax.reload();
-        });
-    });
-});
 </script>
 @endsection

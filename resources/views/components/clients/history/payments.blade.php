@@ -13,7 +13,7 @@
     <div class="row">
         <div class="col-12">
             <div class="pb-2 d-flex align-items-center justify-content-between">
-                <a href="{{ route('clients.index') }}" class="btn-back" >
+                <a href="{{ route('clients.index') }}" class="btn-back">
                     <i class="mdi mdi-keyboard-backspace fs-20"></i>
                 </a>
             </div>
@@ -32,7 +32,7 @@
                 <ul class="nav nav-tabs nav-dept mt-3" role="tablist">
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url('clients/'.base64_encode($client->id).'/'.'contacts' ) }}" >
+                        <a class="nav-link" href="{{ url('clients/'.base64_encode($client->id).'/'.'contacts' ) }}">
                             <span class="d-none d-md-inline-block">Contacts</span>
                         </a>
                     </li>
@@ -57,7 +57,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link"
-                            @if($user->hasRole([1,3,4,7])) href="{{ url('clients/'.base64_encode($client->id).'/'.'designing' ) }}" @endif  role="tab">
+                            @if($user->hasRole([1,3,4,7])) href="{{ url('clients/'.base64_encode($client->id).'/'.'designing' ) }}" @endif role="tab">
                             <span class="d-none d-md-inline-block">Designing</span>
                         </a>
                     </li>
@@ -105,27 +105,27 @@
                                 </a>
                             </div>
                             <div>
-                                <span id="pane-timer"> <?= date('M d Y h:m:s')?></span>
+                                <span id="pane-timer"> <?= date('M d Y h:m:s') ?></span>
                                 <i class="mdi mdi-calendar-month"></i>
                             </div>
                         </div>
                         <hr>
 
                         <div class="col-12 p-0">
-                            <table id="tbl_payments" class="table table-bordered dt-responsive nowrap"
+                            <table id="tbl_payments" class="table table-premium table-centered table-striped dt-responsive nowrap"
                                 style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-                                <thead>
-                                <tr>
-                                    <th>Sl No</th>
-                                    <th>Project Name</th>
-                                    <th>Package</th>
-                                    <th>Paid</th>
-                                    <th>Balance</th>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th> Reference </th>
-                                    <th>Added By</th>
-                                </tr>
+                                <thead class="thead-custom-teal">
+                                    <tr>
+                                        <th>Sl No</th>
+                                        <th>Project Name</th>
+                                        <th>Package</th>
+                                        <th>Paid</th>
+                                        <th>Balance</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th> Reference </th>
+                                        <th>Added By</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
 
@@ -157,24 +157,24 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_add_payments" class="custom-validation"  method="POST" novalidate>
+                <form id="frm_add_payments" class="custom-validation" method="POST" novalidate>
 
                     @csrf
                     <input type="hidden" value="{{ $client->id}}" name="client" id="client">
                     <div class="row">
                         @php
-                            $projects = DB::table('department_projects')->select('id', 'project_name')
-                                                ->where('client', $client->id)
-                                                ->whereNull('deleted_at')
-                                                ->get();
+                        $projects = DB::table('department_projects')->select('id', 'project_name')
+                        ->where('client', $client->id)
+                        ->whereNull('deleted_at')
+                        ->get();
                         @endphp
                         <div class="col-12">
                             <div class="form-group">
-                                <select class="form-control select2" name="project_type" id="project_type" required >
+                                <select class="form-control select2" name="project_type" id="project_type" required>
                                     <option value="" selected> Select Project</option>
 
                                     @foreach ($projects as $item)
-                                        <option value="{{ $item->id }}"> {{ $item->project_name }}</option>
+                                    <option value="{{ $item->id }}"> {{ $item->project_name }}</option>
                                     @endforeach
                                 </select>
                                 <span class="invalid-feedback" id="dock_type-input-error" role="alert">
@@ -192,8 +192,8 @@
                             <div class="form-group">
                                 <label for=""> Amount </label>
                                 <input type="text" id="amount" name='amount' class="form-control"
-                                onKeyPress="return isNumberKey(event);"  required>
-                                <span class="invalid-feedback" id="amount-input-error" role="alert" >  <strong></strong></span>
+                                    onKeyPress="return isNumberKey(event);" required>
+                                <span class="invalid-feedback" id="amount-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
 
@@ -215,8 +215,8 @@
                                     <input type="text" class="form-control" readonly>
                                     <div class="input-group-btn">
                                         <span class="fileUpload btn btn-primary">
-                                        <span class="upl" id="upload">Upload</span>
-                                        <input type="file" class="upload up" id="payment_cheque_receipt" name="payment_cheque_receipt" accept="image/*"  tabindex="9"  />
+                                            <span class="upl" id="upload">Upload</span>
+                                            <input type="file" class="upload up" id="payment_cheque_receipt" name="payment_cheque_receipt" accept="image/*" tabindex="9" />
                                         </span>
                                     </div>
                                 </div>
@@ -230,8 +230,8 @@
                                     <input type="text" class="form-control" readonly>
                                     <div class="input-group-btn">
                                         <span class="fileUpload btn btn-primary">
-                                        <span class="upl" id="upload">Upload</span>
-                                        <input type="file" class="upload up" id="payment_cash_receipt" name="payment_cash_receipt" accept="image/*"  tabindex="10"  />
+                                            <span class="upl" id="upload">Upload</span>
+                                            <input type="file" class="upload up" id="payment_cash_receipt" name="payment_cash_receipt" accept="image/*" tabindex="10" />
                                         </span>
                                     </div>
                                 </div>
@@ -241,15 +241,14 @@
                         <div class="pay_type_online col-6" style="display: none;">
                             <label> Transaction Id </label>
                             <input type="text" name="transactionid" id="transactionid" class="form-control" placeholder="Transaction Id"
-                            onKeyPress="return isNumberKey(event);" tabindex="11">
+                                onKeyPress="return isNumberKey(event);" tabindex="11">
                             <span class="invalid-feedback" id="transactionid-input-error" role="alert"><strong></strong></span>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Add Payment </button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Add Payment </button>
                             </div>
                         </div>
                     </div>
@@ -271,53 +270,105 @@
 <script src="{{ asset('assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js')}}"></script>
 
 <script>
-    $(document).ready(function(){
-        $(document).on('change','.up', function(){
-            $(this).closest('.form-group').find('.form-control').attr("value",$(this).get(0).files[0].name);
+    $(document).ready(function() {
+        $(document).on('change', '.up', function() {
+            $(this).closest('.form-group').find('.form-control').attr("value", $(this).get(0).files[0].name);
         });
 
         $("#tbl_payments").DataTable({
             processing: true,
             serverSide: true,
             bDestroy: true,
-            ajax :{
-                    type: 'GET',
-                    data:{'client': {{ $client->id }} },
-                    url: "{{ route('client.payments') }}",
-                    error:function(err){ console.log(err);}
+            ajax: {
+                type: 'GET',
+                data: {
+                    'client': {
+                        {
+                            $client - > id
+                        }
+                    }
+                },
+                url: "{{ route('client.payments') }}",
+                error: function(err) {
+                    console.log(err);
+                }
             },
-            columns: [
-                {data: 'DT_RowIndex', name: 'Sl No', orderable: false, searchable: false},
-                {data: 'project', name: 'name', orderable: false, searchable: false},
-                {data: 'packages.package', name: 'packages.package', orderable: false, searchable: true},
-                {data: 'amount', name: 'amount', orderable: false, searchable: true},
-                {data: 'remains', name: 'remains', orderable: false, searchable: true},
-                {data: 'paid_date', name: 'paid_date', orderable: false, searchable: true},
-                {data: 'payment_type', name: 'payment_type', orderable: false, searchable: true},
-                {data: 'referance', name: 'referance', orderable: false, searchable: false},
-                {data: 'addedBy.name', name: 'addedBy.name', orderable: false, searchable: true},
+            columns: [{
+                    data: 'DT_RowIndex',
+                    name: 'Sl No',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'project',
+                    name: 'name',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'packages.package',
+                    name: 'packages.package',
+                    orderable: false,
+                    searchable: true
+                },
+                {
+                    data: 'amount',
+                    name: 'amount',
+                    orderable: false,
+                    searchable: true
+                },
+                {
+                    data: 'remains',
+                    name: 'remains',
+                    orderable: false,
+                    searchable: true
+                },
+                {
+                    data: 'paid_date',
+                    name: 'paid_date',
+                    orderable: false,
+                    searchable: true
+                },
+                {
+                    data: 'payment_type',
+                    name: 'payment_type',
+                    orderable: false,
+                    searchable: true
+                },
+                {
+                    data: 'referance',
+                    name: 'referance',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'addedBy.name',
+                    name: 'addedBy.name',
+                    orderable: false,
+                    searchable: true
+                },
             ]
         });
 
-        $('.add-pay-btn').click(function(){
+        $('.add-pay-btn').click(function() {
             $('#mdlAddPayment').modal('show');
         });
 
-        $('#payment_type').change(function(){
+        $('#payment_type').change(function() {
             let transactiontype = $(this).val();
-            if(transactiontype == 'Cheque'){
+            if (transactiontype == 'Cheque') {
                 $('.pay_type_online').css('display', 'none');
                 $('.pay_type_cash').css('display', 'none');
                 $('.pay_type_cheque').css('display', 'block');
-            }else if(transactiontype == 'Cash'){
+            } else if (transactiontype == 'Cash') {
                 $('.pay_type_online').css('display', 'none');
                 $('.pay_type_cheque').css('display', 'none');
                 $('.pay_type_cash').css('display', 'block');
-            }else if(transactiontype == 'Online'){
+            } else if (transactiontype == 'Online') {
                 $('.pay_type_cash').css('display', 'none');
                 $('.pay_type_cheque').css('display', 'none');
                 $('.pay_type_online').css('display', 'block');
-            }else{
+            } else {
                 $('.pay_type_cash').css('display', 'none');
                 $('.pay_type_cheque').css('display', 'none');
                 $('.pay_type_online').css('display', 'none');
@@ -325,15 +376,17 @@
         })
 
 
-        $('#project_type').change(function(e){
+        $('#project_type').change(function(e) {
             let project = $(this).val();
             $('#balance').val('')
-            if(project != ''){
+            if (project != '') {
                 $('#balance').val('')
                 $.ajax({
                     type: 'GET',
                     url: "{{ route('client.getPendingPayments.byProject') }}",
-                    data: {'project': project},
+                    data: {
+                        'project': project
+                    },
                     success: function(response) {
                         $('#balance').val(response.balance)
                     }
@@ -341,14 +394,14 @@
             }
         })
 
-        $('#frm_add_payments').on('submit', function(e){
+        $('#frm_add_payments').on('submit', function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
 
             $.ajax({
                 type: 'POST',
-                url: '{{ route('client.addPayment') }}',
+                url: "{{ route('client.addPayment') }}",
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -361,7 +414,9 @@
                     if (response.status == true) {
                         $('#frm_add_payments')[0].reset();
                         alertify.success(response.message);
-                        setTimeout(() => { window.location.reload();}, 1500);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
                     } else {
                         alertify.error(response.message);
                         $(".creatBtn").prop('disabled', false);

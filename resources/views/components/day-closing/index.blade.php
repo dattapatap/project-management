@@ -384,7 +384,7 @@
                     </div>
                     @else
                     <div class="table-responsive">
-                        <table class="table history-table mb-0">
+                        <table class="table table-premium table-centered table-striped history-table mb-0">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -533,7 +533,7 @@
                     e.preventDefault();
                     return false;
                 }
-                
+
                 // Count words
                 var words = remarks.split(/\s+/).filter(function(word) {
                     return word.length > 0;

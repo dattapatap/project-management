@@ -727,7 +727,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table id="datatable" class="table table-centered table-nowrap align-middle mb-0" style="width:100%;">
+                        <table id="datatable" class="table table-premium table-centered table-striped table-nowrap align-middle mb-0" style="width:100%;">
                             <thead class="table-light">
                                 <tr>
                                     <th>Sl</th>

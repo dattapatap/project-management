@@ -1,5 +1,30 @@
 @extends('layouts.app')
 
+@section('styles')
+<style>
+    /* ── Custom Table Header Class ── */
+    .thead-custom-teal th,
+    .thead-custom-teal td,
+    .thead-custom-teal tr th {
+        background: #48A596 !important;
+        background-color: #48A596 !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        font-size: 11px !important;
+        letter-spacing: 0.5px !important;
+        border-bottom: 2px solid #2a6b62 !important;
+        vertical-align: middle !important;
+    }
+
+    .thead-custom-teal th *,
+    .thead-custom-teal td * {
+        color: #ffffff !important;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="container-fluid erp-page erp-page--nsd companies-wrapper">
     @include('layouts.partials.erp-page-header', [
@@ -72,20 +97,15 @@
                         <div class="tab-pane active" role="tabpanel">
                             <div class="table-responsive">
                                 <table class="table table-centered mb-0 erp-table--companies" id="datatable">
-                                    <thead>
+                                    <thead class="thead-custom-teal">
                                         <tr>
-                                            <th scope="col" class="text-center col-sl">Sl No</th>
-                                            <th scope="col">Name</th>
-                                            @if(!$user->hasRole('Project-Manager'))
-                                            <th scope="col" class="text-center col-contact">Contact Info</th>
-                                            @endif
+                                            <th scope="col" class="text-center col-sl">Sl</th>
+                                            <th scope="col">Company / Lead</th>
                                             <th scope="col" class="text-center"> Mobile</th>
-                                            <th scope="col" class="text-center"> City </th>
                                             @if($user->hasRole(['Admin', 'Team-Leader', 'Branch-Manager']))
-                                            <th scope="col" class="text-center">Created By</th>
-                                            <th scope="col" class="text-center">Following By</th>
+                                            <th scope="col" class="text-center">Attribution</th>
                                             @endif
-                                            <th scope="col" class="text-center"> Status</th>
+                                            <th scope="col" class="text-center">Source & Status</th>
                                             <th scope="col" class="text-center"> Created Date </th>
                                             <th scope="col" class="text-center col-action">Action</th>
                                         </tr>

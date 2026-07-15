@@ -12,20 +12,32 @@
 
         // Growth Chart logic
         @if(isset($adminData['growth_trend']))
+        var growthTrend = @json($adminData['growth_trend']);
         var options = {
             series: [{
                 name: 'Completed Tasks',
-                data: [ @foreach($adminData['growth_trend'] as $t) {{ $t->count }}, @endforeach ]
+                data: growthTrend.map(function(item) {
+                    return item.count;
+                })
             }],
             chart: {
                 height: 250,
                 type: 'area',
-                toolbar: { show: false },
-                sparkline: { enabled: false }
+                toolbar: {
+                    show: false
+                },
+                sparkline: {
+                    enabled: false
+                }
             },
             colors: ['#667eea'],
-            dataLabels: { enabled: false },
-            stroke: { curve: 'smooth', width: 3 },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
             fill: {
                 type: 'gradient',
                 gradient: {
@@ -36,15 +48,27 @@
                 }
             },
             xaxis: {
-                categories: [ @foreach($adminData['growth_trend'] as $t) '{{ $t->month }}', @endforeach ],
-                axisBorder: { show: false },
-                axisTicks: { show: false }
+                categories: growthTrend.map(function(item) {
+                    return item.month;
+                }),
+                axisBorder: {
+                    show: false
+                },
+                axisTicks: {
+                    show: false
+                }
             },
             grid: {
                 borderColor: '#f1f1f1',
-                padding: { bottom: 10 }
+                padding: {
+                    bottom: 10
+                }
             },
-            tooltip: { x: { format: 'dd/mm/yy HH:mm' } },
+            tooltip: {
+                x: {
+                    format: 'dd/mm/yy HH:mm'
+                }
+            },
         };
 
         var chartEle = document.querySelector("#employee-growth-chart");

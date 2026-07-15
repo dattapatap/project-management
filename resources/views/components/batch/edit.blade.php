@@ -3,17 +3,18 @@
 @section('content')
 
 <style>
-     select[readonly].select2-hidden-accessible + .select2-container {
+    select[readonly].select2-hidden-accessible+.select2-container {
         pointer-events: none;
         touch-action: none;
     }
 
-    select[readonly].select2-hidden-accessible + .select2-container .select2-selection {
+    select[readonly].select2-hidden-accessible+.select2-container .select2-selection {
         background: #eee;
         box-shadow: none;
     }
 
-    select[readonly].select2-hidden-accessible + .select2-container .select2-selection__arrow, select[readonly].select2-hidden-accessible + .select2-container .select2-selection__clear {
+    select[readonly].select2-hidden-accessible+.select2-container .select2-selection__arrow,
+    select[readonly].select2-hidden-accessible+.select2-container .select2-selection__clear {
         display: none;
     }
 </style>
@@ -50,11 +51,11 @@
                             <input type="hidden" name="batch_id" value="{{ $batch->id}}" class="form-control">
                             <div class="col-3">
                                 <div class="form-group">
-                                    <label>Brand Name  <span class="text_required">*</span></label>
+                                    <label>Brand Name <span class="text_required">*</span></label>
                                     <select class="form-control select2" name="batch_name" id="batch_name" aria-placeholder="Brand" readonly>
                                         <option>Select</option>
                                         @foreach ($brands as $item)
-                                            <option value="{{ $item->id }}" @if($batch->brand_id ==  $item->id) selected @endif  >{{ $item->brand_name }}</option>
+                                        <option value="{{ $item->id }}" @if($batch->brand_id == $item->id) selected @endif >{{ $item->brand_name }}</option>
                                         @endforeach
                                     </select>
                                     <span class="invalid-feedback" id="batch_name-input-error" role="alert">
@@ -65,7 +66,7 @@
                             <div class="col-3">
                                 <div class="form-group">
                                     <label>Product <span class="text_required">*</span></label>
-                                    <select class="form-control select2" name="product" id="product" aria-placeholder="Product"readonly >
+                                    <select class="form-control select2" name="product" id="product" aria-placeholder="Product" readonly>
                                         <option value="{{ $batch->product_id }}" selected> {{ $batch->product->product_name }} </option>
                                     </select>
                                     <span class="invalid-feedback" id="product-input-error" role="alert">
@@ -77,7 +78,7 @@
                                 <div class="form-group">
                                     <label>GTIN Number <span class="text_required">*</span></label>
                                     <input type="number" name="gtin_number" id="gtin_number" class="form-control"
-                                    value="{{ $batch->gtin_no }}" placeholder="GTIN Number" readonly style="    background-color: #eee;">
+                                        value="{{ $batch->gtin_no }}" placeholder="GTIN Number" readonly style="    background-color: #eee;">
                                     <span class="invalid-feedback" id="gtin_number-input-error" role="alert">
                                         <strong></strong>
                                     </span>
@@ -87,7 +88,7 @@
                                 <div class="form-group">
                                     <label>Product Description</label>
                                     <input type="text" name="product_description" id="product_description" class="form-control"
-                                    value="{{ $batch->description }}" placeholder="Product Description">
+                                        value="{{ $batch->description }}" placeholder="Product Description">
                                 </div>
                             </div>
                         </div>
@@ -97,8 +98,8 @@
                                 <div class="form-group">
                                     <label>Batch/Lot No.</label>
                                     <div class="input-group mt-3 mt-sm-0 mr-sm-3">
-                                        <input type="text" name="batch_no_detail" class="form-control"  placeholder="Batch Number"
-                                        value="{{$batch->batch_no_detail}}">
+                                        <input type="text" name="batch_no_detail" class="form-control" placeholder="Batch Number"
+                                            value="{{$batch->batch_no_detail}}">
                                         <div class="input-group-prepend">
                                             <select class="form-control" name="batch_type" id="batch_type" aria-placeholder="Type" style="border-radius: 0;">
                                                 <option value="BATCH" @if($batch->batch_type == "BATCH") selected @endif>Batch No</option>
@@ -121,8 +122,8 @@
                             <div class="col-2">
                                 <div class="form-group">
                                     <label>Batch/Lot Size <span class="text_required">*</span></label>
-                                    <input type="text" name="batch_size" class="form-control"  placeholder="Batch Size"
-                                    onkeyup="this.value = this.value.toUpperCase();" value="{{ $batch->batch_size }}">
+                                    <input type="text" name="batch_size" class="form-control" placeholder="Batch Size"
+                                        onkeyup="this.value = this.value.toUpperCase();" value="{{ $batch->batch_size }}">
                                     <span class="invalid-feedback" id="batch_size-input-error" role="alert">
                                         <strong></strong>
                                     </span>
@@ -131,20 +132,20 @@
                             <div class="col-2">
                                 <div class="form-group">
                                     <label> Gross Weight </label>
-                                    <input type="text" name="gross_weight" class="form-control"  placeholder="Grass Weight" value="{{ $batch->gross_weight }}">
+                                    <input type="text" name="gross_weight" class="form-control" placeholder="Grass Weight" value="{{ $batch->gross_weight }}">
                                 </div>
                             </div>
                             <div class="col-1">
                                 <div class="form-group">
                                     <label> Tare Weight</label>
-                                    <input type="text" name="tare_weight" class="form-control"  placeholder="Tare Weight" value="{{ $batch->tare_weight }}">
+                                    <input type="text" name="tare_weight" class="form-control" placeholder="Tare Weight" value="{{ $batch->tare_weight }}">
 
                                 </div>
                             </div>
                             <div class="col-2">
                                 <div class="form-group">
                                     <label> Net Weight</label>
-                                   <input type="text" name="net_weight" class="form-control"  placeholder="Net Weight" value="{{ $batch->net_weight }}">
+                                    <input type="text" name="net_weight" class="form-control" placeholder="Net Weight" value="{{ $batch->net_weight }}">
                                 </div>
                             </div>
                         </div>
@@ -156,13 +157,13 @@
                                 <div class="form-group">
                                     <label>Total (BAG/DRUM/BOX)<span class="text_required">*</span></label>
                                     <div class="input-group mt-3 mt-sm-0 mr-sm-3">
-                                        <input type="text" name="total" class="form-control"  placeholder="Total"
-                                        onKeyPress="return isNumberKey(event);" onpaste="return false;" value="{{ $batch->tot_drums }}">
+                                        <input type="text" name="total" class="form-control" placeholder="Total"
+                                            onKeyPress="return isNumberKey(event);" onpaste="return false;" value="{{ $batch->tot_drums }}">
                                         <div class="input-group-prepend">
                                             <select class="form-control" name="total_type" id="total_type" aria-placeholder="Type" style="border-radius: 0;">
                                                 <option value="DRUM" @if($batch->tot_type == "DRUM") selected @endif>DRUM</option>
-                                                <option value="BAG" @if($batch->tot_type ==  "BAG") selected @endif >BAG</option>
-                                                <option value="BOX" @if($batch->tot_type ==  "BOX") selected @endif >BOX</option>
+                                                <option value="BAG" @if($batch->tot_type == "BAG") selected @endif >BAG</option>
+                                                <option value="BOX" @if($batch->tot_type == "BOX") selected @endif >BOX</option>
                                             </select>
                                         </div>
                                     </div>
@@ -176,8 +177,8 @@
                             <div class="col-2">
                                 <div class="form-group">
                                     <label> Drum Number <span class="text_required">*</span></label>
-                                    <input type="text" name="drum_number" class="form-control"  placeholder="Drum Number" value="{{  $batch->drum_no }}"
-                                    onKeyPress="return isNumberKey(event);" onpaste="return false;">
+                                    <input type="text" name="drum_number" class="form-control" placeholder="Drum Number" value="{{  $batch->drum_no }}"
+                                        onKeyPress="return isNumberKey(event);" onpaste="return false;">
                                     <span class="invalid-feedback" id="drum_number-input-error" role="alert">
                                         <strong></strong>
                                     </span>
@@ -187,37 +188,37 @@
                             <div class="col-2">
                                 <div class="form-group">
                                     <label>Item Code</label>
-                                    <input type="text" name="item_code" class="form-control"  placeholder="Item Code"
-                                    value="{{ $batch->item_code }}">
+                                    <input type="text" name="item_code" class="form-control" placeholder="Item Code"
+                                        value="{{ $batch->item_code }}">
                                 </div>
                             </div>
                             <div class="col-2">
                                 <div class="form-group">
                                     <label>Manufacture Date</label>
-                                    <input type="text" name="manufature_date" id="manufature_date" class="form-control"  placeholder="Manufature Date"
-                                    value="{{ $batch->manf_date }}">
+                                    <input type="text" name="manufature_date" id="manufature_date" class="form-control" placeholder="Manufature Date"
+                                        value="{{ $batch->manf_date }}">
                                 </div>
                             </div>
                             <div class="col-2">
                                 <div class="form-group">
                                     <label>Expiry/Retest Date</label>
-                                    <input type="text" name="expiry_date" id="expiry_date" class="form-control"  placeholder="Expiry Date"
-                                    value="{{ $batch->exp_date }}">
+                                    <input type="text" name="expiry_date" id="expiry_date" class="form-control" placeholder="Expiry Date"
+                                        value="{{ $batch->exp_date }}">
                                 </div>
                             </div>
 
                             <div class="col-2">
                                 <div class="form-group">
                                     <label>LIC. No.</label>
-                                    <input type="text" name="man_lic_number" class="form-control"  placeholder="Man. lic No."
-                                    value="{{ $batch->manf_lic_no }}">
+                                    <input type="text" name="man_lic_number" class="form-control" placeholder="Man. lic No."
+                                        value="{{ $batch->manf_lic_no }}">
                                 </div>
                             </div>
 
                             <div class="col-6">
                                 <div class="form-group">
                                     <label>Special Storage Conditions</label>
-                                    <input type="text"  name="storage_condition" class="form-control"  placeholder="Special Storage Condition" value="{{ $batch->storage_condition  }}">
+                                    <input type="text" name="storage_condition" class="form-control" placeholder="Special Storage Condition" value="{{ $batch->storage_condition  }}">
                                     <span class="invalid-feedback" id="storage_condition-input-error" role="alert">
                                         <strong></strong>
                                     </span>
@@ -226,7 +227,7 @@
                             <div class="col-6">
                                 <div class="form-group">
                                     <label>Remarks</label>
-                                    <input type="text"  name="remarks" class="form-control"  placeholder="Remarks" value="{{ $batch->remarks  }}">
+                                    <input type="text" name="remarks" class="form-control" placeholder="Remarks" value="{{ $batch->remarks  }}">
                                     <span class="invalid-feedback" id="remarks-input-error" role="alert">
                                         <strong></strong>
                                     </span>
@@ -257,11 +258,10 @@
 
 @section('scripts')
 <script>
-
-    $(document).ready(function(){
+    $(document).ready(function() {
         $('.select2').select2();
 
-        $('#batch_name').change(function(){
+        $('#batch_name').change(function() {
             let brand_value = $(this).val();
             $('#product').empty().append('<option selected="selected" value="">Select Product</option>');
             $('#gtin_number').val('');
@@ -269,10 +269,14 @@
             $.ajax({
                 type: 'GET',
                 url: "{{ route('products.allproductsbybrandid') }}",
-                data: {'brandid' : brand_value },
+                data: {
+                    'brandid': brand_value
+                },
                 success: function(response) {
-                    if(response.status = true){
-                        $("#product").select2({data :response.data });
+                    if (response.status = true) {
+                        $("#product").select2({
+                            data: response.data
+                        });
                     }
                 },
             });
@@ -281,14 +285,16 @@
 
         })
 
-        $('#product').change(function(){
+        $('#product').change(function() {
             let product_value = $(this).val();
             $('#gtin_number').val('');
             $('#product_description').val('');
             $.ajax({
                 type: 'GET',
                 url: "{{ route('products.getProductByid') }}",
-                data: {'productid' : product_value },
+                data: {
+                    'productid': product_value
+                },
                 success: function(response) {
                     $("#gtin_number").val(response.data.gtin_no);
                     $("#product_description").val(response.data.product_desc);
@@ -297,7 +303,7 @@
         })
 
 
-        $('#frm_batch').submit(function(e){
+        $('#frm_batch').submit(function(e) {
 
             e.preventDefault();
             var formData = new FormData($(this)[0]);
@@ -305,8 +311,10 @@
 
             $.ajax({
                 type: 'POST',
-                url: '{{ route('batches.updateBatch') }}',
-                headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
+                url: "{{ route('batches.updateBatch') }}",
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -349,13 +357,11 @@
 
     })
 
-    function isNumberKey(evt){
+    function isNumberKey(evt) {
         var charCode = (evt.which) ? evt.which : evt.keyCode;
         if (charCode > 31 && (charCode < 48 || charCode > 57))
             return false;
         return true;
     }
-
-
 </script>
 @endsection

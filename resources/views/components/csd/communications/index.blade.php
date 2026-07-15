@@ -7,19 +7,27 @@
 @section('content')
 <div class="container-fluid erp-page erp-page--csd">
     @include('layouts.partials.erp-page-header', [
-        'title' => 'Communication Center',
-        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><button type="button" class="btn btn-primary btn-sm" id="btnLogCommunication"><i class="mdi mdi-plus"></i> Log Communication</button>',
+    'title' => 'Communication Center',
+    'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><button type="button" class="btn btn-primary btn-sm" id="btnLogCommunication"><i class="mdi mdi-plus"></i> Log Communication</button>',
     ])
     <div class="card erp-table-card">
         <div class="card-body">
-            <table id="dataTable" class="table table-bordered table-hover w-100">
-                <thead>
-                    <tr>
-                        <th>#</th><th>Client</th><th>Type</th><th>Subject</th>
-                        <th>Date</th><th>Next Follow-up</th><th>By</th><th>Action</th>
-                    </tr>
-                </thead>
-            </table>
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-premium table-centered table-striped w-100">
+                    <thead class="thead-custom-teal">
+                        <tr>
+                            <th>#</th>
+                            <th>Client</th>
+                            <th>Type</th>
+                            <th>Subject</th>
+                            <th>Date</th>
+                            <th>Next Follow-up</th>
+                            <th>By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -191,53 +199,84 @@
 <script src="{{ asset('assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('js/csd-common.js') }}"></script>
 <script>
-$(function(){
-    csdApi.mountModals();
+    $(function() {
+        csdApi.mountModals();
 
-    var defaultCommDate = @json(now()->format('Y-m-d\TH:i'));
+        var defaultCommDate = "{{ now()->format('Y-m-d\TH:i') }}";
 
-    var table = $('#dataTable').DataTable({processing:true,serverSide:true,ajax:'{{ route('csd.communications.data') }}',
-        columns:[{data:'DT_RowIndex',orderable:false},{data:'client_name'},{data:'type'},{data:'subject'},{data:'communication_date'},{data:'next_followup'},{data:'creator_name'},{data:'action',orderable:false}]});
+        var table = $('#dataTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('csd.communications.data') }}",
+            columns: [{
+                data: 'DT_RowIndex',
+                orderable: false
+            }, {
+                data: 'client_name'
+            }, {
+                data: 'type'
+            }, {
+                data: 'subject'
+            }, {
+                data: 'communication_date'
+            }, {
+                data: 'next_followup'
+            }, {
+                data: 'creator_name'
+            }, {
+                data: 'action',
+                orderable: false
+            }]
+        });
 
-    $('#btnLogCommunication').on('click', function () {
-        $('#frmAdd')[0]?.reset();
-        $('input[name="communication_date"]', '#frmAdd').val(defaultCommDate);
-        $('#mdlAdd').modal('show');
-    });
-
-    $('#frmAdd').on('submit', function (e) {
-        e.preventDefault();
-        csdApi.post('{{ route('csd.communications.store') }}', $(this).serialize(), function () {
-            csdApi.closeModal('#mdlAdd', '#frmAdd');
+        $('#btnLogCommunication').on('click', function() {
+            $('#frmAdd')[0]?.reset();
             $('input[name="communication_date"]', '#frmAdd').val(defaultCommDate);
-            table.ajax.reload(null, false);
+            $('#mdlAdd').modal('show');
+        });
+
+        $('#frmAdd').on('submit', function(e) {
+            e.preventDefault();
+            csdApi.post("{{ route('csd.communications.store') }}", $(this).serialize(),
+                function() {
+                    csdApi.closeModal('#mdlAdd', '#frmAdd');
+                    $('input[name="communication_date"]', '#frmAdd').val(defaultCommDate);
+                    table.ajax.reload(null, false);
+                });
+        });
+        $(document).on('click', '.viewComm', function() {
+            csdApi.get('/csd/communications/' + $(this).data('id'), function(r) {
+                if (!r.success) return;
+                var d = r.data;
+                $('#viewCommBody').html(`<p><strong>Client:</strong> ${d.client?.name||'-'}<br><strong>Type:</strong> ${d.type}<br><strong>Subject:</strong> ${d.subject||'-'}<br><strong>Remarks:</strong> ${d.remarks}<br><strong>MOM:</strong> ${d.mom||'-'}</p>`);
+                $('#mdlView').modal('show');
+            });
+        });
+        $(document).on('click', '.editComm', function() {
+            csdApi.get('/csd/communications/' + $(this).data('id'), function(r) {
+                if (!r.success) return;
+                var d = r.data;
+                $('#editCommId').val(d.id);
+                $('#editCommType').val(d.type);
+                $('#editCommSubject').val(d.subject);
+                $('#editCommRemarks').val(d.remarks);
+                $('#editCommMom').val(d.mom);
+                $('#editCommDate').val(d.communication_date ? d.communication_date.replace(' ', 'T').substring(0, 16) : '');
+                $('#editCommFollowup').val(d.next_followup ? d.next_followup.substring(0, 10) : '');
+                $('#mdlEditComm').modal('show');
+            });
+        });
+        $('#frmEditComm').on('submit', function(e) {
+            e.preventDefault();
+            var id = $('#editCommId').val();
+            csdApi.put('/csd/communications/' + id, $(this).serializeArray().reduce(function(o, i) {
+                o[i.name] = i.value;
+                return o;
+            }, {}), function() {
+                csdApi.closeModal('#mdlEditComm', '#frmEditComm');
+                table.ajax.reload(null, false);
+            });
         });
     });
-    $(document).on('click','.viewComm',function(){
-        csdApi.get('/csd/communications/'+$(this).data('id'),function(r){
-            if(!r.success)return; var d=r.data;
-            $('#viewCommBody').html(`<p><strong>Client:</strong> ${d.client?.name||'-'}<br><strong>Type:</strong> ${d.type}<br><strong>Subject:</strong> ${d.subject||'-'}<br><strong>Remarks:</strong> ${d.remarks}<br><strong>MOM:</strong> ${d.mom||'-'}</p>`);
-            $('#mdlView').modal('show');
-        });
-    });
-    $(document).on('click','.editComm',function(){
-        csdApi.get('/csd/communications/'+$(this).data('id'),function(r){
-            if(!r.success)return; var d=r.data;
-            $('#editCommId').val(d.id);
-            $('#editCommType').val(d.type);
-            $('#editCommSubject').val(d.subject);
-            $('#editCommRemarks').val(d.remarks);
-            $('#editCommMom').val(d.mom);
-            $('#editCommDate').val(d.communication_date ? d.communication_date.replace(' ','T').substring(0,16) : '');
-            $('#editCommFollowup').val(d.next_followup ? d.next_followup.substring(0,10) : '');
-            $('#mdlEditComm').modal('show');
-        });
-    });
-    $('#frmEditComm').on('submit',function(e){e.preventDefault();var id=$('#editCommId').val();
-        csdApi.put('/csd/communications/'+id,$(this).serializeArray().reduce(function(o,i){o[i.name]=i.value;return o;},{}),function(){
-            csdApi.closeModal('#mdlEditComm','#frmEditComm');
-            table.ajax.reload(null, false);
-        });});
-});
 </script>
 @endsection

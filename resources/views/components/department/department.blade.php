@@ -18,7 +18,7 @@
         background: #ffffff;
         border: 1px solid #e2e8f0;
         color: #4b5563;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         text-decoration: none !important;
     }
@@ -95,7 +95,7 @@
         letter-spacing: 0.5px;
         padding: 12px 16px;
         background: #f1f5f9;
-        border-radius: 6px;
+        border-radius: 0px;
     }
 
     .table-premium tbody tr {
@@ -106,7 +106,7 @@
     .table-premium tbody tr:hover {
         background: #f8fafc !important;
         transform: scale(1.001) translateY(-1px);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
     }
 
     .table-premium tbody td {
@@ -137,7 +137,7 @@
         height: 36px;
         border-radius: 50%;
         border: 2px solid #e2e8f0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
         object-fit: cover;
     }
 
@@ -193,9 +193,17 @@
     }
 
     @keyframes floatAnimation {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
+        0% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+
+        100% {
+            transform: translateY(0px);
+        }
     }
 </style>
 @endsection
@@ -250,8 +258,8 @@
                     <div class="tab-pane active" id="members" role="tabpanel">
                         @if(!$departments->users->isEmpty())
                         <div class="table-responsive">
-                            <table class="table table-centered mb-0 table-hover table-premium">
-                                <thead>
+                            <table class="table table-striped mb-0 table-hover table-premium">
+                                <thead class="thead-custom-teal">
                                     <tr>
                                         <th scope="col" style="width: 8%">Sl</th>
                                         <th scope="col" style="width: 8%;" class="text-center">Avatar</th>
@@ -265,25 +273,25 @@
                                 <tbody>
                                     @foreach ($departments->users as $items)
                                     @php
-                                        $users = \App\Models\User::with('emp')->where('id', $items->user)->first();
+                                    $users = \App\Models\User::with('emp')->where('id', $items->user)->first();
                                     @endphp
                                     @if($users)
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
                                         <td class="text-center">
                                             @if ($users->profile)
-                                                <img class="avatar-circle-premium" title="{{ $users->name }}" src="{{ asset('storage/'. $users->profile )}}">
+                                            <img class="avatar-circle-premium" title="{{ $users->name }}" src="{{ asset('storage/'. $users->profile )}}">
                                             @else
-                                                <img class="avatar-circle-premium" title="{{ $users->name }}" src="{{ Avatar::create($users->name)->toBase64() }}">
+                                            <img class="avatar-circle-premium" title="{{ $users->name }}" src="{{ Avatar::create($users->name)->toBase64() }}">
                                             @endif
                                         </td>
                                         <td>
                                             <span class="font-weight-semibold text-dark">{{ $users->name }}</span>
-                                            @if($users->hasRole("Team-Leader")) 
-                                                <span class="badge-premium badge-leader">Team-Leader</span> 
+                                            @if($users->hasRole("Team-Leader"))
+                                            <span class="badge-premium badge-leader">Team-Leader</span>
                                             @endif
-                                            @if($users->hasRole("Project-Manager")) 
-                                                <span class="badge-premium badge-manager">Project-Manager</span> 
+                                            @if($users->hasRole("Project-Manager"))
+                                            <span class="badge-premium badge-manager">Project-Manager</span>
                                             @endif
                                         </td>
                                         <td>

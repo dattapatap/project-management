@@ -1,5 +1,22 @@
 @extends('layouts.app')
 
+@section('styles')
+<style>
+    #project-list-view .card,
+    #project-list-view .card-body,
+    #project-list-view .table-responsive {
+        overflow: visible !important;
+    }
+
+    #project-list-view .dropdown-menu {
+        background-color: #ffffff !important;
+        border: 1px solid #e9ecef !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+        z-index: 1050 !important;
+    }
+</style>
+@endsection
+
 @section('content')
 
 <div class="container-fluid erp-page erp-page--od">
@@ -8,7 +25,7 @@
     @if(isset($stats))
     <div class="row mb-4">
         <div class="col-6 col-md-4 col-lg">
-            <a href="{{ url('projects/search?search=Near+Deadline' . (isset($department) ? '&department='.$department : '')) }}" class="text-decoration-none">
+            <a href="{{ url('projects/search?search=Near+Deadline' . (isset($team) ? '&team='.$team : '')) }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-danger">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -25,7 +42,7 @@
             </a>
         </div>
         <div class="col-6 col-md-4 col-lg">
-            <a href="{{ url('projects?status=ToDo' . (isset($department) ? '&department='.$department : '')) }}" class="text-decoration-none">
+            <a href="{{ url('projects?status=ToDo' . (isset($team) ? '&team='.$team : '')) }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-warning">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -42,7 +59,7 @@
             </a>
         </div>
         <div class="col-6 col-md-4 col-lg">
-            <a href="{{ url('projects?status=InProgress' . (isset($department) ? '&department='.$department : '')) }}" class="text-decoration-none">
+            <a href="{{ url('projects?status=InProgress' . (isset($team) ? '&team='.$team : '')) }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-info">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -59,7 +76,7 @@
             </a>
         </div>
         <div class="col-6 col-md-4 col-lg">
-            <a href="{{ url('projects?status=Completed' . (isset($department) ? '&department='.$department : '')) }}" class="text-decoration-none">
+            <a href="{{ url('projects?status=Completed' . (isset($team) ? '&team='.$team : '')) }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-success">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -76,7 +93,7 @@
             </a>
         </div>
         <div class="col-6 col-md-4 col-lg">
-            <a href="{{ url('projects?status=all' . (isset($department) ? '&department='.$department : '')) }}" class="text-decoration-none">
+            <a href="{{ url('projects?status=all' . (isset($team) ? '&team='.$team : '')) }}" class="text-decoration-none">
                 <div class="card project-kpi-card gradient-primary">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -111,11 +128,11 @@
                     <input type="hidden" name="status" value="{{ request('status', 'Pending') }}">
                     <div class="d-flex">
                         @if(Auth::user()->hasRole(['Admin', 'Branch-Manager']))
-                        <select name="department" class="form-control mr-2" onchange="this.form.submit()" style="height: 38px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: 500; font-size: 13px; color: #4a5568; width: 170px;">
-                            <option value="">All Departments</option>
-                            <option value="1" {{ (isset($department) && $department == 1) ? 'selected' : '' }}>NSD (Sales)</option>
-                            <option value="2" {{ (isset($department) && $department == 2) ? 'selected' : '' }}>OD (Operations)</option>
-                            <option value="3" {{ (isset($department) && $department == 3) ? 'selected' : '' }}>CSD (Customer Service)</option>
+                        <select name="team" class="form-control mr-2" onchange="this.form.submit()" style="height: 38px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: 500; font-size: 13px; color: #4a5568; width: 170px;">
+                            <option value="">All Teams</option>
+                            @foreach($teams as $t)
+                            <option value="{{ $t->id }}" {{ (isset($team) && $team == $t->id) ? 'selected' : '' }}>{{ $t->name }}</option>
+                            @endforeach
                         </select>
                         @endif
                         <div class="input-group">
@@ -223,9 +240,11 @@
                                             projectid="{{ $item->id }}">
                                             <i class="mdi mdi-update mr-2"></i>Add Update
                                         </a>
+                                        @if($user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
                                         <a href="javascript:void(0);" class="dropdown-item btn_add_task" projectid="{{ $item->id }}">
                                             <i class="mdi mdi-checkbox-marked-circle-outline mr-2"></i>Add Task
                                         </a>
+                                        @endif
                                         <a href="javascript:void(0);" class="dropdown-item btn_edit_project"
                                             projectid="{{ $item->id }}">
                                             <i class="mdi mdi-pencil mr-2"></i>Edit
@@ -366,8 +385,8 @@
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-centered table-nowrap table-hover mb-0">
-                            <thead class="thead-light">
+                        <table class="table table-premium table-centered table-striped table-hover mb-0">
+                            <thead class="thead-custom-teal">
                                 <tr>
                                     <th>Project Name</th>
                                     <th>Client</th>
@@ -431,7 +450,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="#" class="dropdown-toggle arrow-none" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 18px;">
+                                            <a href="#" class="dropdown-toggle arrow-none" data-bs-toggle="dropdown" data-bs-strategy="fixed" aria-expanded="false" style="font-size: 18px;">
                                                 <i class="mdi mdi-dots-horizontal"></i>
                                             </a>
                                             <div class="dropdown-menu dropdown-menu-end">
@@ -454,7 +473,9 @@
                                                 @endif
                                                 @if($item->status != 'Completed')
                                                 <a class="dropdown-item btn_project_update" projectid="{{ $item->id }}"><i class="mdi mdi-update mr-2"></i>Add Update</a>
+                                                @if($user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
                                                 <a class="dropdown-item btn_add_task" projectid="{{ $item->id }}"><i class="mdi mdi-checkbox-marked-circle-outline mr-2"></i>Add Task</a>
+                                                @endif
                                                 <a class="dropdown-item btn_edit_project" projectid="{{ $item->id }}"><i class="mdi mdi-pencil mr-2"></i>Edit</a>
                                                 @endif
                                                 <a class="dropdown-item" href="{{ url('projects/' . base64_encode($item->id) . '/history') }}"><i class="mdi mdi-history mr-2"></i>History</a>

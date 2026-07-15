@@ -25,6 +25,22 @@
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
         border-color: #cbd5e1 !important;
     }
+
+    /* ── Stats Filters ──────────────────────────────────────────── */
+    .stat-filter-card {
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .stat-filter-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.05) !important;
+        border-color: #3b82f6 !important;
+    }
+    .stat-filter-card.active-filter {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12), 0 4px 12px rgba(0,0,0,0.03) !important;
+        background-color: rgba(59, 130, 246, 0.01) !important;
+    }
 </style>
 @endsection
 
@@ -44,6 +60,7 @@
                 <option value="ToDo">Not Started</option>
                 <option value="InProgress">In Progress</option>
                 <option value="Completed">Completed</option>
+                <option value="overdue">Overdue</option>
             </select>
             <a href="{{ url('/') }}" class="btn btn-outline-secondary btn-sm" style="height: 35px; line-height: 23px;">
                 <i class="mdi mdi-arrow-left"></i>
@@ -62,7 +79,7 @@
     <!-- Stats Cards Grid -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card bg-white shadow-sm border mb-3">
+            <div class="card bg-white shadow-sm border mb-3 stat-filter-card active-filter" data-filter="all">
                 <div class="card-body d-flex align-items-center justify-content-between p-4">
                     <div>
                         <p class="text-muted font-weight-medium mb-1">Total Projects</p>
@@ -75,7 +92,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-white shadow-sm border mb-3">
+            <div class="card bg-white shadow-sm border mb-3 stat-filter-card" data-filter="InProgress">
                 <div class="card-body d-flex align-items-center justify-content-between p-4">
                     <div>
                         <p class="text-muted font-weight-medium mb-1">In Progress</p>
@@ -88,7 +105,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-white shadow-sm border mb-3">
+            <div class="card bg-white shadow-sm border mb-3 stat-filter-card" data-filter="Completed">
                 <div class="card-body d-flex align-items-center justify-content-between p-4">
                     <div>
                         <p class="text-muted font-weight-medium mb-1">Completed</p>
@@ -101,7 +118,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-white shadow-sm border mb-3">
+            <div class="card bg-white shadow-sm border mb-3 stat-filter-card" data-filter="overdue">
                 <div class="card-body d-flex align-items-center justify-content-between p-4">
                     <div>
                         <p class="text-muted font-weight-medium mb-1">Overdue</p>
@@ -146,7 +163,7 @@
                         $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : ($p->status === 'Completed' ? 100 : 0);
                     @endphp
                     
-                    <div class="card bg-white shadow-sm border mb-3 timeline-project-card" data-status="{{ $p->status }}" onclick="window.open('{{ url('/projects/'.base64_encode($p->id).'/history') }}', '_blank')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                    <div class="card bg-white shadow-sm border mb-3 timeline-project-card" data-status="{{ $p->status }}" data-overdue="{{ $isOverdue ? '1' : '0' }}" onclick="window.open('{{ url('/projects/'.base64_encode($p->id).'/history') }}', '_blank')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                         <div class="card-body p-4">
                             <div class="row align-items-center">
                                 <!-- Project Info -->
@@ -204,20 +221,60 @@
 @section('scripts')
 <script>
 (function () {
-    // 🔄 Filter Change Handlers
-    document.getElementById('filterStatus').addEventListener('change', function () {
-        const selectedStatus = this.value;
-        const cards = document.querySelectorAll('.timeline-project-card');
-        
-        cards.forEach(card => {
-            const status = card.getAttribute('data-status');
-            if (selectedStatus === 'all' || status === selectedStatus) {
-                card.style.display = 'block';
+    const filterSelect = document.getElementById('filterStatus');
+    const filterCards = document.querySelectorAll('.stat-filter-card');
+    const projectCards = document.querySelectorAll('.timeline-project-card');
+
+    function applyFilter(filterVal) {
+        // Update select value
+        filterSelect.value = filterVal;
+
+        // Update card active classes
+        filterCards.forEach(card => {
+            if (card.getAttribute('data-filter') === filterVal) {
+                card.classList.add('active-filter');
             } else {
-                card.style.display = 'none';
+                card.classList.remove('active-filter');
             }
         });
+
+        // Show/hide project cards
+        projectCards.forEach(card => {
+            const status = card.getAttribute('data-status');
+            const isOverdue = card.getAttribute('data-overdue') === '1';
+
+            if (filterVal === 'all') {
+                card.style.display = 'block';
+            } else if (filterVal === 'overdue') {
+                if (isOverdue) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            } else {
+                if (status === filterVal) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // Select change listener
+    filterSelect.addEventListener('change', function () {
+        applyFilter(this.value);
     });
+
+    // Cards click listener
+    filterCards.forEach(card => {
+        card.addEventListener('click', function () {
+            applyFilter(this.getAttribute('data-filter'));
+        });
+    });
+
+    // Set initial active state on 'all'
+    applyFilter('all');
 })();
 </script>
 @endsection

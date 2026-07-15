@@ -137,7 +137,7 @@
             </div>
             @else
             <div class="table-responsive">
-                <table class="table custom-table mb-0">
+                <table class="table table-premium table-centered table-striped custom-table mb-0">
                     <thead>
                         <tr>
                             <th style="padding-left: 24px;">Subordinate</th>

@@ -44,6 +44,8 @@
                                 <select name="status" class="form-control">
                                     <option value="identified">Identified</option>
                                     <option value="proposed">Proposed</option>
+                                    <option value="won">Won</option>
+                                    <option value="lost">Lost</option>
                                 </select>
                             </div>
                         </div>
@@ -156,6 +158,42 @@
                 <div class="modal-footer csd-modal__footer">
                     <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="mdlAssignNsd" class="modal fade csd-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content csd-modal__content">
+            <form id="frmAssignNsd">
+                @csrf
+                <input type="hidden" id="assignOpportunityId">
+                <div class="modal-header csd-modal__header">
+                    <div>
+                        <p class="csd-modal__eyebrow">CSD · Assignment</p>
+                        <h5 class="modal-title csd-modal__title">Assign Upsell to NSD</h5>
+                    </div>
+                    <button type="button" class="close csd-modal__close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body csd-modal__body text-dark">
+                    <p class="mb-3 font-size-13 text-muted">
+                        Assigning upsell opportunity <strong id="assignOpportunityTitle" class="text-dark"></strong> for client <strong id="assignClientName" class="text-dark"></strong> to Sales (NSD) for commercial closure.
+                    </p>
+                    <div class="form-group csd-field mb-0">
+                        <label class="font-weight-semibold">Select Sales Representative (NSD) <span class="text-danger">*</span></label>
+                        <select name="sales_rep_id" id="assignSalesRepId" class="form-control border" required style="color: #495057;">
+                            <option value="">Choose active representative...</option>
+                            @foreach($nsdReps as $rep)
+                            <option value="{{ $rep->id }}">{{ $rep->name }} ({{ $rep->getRoleNames()->first() ?? 'Sales Rep' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer csd-modal__footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold">Confirm & Handover</button>
                 </div>
             </form>
         </div>

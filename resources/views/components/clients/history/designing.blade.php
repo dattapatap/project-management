@@ -8,7 +8,7 @@
     <div class="row">
         <div class="col-12">
             <div class="pb-2 d-flex align-items-center justify-content-between">
-                <a href="{{ route('clients.index') }}" class="btn-back" >
+                <a href="{{ route('clients.index') }}" class="btn-back">
                     <i class="mdi mdi-keyboard-backspace fs-20"></i>
                 </a>
             </div>
@@ -27,7 +27,7 @@
                 <ul class="nav nav-tabs nav-dept mt-3" role="tablist">
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url('clients/'.base64_encode($client->id).'/'.'contacts' ) }}" >
+                        <a class="nav-link" href="{{ url('clients/'.base64_encode($client->id).'/'.'contacts' ) }}">
                             <span class="d-none d-md-inline-block">Contacts</span>
                         </a>
                     </li>
@@ -77,7 +77,7 @@
 
                     @if($client->is_active)
                     <li class="nav-item">
-                        <a class="nav-link"  @if($user->hasRole([1,2,3,4,5])) href="{{ url('clients/'.base64_encode($client->id).'/'.'payment' ) }}" @endif role="tab">
+                        <a class="nav-link" @if($user->hasRole([1,2,3,4,5])) href="{{ url('clients/'.base64_encode($client->id).'/'.'payment' ) }}" @endif role="tab">
                             <span class="d-none d-md-inline-block">Payment</span>
                         </a>
                     </li>
@@ -92,7 +92,7 @@
                         <div class="heading_tab_content d-flex">
                             <h4 class="lbl-heading-pane fs-15"> DSR Update</h4>
                             <span>
-                                <span id="pane-timer"> <?= date('M d Y h:m:s')?></span>
+                                <span id="pane-timer"> <?= date('M d Y h:m:s') ?></span>
                                 <i class="mdi mdi-calendar-month"></i>
                             </span>
                         </div>
@@ -118,9 +118,9 @@
                                             <div class="col-3">
                                                 <div class="form-group">
                                                     <label>TBRO Type : </label>
-                                                    <select class="form-control" name="tbro_type" id="tbro_type" width="100%"  tabindex="2">
+                                                    <select class="form-control" name="tbro_type" id="tbro_type" width="100%" tabindex="2">
                                                         <option selected value> Select</option>
-                                                        <option value="Call" > Call </option>
+                                                        <option value="Call"> Call </option>
                                                         <option value="Direct visit" selected> Direct visit </option>
                                                     </select>
                                                     <span class="invalid-feedback" id="tbro_type-input-error" role="alert"><strong></strong></span>
@@ -130,7 +130,7 @@
                                                 <div class="form-group">
                                                     <label>Time : </label>
                                                     <input type="text" name="tbro_time" id="tbro_time" class="form-control"
-                                                    placeholder="HH:MM A"  tabindex="3" >
+                                                        placeholder="HH:MM A" tabindex="3">
                                                     <span class="invalid-feedback" id="tbro_time-input-error" role="alert"><strong></strong></span>
                                                 </div>
                                             </div>
@@ -138,20 +138,20 @@
                                                 <div class="form-group">
                                                     <label>TBRO :</label>
                                                     <input type="text" name="tbro_date" id="tbro_date" class="form-control"
-                                                    placeholder="MM/DD/YYYY"  tabindex="4">
+                                                        placeholder="MM/DD/YYYY" tabindex="4">
                                                     <span class="invalid-feedback" id="tbro_date-input-error" role="alert"><strong></strong></span>
                                                 </div>
 
                                             </div>
                                             <div class="col-3">
                                                 @php
-                                                        $stsStatus = App\Models\ParentStatus::where('category', 'DSR')->get();
+                                                $stsStatus = App\Models\ParentStatus::where('category', 'DSR')->get();
                                                 @endphp
                                                 <label>STS Status :</label>
-                                                <select class="form-control" id="dsr_status" name="dsr_status" width="100%"  tabindex="5">
+                                                <select class="form-control" id="dsr_status" name="dsr_status" width="100%" tabindex="5">
                                                     <option selected value="">Select DSR status</option>
                                                     @foreach ($stsStatus as $item)
-                                                        <option value="{{$item->name}}"> {{$item->name}} </option>
+                                                    <option value="{{$item->name}}"> {{$item->name}} </option>
                                                     @endforeach
                                                 </select>
                                                 <span class="invalid-feedback" id="dsr_status-input-error" role="alert"><strong></strong></span>
@@ -172,7 +172,7 @@
 
                                             <div class="col-3">
                                                 <label> Payment Type </label>
-                                                <select class="form-control" name="payment_type" id="payment_type" width="100%"  tabindex="4">
+                                                <select class="form-control" name="payment_type" id="payment_type" width="100%" tabindex="4">
                                                     <option selected value> Select Type</option>
                                                     <option value="Cheque"> Cheque </option>
                                                     <option value="Online"> Online </option>
@@ -181,56 +181,56 @@
                                             </div>
                                             <div class="col-4">
                                                 <label> Cheque/Receipt </label>
-                                                    <input type="file" name="payment_receipt" id="payment_receipt" class="custom-file-input" accept="image/*, .pdf">
-                                                    <span class="invalid-feedback" id="payment_receipt-input-error" role="alert"><strong></strong></span>
-                                                </div>
-                                            </div>4
-
-                                        </div>
-
+                                                <input type="file" name="payment_receipt" id="payment_receipt" class="custom-file-input" accept="image/*, .pdf">
+                                                <span class="invalid-feedback" id="payment_receipt-input-error" role="alert"><strong></strong></span>
+                                            </div>
+                                        </div>4
 
                                     </div>
 
-                                    <div  style="width:30%">
-                                        <div class="col-12 text-right">
-                                            <span class="fs-14 fw-600">
-                                                    Sales Executive :
-                                                    <span class="fw-500"> {{ $client->referral->name }} ( {{  $client->referral->mobile }})</span>
-                                            </span>
-                                        </div>
-                                        <div class="col-12 mt-2 text-right">
-                                            <span class="fs-14 fw-600">
-                                                Tele/CC Executive :
-                                                <span class="fw-500"> {{ $client->referral->name }} ( {{  $client->referral->mobile }})</span>
-                                            </span>
-                                        </div>
-                                    </div>
+
                                 </div>
 
-                                <div class="row float-roght">
-                                    <div class="col-12">
-                                        <button type="submit" class="btn btn-primary waves-effect waves-light mr-1 float-right creatBtn">
-                                            Create DSR
-                                        </button>
+                                <div style="width:30%">
+                                    <div class="col-12 text-right">
+                                        <span class="fs-14 fw-600">
+                                            Sales Executive :
+                                            <span class="fw-500"> {{ $client->referral->name }} ( {{ $client->referral->mobile }})</span>
+                                        </span>
+                                    </div>
+                                    <div class="col-12 mt-2 text-right">
+                                        <span class="fs-14 fw-600">
+                                            Tele/CC Executive :
+                                            <span class="fw-500"> {{ $client->referral->name }} ( {{ $client->referral->mobile }})</span>
+                                        </span>
                                     </div>
                                 </div>
-
-                            </form>
-
-
-
                         </div>
 
-                    </div>
-                </div>
+                        <div class="row float-roght">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary waves-effect waves-light mr-1 float-right creatBtn">
+                                    Create DSR
+                                </button>
+                            </div>
+                        </div>
 
+                        </form>
+
+
+
+                    </div>
+
+                </div>
             </div>
 
         </div>
 
     </div>
 
-    <!-- end row -->
+</div>
+
+<!-- end row -->
 </div>
 
 
@@ -240,11 +240,11 @@
 
 @section('scripts')
 <script>
-    $(document).ready(function(){
+    $(document).ready(function() {
         $('#tbro_time').datetimepicker({
             format: 'hh:mm A',
-            useCurrent:true,
-            defaultDate:new Date(),
+            useCurrent: true,
+            defaultDate: new Date(),
             icons: {
                 time: 'fa fa-clock-o',
                 date: 'fa fa-calendar',
@@ -259,30 +259,30 @@
         });
 
         $('#tbro_date').datetimepicker({
-            format:'DD-MM-YYYY',
+            format: 'DD-MM-YYYY',
             maxDate: moment().add(90, 'days'),
             minDate: moment(),
-            useCurrent:false,
+            useCurrent: false,
         });
 
 
-        $('#dsr_status').on('change',function(e){
-            if($(this).val() === 'Matured'){
+        $('#dsr_status').on('change', function(e) {
+            if ($(this).val() === 'Matured') {
                 $('.payment_field').css('display', 'flex');
-            }else{
+            } else {
                 $('.payment_field').css('display', 'none');
             }
 
         });
 
-        $('.frm_dsr_update').submit(function(e){
+        $('.frm_dsr_update').submit(function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
 
             $.ajax({
                 type: 'POST',
-                url: '{{ route('client.createDsr') }}',
+                url: "{{ route('client.createDsr') }}",
                 data: formData,
                 cache: false,
                 contentType: false,

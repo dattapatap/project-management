@@ -6,25 +6,30 @@
         overflow: hidden;
         font-family: 'Outfit', 'Inter', sans-serif;
     }
+
     #mdlEditProject .modal-header {
         background: linear-gradient(135deg, #f8fafd 0%, #edf2f9 100%);
         border-bottom: 1px solid #edf2f7;
         padding: 20px 24px;
     }
+
     #mdlEditProject .modal-title {
         font-weight: 700;
         color: #1e293b;
         font-size: 1.15rem;
     }
+
     #mdlEditProject .modal-body {
         padding: 24px;
     }
+
     #mdlEditProject label {
         font-weight: 600;
         font-size: 13px;
         color: #475569;
         margin-bottom: 6px;
     }
+
     #mdlEditProject .form-control {
         height: 44px;
         border-radius: 10px;
@@ -36,15 +41,18 @@
         background-color: #f8fafc;
         transition: all 0.2s ease-in-out;
     }
+
     #mdlEditProject .form-control:focus {
         background-color: #ffffff;
         border-color: #3b82f6;
         box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         outline: none;
     }
+
     #mdlEditProject textarea.form-control {
         height: auto;
     }
+
     #mdlEditProject .creatBtn {
         background: linear-gradient(135deg, #556ee6 0%, #3b82f6 100%);
         border: none;
@@ -55,6 +63,7 @@
         transition: all 0.2s ease;
         box-shadow: 0 4px 12px rgba(85, 110, 230, 0.25);
     }
+
     #mdlEditProject .creatBtn:hover {
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(85, 110, 230, 0.35);
@@ -71,7 +80,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_edit_project" class="custom-validation"  method="POST">
+                <form id="frm_edit_project" class="custom-validation" method="POST">
                     @csrf
                     <input type="hidden" value="" name="project-id" id="project-id">
                     <div class="row">
@@ -122,8 +131,7 @@
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Update Project </button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Update Project </button>
                             </div>
                         </div>
                     </div>
@@ -134,36 +142,35 @@
     </div>
 </div>
 <script>
-
-    $(document).ready(function(){
+    $(document).ready(function() {
         tinymce.init({
-                selector: 'textarea#description',
-                branding: false,
-                table_grid: false,
-                plugins: [
-                    "advlist autolink lists link image charmap print preview anchor",
-                    "searchreplace visualblocks code fullscreen",
-                    "insertdatetime media paste table codesample"
-                ],
-                toolbar: "undo redo | fontselect styleselect fontsizeselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | codesample action section button",
-                font_formats:"Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino;",
-                fontsize_formats: "8px 9px 10px 11px 12px 14px 16px 18px 20px 22px 24px 26px 28px 30px 32px 34px 36px 38px 40px 42px 44px 46px 48px 50px 52px 54px",
-                height: 300
+            selector: 'textarea#description',
+            branding: false,
+            table_grid: false,
+            plugins: [
+                "advlist autolink lists link image charmap print preview anchor",
+                "searchreplace visualblocks code fullscreen",
+                "insertdatetime media paste table codesample"
+            ],
+            toolbar: "undo redo | fontselect styleselect fontsizeselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | codesample action section button",
+            font_formats: "Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino;",
+            fontsize_formats: "8px 9px 10px 11px 12px 14px 16px 18px 20px 22px 24px 26px 28px 30px 32px 34px 36px 38px 40px 42px 44px 46px 48px 50px 52px 54px",
+            height: 300
         });
 
-        $(document).on('click', '.btn_edit_project', function(eve){
+        $(document).on('click', '.btn_edit_project', function(eve) {
             eve.preventDefault();
             let projectid = $(this).attr('projectid');
             $.ajax({
                 type: 'GET',
-                url: base_url +'/projects/'+ projectid +'/edit',
-                dataType:'json',
+                url: base_url + '/projects/' + projectid + '/edit',
+                dataType: 'json',
                 beforeSend: function() {
                     $('#cover-spin').css('display', 'block');
                 },
                 success: function(response) {
                     $('#cover-spin').css('display', 'none');
-                    if(response.success == true){
+                    if (response.success == true) {
                         const project = response.project
                         $('#project-id').val(project.id)
                         $('#client_name').val(project.clients.name)
@@ -171,12 +178,12 @@
                         $('#start_date').val(moment(project.start_date).format('YYYY-MM-DD'))
                         $('#end_date').val(moment(project.end_date).format('YYYY-MM-DD'))
                         $('#act_start_date').val(moment(project.act_start_date).format('YYYY-MM-DD'))
-                        if(project.description != null ){
+                        if (project.description != null) {
                             tinymce.get("description").setContent(project.description);
                         }
 
                         $('#mdlEditProject').modal('show');
-                    }else{
+                    } else {
                         alertify.error(response.message);
                     }
                 },
@@ -193,14 +200,14 @@
             });
         })
 
-        $('#frm_edit_project').on('submit', function(eve){
+        $('#frm_edit_project').on('submit', function(eve) {
             eve.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
 
             $.ajax({
                 type: 'POST',
-                url: base_url +'/projects/'+ $('#projectid').val() +'/update',
+                url: base_url + '/projects/' + $('#project-id').val() + '/update',
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -210,11 +217,11 @@
                 },
                 success: function(response) {
                     $('#cover-spin').css('display', 'none');
-                    if(response.success == true){
+                    if (response.success == true) {
                         alertify.success(response.message);
                         $('#mdlEditProject').modal('hide');
                         $('#frm_edit_project')[0].reset();
-                    }else{
+                    } else {
                         alertify.error(response.message);
                     }
                 },
@@ -232,5 +239,4 @@
 
         })
     })
-
 </script>

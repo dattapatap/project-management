@@ -7,14 +7,14 @@
 @section('content')
 <div class="container-fluid erp-page erp-page--csd">
     @php
-        $billingFilter = $billingFilter ?? 'all';
-        $cycleTabs = ['all' => 'All', 'monthly' => 'Monthly', 'yearly' => 'Yearly'];
+    $billingFilter = $billingFilter ?? 'all';
+    $cycleTabs = ['all' => 'All', 'monthly' => 'Monthly', 'yearly' => 'Yearly'];
     @endphp
 
     @include('layouts.partials.erp-page-header', [
-        'title' => 'AMC / Support Contracts',
-        'subtitle' => 'Monthly (5-day reminder) and yearly (30-day reminder) agreements with document storage.',
-        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><a href="' . route('csd.amc.create') . '" class="btn btn-primary btn-sm"><i class="mdi mdi-plus"></i> Add Contract</a>',
+    'title' => 'AMC / Support Contracts',
+    'subtitle' => 'Monthly (5-day reminder) and yearly (30-day reminder) agreements with document storage.',
+    'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm mr-2"><i class="mdi mdi-arrow-left mr-1"></i> Back</a><a href="' . route('csd.amc.create') . '" class="btn btn-primary btn-sm"><i class="mdi mdi-plus"></i> Add Contract</a>',
     ])
 
     @if(session('success'))
@@ -33,22 +33,24 @@
 
     <div class="card erp-table-card">
         <div class="card-body">
-            <table id="dataTable" class="table table-bordered table-hover w-100">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Client</th>
-                        <th>Type</th>
-                        <th>Cycle</th>
-                        <th>Start</th>
-                        <th>End</th>
-                        <th>Amount</th>
-                        <th>Doc</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-            </table>
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-premium table-centered table-striped table-hover w-100">
+                    <thead class="thead-custom-teal">
+                        <tr>
+                            <th>#</th>
+                            <th>Client</th>
+                            <th>Type</th>
+                            <th>Cycle</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Amount</th>
+                            <th>Doc</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -58,28 +60,54 @@
 <script src="{{ asset('assets/libs/datatables.net/js/jquery.dataTables.min.js')}}"></script>
 <script src="{{ asset('assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 <script>
-$(function () {
-    var cycleFilter = @json($billingFilter);
-    $('#dataTable').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: '{{ route('csd.amc.data') }}',
-            data: function (d) { d.cycle = cycleFilter; }
-        },
-        columns: [
-            { data: 'DT_RowIndex', orderable: false },
-            { data: 'client_name' },
-            { data: 'contract_type' },
-            { data: 'billing_cycle' },
-            { data: 'start_date' },
-            { data: 'end_date' },
-            { data: 'amount' },
-            { data: 'document', orderable: false, searchable: false },
-            { data: 'status' },
-            { data: 'action', orderable: false, searchable: false }
-        ]
+    $(function() {
+        var cycleFilter = @json($billingFilter);
+        $('#dataTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('csd.amc.data') }}",
+                data: function(d) {
+                    d.cycle = cycleFilter;
+                }
+            },
+            columns: [{
+                    data: 'DT_RowIndex',
+                    orderable: false
+                },
+                {
+                    data: 'client_name'
+                },
+                {
+                    data: 'contract_type'
+                },
+                {
+                    data: 'billing_cycle'
+                },
+                {
+                    data: 'start_date'
+                },
+                {
+                    data: 'end_date'
+                },
+                {
+                    data: 'amount'
+                },
+                {
+                    data: 'document',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'status'
+                },
+                {
+                    data: 'action',
+                    orderable: false,
+                    searchable: false
+                }
+            ]
+        });
     });
-});
 </script>
 @endsection

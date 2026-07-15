@@ -47,6 +47,8 @@ Route::get('/cache-clear', function () {
     Artisan::call('config:cache');
     Artisan::call('view:cache');
 
+    // Artisan::call('migrate');
+
     return "All Laravel caches and configurations cleared successfully!";
 });
 
@@ -167,11 +169,7 @@ Route::group(['middleware' => ['auth', 'restrict.sales']], function () {
     Route::get('sales/pipeline', [\App\Http\Controllers\Sales\SalesPipelineController::class, 'index'])->name('sales.pipeline');
     Route::post('sales/pipeline/move', [\App\Http\Controllers\Sales\SalesPipelineController::class, 'moveCard'])->name('sales.pipeline.move');
 
-    // Service Catalog Manager
-    Route::get('sales/catalog', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'index'])->name('sales.catalog.index');
-    Route::post('sales/catalog', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'store'])->name('sales.catalog.store');
-    Route::put('sales/catalog/{id}', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'update'])->name('sales.catalog.update');
-    Route::post('sales/catalog/{id}/toggle', [\App\Http\Controllers\Sales\ServiceCatalogController::class, 'toggleStatus'])->name('sales.catalog.toggle');
+
 
 
 
@@ -218,6 +216,7 @@ Route::group(['prefix' => 'csd', 'middleware' => ['auth', 'restrict.csd'], 'as' 
     Route::post('/clients', [CsdClientController::class, 'store'])->name('clients.store');
     Route::put('/clients/{assignment}', [CsdClientController::class, 'update'])->name('clients.update');
     Route::get('/clients/{assignment}', [CsdClientController::class, 'show'])->name('clients.show');
+    Route::delete('/clients/{assignment}', [CsdClientController::class, 'destroy'])->name('clients.destroy');
     Route::post('/contacts', [CsdClientController::class, 'storeContact'])->name('contacts.store');
 
     Route::get('/collections', [CsdCollectionController::class, 'index'])->name('collections.index');
@@ -269,6 +268,7 @@ Route::group(['prefix' => 'csd', 'middleware' => ['auth', 'restrict.csd'], 'as' 
     Route::post('/opportunities', [CsdOpportunityController::class, 'store'])->name('opportunities.store');
     Route::put('/opportunities/{opportunity}', [CsdOpportunityController::class, 'update'])->name('opportunities.update');
     Route::get('/opportunities/{opportunity}', [CsdOpportunityController::class, 'show'])->name('opportunities.show');
+    Route::post('/opportunities/{opportunity}/assign-nsd', [CsdOpportunityController::class, 'assignNsd'])->name('opportunities.assign-nsd');
 
     Route::get('/reports/team', [CsdTeamReportController::class, 'index'])->name('reports.team');
 });

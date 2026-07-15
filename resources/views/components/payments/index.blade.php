@@ -9,8 +9,8 @@
 
 <div class="container-fluid erp-page erp-page--admin erp-list-page">
     @include('layouts.partials.erp-page-header', [
-        'title' => 'Payments',
-        'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>'
+    'title' => 'Payments',
+    'actions' => '<a href="' . url('/') . '" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-arrow-left mr-1"></i> Back</a>'
     ])
 
     <div class="row">
@@ -20,8 +20,8 @@
 
                     <div class="col-12">
                         <div class="table-responsive">
-                            <table id="payments" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-                                <thead>
+                            <table id="payments" class="table table-striped dt-responsive table-premium table-centered " style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                <thead class="thead-custom-teal">
                                     <tr>
                                         <th>Sl No</th>
                                         <th>Company</th>
@@ -58,17 +58,17 @@
             </div>
             <div class="modal-body">
                 <div class="col-12 p-0">
-                    <table id="tbl_payment_history" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-                        <thead class="thead-light">
-                        <tr>
-                            <th>Sl No</th>
-                            <th>Date</th>
-                            <th>Paid</th>
-                            <th>Balance</th>
-                            <th>Type</th>
-                            <th> Reference </th>
-                            <th>Added By</th>
-                        </tr>
+                    <table id="tbl_payment_history" class="table table-premium table-centered table-striped dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                        <thead class="thead-custom-teal">
+                            <tr>
+                                <th>Sl No</th>
+                                <th>Date</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Type</th>
+                                <th> Reference </th>
+                                <th>Added By</th>
+                            </tr>
                         </thead>
                         <tbody>
 
@@ -91,11 +91,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_add_payments" class="custom-validation"  method="POST" novalidate>
+                <form id="frm_add_payments" class="custom-validation" method="POST" novalidate>
                     @csrf
                     <div class="row">
-                        <input type="hidden"  name="project_type" id="project_type" >
-                        <input type="hidden"  name="client" id="client" >
+                        <input type="hidden" name="project_type" id="project_type">
+                        <input type="hidden" name="client" id="client">
                         <div class="col-6">
                             <div class="form-group">
                                 <label for="">Balance</label>
@@ -106,8 +106,8 @@
                             <div class="form-group">
                                 <label for=""> Amount </label>
                                 <input type="text" id="amount" name='amount' class="form-control"
-                                onKeyPress="return isNumberKey(event);"  required tabindex="1">
-                                <span class="invalid-feedback" id="amount-input-error" role="alert" >  <strong></strong></span>
+                                    onKeyPress="return isNumberKey(event);" required tabindex="1">
+                                <span class="invalid-feedback" id="amount-input-error" role="alert"> <strong></strong></span>
                             </div>
                         </div>
 
@@ -129,8 +129,8 @@
                                     <input type="text" class="form-control" readonly>
                                     <div class="input-group-btn">
                                         <span class="fileUpload btn btn-primary">
-                                        <span class="upl" id="upload">Upload</span>
-                                        <input type="file" class="upload up" id="payment_cheque_receipt" name="payment_cheque_receipt" accept="image/*"  tabindex="3"  />
+                                            <span class="upl" id="upload">Upload</span>
+                                            <input type="file" class="upload up" id="payment_cheque_receipt" name="payment_cheque_receipt" accept="image/*" tabindex="3" />
                                         </span>
                                     </div>
                                 </div>
@@ -144,8 +144,8 @@
                                     <input type="text" class="form-control" readonly>
                                     <div class="input-group-btn">
                                         <span class="fileUpload btn btn-primary">
-                                        <span class="upl" id="upload">Upload</span>
-                                        <input type="file" class="upload up" id="payment_cash_receipt" name="payment_cash_receipt" accept="image/*"  tabindex="4"  />
+                                            <span class="upl" id="upload">Upload</span>
+                                            <input type="file" class="upload up" id="payment_cash_receipt" name="payment_cash_receipt" accept="image/*" tabindex="4" />
                                         </span>
                                     </div>
                                 </div>
@@ -155,15 +155,14 @@
                         <div class="pay_type_online col-6" style="display: none;">
                             <label> Transaction Id </label>
                             <input type="text" name="transactionid" id="transactionid" class="form-control" placeholder="Transaction Id"
-                            onKeyPress="return isNumberKey(event);" tabindex="5">
+                                onKeyPress="return isNumberKey(event);" tabindex="5">
                             <span class="invalid-feedback" id="transactionid-input-error" role="alert"><strong></strong></span>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-12 mt-3 float-roght btns_div">
                             <div class="float-right">
-                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"
-                                > Add Payment </button>
+                                <button type="submit" class="btn btn-primary waves-effect waves-light me-1 btn-submit creatBtn"> Add Payment </button>
                             </div>
                         </div>
                     </div>

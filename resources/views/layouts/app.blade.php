@@ -6,6 +6,7 @@ $showGlobalTimer = false;
 $hasSubmittedClosingToday = false;
 if (Auth::check()) {
 $user = Auth::user();
+$user->loadMissing('departments');
 if (!$user->hasRole('Admin')) {
 $userPerformance = new \App\Services\UserPerformanceService();
 $deptType = $userPerformance->departmentType($user);
@@ -61,7 +62,7 @@ $hasSubmittedClosingToday = \App\Models\DayClosing::where('user_id', $user->id)
     <link href="{{ asset('assets/libs/select2/select2.css') }}" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/libs/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('css/reports.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('css/erp-theme.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('css/erp-theme.css') }}?v={{ filemtime(public_path('css/erp-theme.css')) }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('css/erp-components.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('css/sales-dashboard.css') }}">
 
@@ -103,10 +104,6 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                             </span>
                         </a>
                     </div>
-                    <button type="button" class="btn btn-sm px-3 font-size-24 header-item waves-effect"
-                        id="vertical-menu-btn">
-                        <i class="mdi mdi-backburger"></i>
-                    </button>
                 </div>
 
                 <div class="d-flex">
@@ -163,7 +160,7 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
 
                     {{-- Start Add Task Shortcut Button --}}
                     @auth
-                    @if(Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
+                    @if($user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager']) || ($user->hasRole('Team-Leader') && optional($user->departments)->department == 2))
                     <div class="d-inline-flex align-items-center mr-3" style="align-self: center;">
                         <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-weight-bold btn_header_add_task" style="height: 36px; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: none;">
                             <i class="mdi mdi-plus-circle font-size-14 text-white"></i> Add Task
@@ -172,6 +169,7 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                     @endif
                     @endauth
                     {{-- End Add Task Shortcut Button --}}
+
 
                     {{-- Start Notifications --}}
                     <div class="dropdown d-inline-block">
@@ -795,8 +793,9 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
     @yield('component')
     @yield('scripts')
 
+
     @auth
-    @if(Auth::user()->hasRole(['Admin', 'Branch-Manager', 'Project-Manager', 'Team-Leader']))
+    @if($user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager']) || ($user->hasRole('Team-Leader') && optional($user->departments)->department == 2))
     @include('components.projects.components.projecttask')
     @endif
     @endauth

@@ -8,7 +8,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="frm_visiting_card" class="custom-validation"  method="POST" novalidate>
+                <form id="frm_visiting_card" class="custom-validation" method="POST" novalidate>
                     @csrf
                     <input type="hidden" value="{{ $client->id}}" name="client" id="client">
                     <div class="row">
@@ -36,18 +36,18 @@
 </div>
 
 <script>
-    $(document).ready(function(){
-        $('.add-visiting-card').click(function(){
-                $('#mdlAddVisitingCard').modal('show');
+    $(document).ready(function() {
+        $('.add-visiting-card').click(function() {
+            $('#mdlAddVisitingCard').modal('show');
         })
 
-        $('#frm_visiting_card').submit(function(e){
+        $('#frm_visiting_card').submit(function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
             $.ajax({
                 type: 'POST',
-                url: '{{ route('client.addVisitingCard') }}',
+                url: "{{ route('client.addVisitingCard') }}",
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -59,7 +59,9 @@
                 success: function(response) {
                     $('#frm_visiting_card')[0].reset();
                     alertify.success(response.message);
-                    setTimeout(() => { window.location.reload(); }, 1000);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 },
                 error: function(response) {
                     console.log(response);
@@ -76,7 +78,14 @@
             });
         });
         $(".gallery-popup").magnificPopup({
-            type:"image",closeOnContentClick:!0,mainClass:"mfp-fade",gallery:{enabled:!0,navigateByImgClick:!0,preload:[0,1]}
+            type: "image",
+            closeOnContentClick: !0,
+            mainClass: "mfp-fade",
+            gallery: {
+                enabled: !0,
+                navigateByImgClick: !0,
+                preload: [0, 1]
+            }
         });
     })
 </script>

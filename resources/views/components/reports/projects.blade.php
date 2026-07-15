@@ -19,7 +19,7 @@
                     <form action="{{ route('reports.projects') }}" method="GET" id="yearForm">
                         <select name="year" class="year-select" onchange="document.getElementById('yearForm').submit()">
                             @for($y = date('Y'); $y >= date('Y')-5; $y--)
-                                <option value="{{ $y }}" {{ $metrics['selected_year'] == $y ? 'selected' : '' }}>Fiscal Year {{ $y }}</option>
+                            <option value="{{ $y }}" {{ $metrics['selected_year'] == $y ? 'selected' : '' }}>Fiscal Year {{ $y }}</option>
                             @endfor
                         </select>
                     </form>
@@ -147,8 +147,8 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table id="modern-projects-table" class="table modern-table mb-0">
-                        <thead>
+                    <table id="modern-projects-table" class="table table-premium table-centered table-striped mb-0">
+                        <thead class="thead-custom-teal">
                             <tr>
                                 <th>Project Identity</th>
                                 <th>Project Team</th>
@@ -183,9 +183,8 @@
                     d.view = currentView;
                 }
             },
-            columns: [
-                { 
-                    data: 'project_name', 
+            columns: [{
+                    data: 'project_name',
                     name: 'project_name',
                     render: function(data) {
                         return `<div>
@@ -194,20 +193,23 @@
                                 </div>`;
                     }
                 },
-                { 
-                    data: 'team_count', 
+                {
+                    data: 'team_count',
                     name: 'team_count'
                 },
-                { 
-                    data: 'task_yield', 
+                {
+                    data: 'task_yield',
                     name: 'task_yield'
                 },
-                { 
-                    data: 'duration', 
+                {
+                    data: 'duration',
                     name: 'duration',
                     className: 'font-weight-bold text-dark'
                 },
-                { data: 'status', name: 'status' }
+                {
+                    data: 'status',
+                    name: 'status'
+                }
             ],
             dom: 'rt<"d-flex justify-content-between align-items-center mt-5"ip>',
             language: {
@@ -225,16 +227,23 @@
             table.ajax.reload();
         });
 
+        var growthData = @json($growthData);
+        var completedCategories = @json($completedCategories);
+
         // 📈 Lush Delivery Velocity Area Chart
         var growthOptions = {
             series: [{
                 name: 'Completed Projects',
-                data: [ @foreach($growthData as $growth) {{ $growth->count }}, @endforeach ]
+                data: growthData.map(function(item) {
+                    return item.count;
+                })
             }],
-            chart: { 
-                height: 250, 
-                type: 'area', 
-                toolbar: { show: false },
+            chart: {
+                height: 250,
+                type: 'area',
+                toolbar: {
+                    show: false
+                },
                 dropShadow: {
                     enabled: true,
                     top: 10,
@@ -243,46 +252,83 @@
                     opacity: 0.1
                 }
             },
-            stroke: { curve: 'smooth', width: 4 },
-            fill: { 
-                type: 'gradient', 
-                gradient: { 
-                    shadeIntensity: 1, 
-                    opacityFrom: 0.5, 
-                    opacityTo: 0.0, 
+            stroke: {
+                curve: 'smooth',
+                width: 4
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.5,
+                    opacityTo: 0.0,
                     stops: [0, 90, 100],
-                    colorStops: [
-                        { offset: 0, color: "#6366f1", opacity: 0.5 },
-                        { offset: 100, color: "#6366f1", opacity: 0 }
+                    colorStops: [{
+                            offset: 0,
+                            color: "#6366f1",
+                            opacity: 0.5
+                        },
+                        {
+                            offset: 100,
+                            color: "#6366f1",
+                            opacity: 0
+                        }
                     ]
-                } 
+                }
             },
             colors: ['#6366f1'],
             xaxis: {
-                categories: [ @foreach($growthData as $growth) "{{ $growth->month }}", @endforeach ],
-                axisBorder: { show: false },
-                axisTicks: { show: false },
-                labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
+                categories: growthData.map(function(item) {
+                    return item.month;
+                }),
+                axisBorder: {
+                    show: false
+                },
+                axisTicks: {
+                    show: false
+                },
+                labels: {
+                    style: {
+                        colors: '#94a3b8',
+                        fontWeight: 600
+                    }
+                }
             },
             yaxis: {
-                labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
+                labels: {
+                    style: {
+                        colors: '#94a3b8',
+                        fontWeight: 600
+                    }
+                }
             },
             grid: {
                 borderColor: '#f1f5f9',
                 strokeDashArray: 5,
-                xaxis: { lines: { show: true } }
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
             },
-            markers: { 
-                size: 6, 
-                colors: ['#6366f1'], 
-                strokeColors: '#fff', 
+            markers: {
+                size: 6,
+                colors: ['#6366f1'],
+                strokeColors: '#fff',
                 strokeWidth: 3,
-                hover: { size: 9 }
+                hover: {
+                    size: 9
+                }
             },
             tooltip: {
                 theme: 'dark',
-                x: { show: false },
-                style: { fontSize: '13px', fontFamily: 'Inter' }
+                x: {
+                    show: false
+                },
+                style: {
+                    fontSize: '13px',
+                    fontFamily: 'Inter'
+                }
             }
         };
         new ApexCharts(document.querySelector("#modern-growth-chart"), growthOptions).render();
@@ -291,16 +337,36 @@
         var completedCatOptions = {
             series: [{
                 name: 'Completed',
-                data: [ @foreach($completedCategories as $ccat) {{ $ccat->total }}, @endforeach ]
+                data: completedCategories.map(function(item) {
+                    return item.total;
+                })
             }],
-            chart: { height: 250, type: 'bar', toolbar: { show: false } },
-            plotOptions: { bar: { borderRadius: 4, horizontal: true, distributed: true } },
-            colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'],
-            dataLabels: { enabled: false },
-            xaxis: {
-                categories: [ @foreach($completedCategories as $ccat) "{{ $ccat->name }}", @endforeach ],
+            chart: {
+                height: 250,
+                type: 'bar',
+                toolbar: {
+                    show: false
+                }
             },
-            legend: { show: false }
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    horizontal: true,
+                    distributed: true
+                }
+            },
+            colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'],
+            dataLabels: {
+                enabled: false
+            },
+            xaxis: {
+                categories: completedCategories.map(function(item) {
+                    return item.name;
+                }),
+            },
+            legend: {
+                show: false
+            }
         };
         new ApexCharts(document.querySelector("#modern-completed-categories-chart"), completedCatOptions).render();
     });

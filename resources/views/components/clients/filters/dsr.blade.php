@@ -13,291 +13,217 @@
         --accent-color: #7F00FF;
     }
 
-    /* Glassmorphic Container styling */
     .glass-card-premium {
-        background: var(--glass-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border);
-        border-radius: 20px;
-        box-shadow: var(--glass-shadow);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: #fff;
+        border: 1px solid rgba(127, 0, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(31, 38, 135, 0.05);
         overflow: hidden;
     }
 
-    .glass-card-premium:hover {
-        box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.07);
-    }
-
-    /* Page Header */
+    /* ── Compact Page Header ── */
     .premium-page-header {
         background: linear-gradient(135deg, #1e003c 0%, #3a007d 100%);
-        border-radius: 20px;
-        padding: 35px 30px;
+        border-radius: 14px;
+        padding: 20px 26px;
         color: #ffffff;
         position: relative;
         overflow: hidden;
-        margin-bottom: 30px;
-        box-shadow: 0 10px 25px rgba(30, 0, 60, 0.15);
+        margin-bottom: 22px;
+        box-shadow: 0 6px 20px rgba(30, 0, 60, 0.12);
     }
+
+    .premium-page-header h4 { font-size: 17px !important; font-weight: 700 !important; margin-bottom: 2px !important; }
+    .premium-page-header p  { font-size: 12px !important; }
 
     .premium-page-header::after {
         content: '';
         position: absolute;
         top: -50%;
-        right: -10%;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(225, 0, 255, 0.15) 0%, transparent 70%);
+        right: -5%;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(225, 0, 255, 0.12) 0%, transparent 70%);
         border-radius: 50%;
+        pointer-events: none;
     }
 
-    /* Form Fields Styling */
+    /* ── Filter Form ── */
     .form-control-premium {
         border: 1px solid rgba(127, 0, 255, 0.15) !important;
-        border-radius: 12px !important;
-        padding: 11px 16px !important;
+        border-radius: 10px !important;
+        padding: 8px 14px !important;
         height: auto !important;
-        font-size: 14px !important;
-        color: #495057 !important;
+        font-size: 13px !important;
+        color: #3d3355 !important;
         background-color: #ffffff !important;
-        transition: all 0.25s ease !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
     }
 
     .form-control-premium:focus {
         border-color: #7F00FF !important;
-        box-shadow: 0 0 0 4px rgba(127, 0, 255, 0.12) !important;
-        background-color: #ffffff !important;
+        box-shadow: 0 0 0 3px rgba(127, 0, 255, 0.1) !important;
     }
 
     .form-group label {
         font-weight: 600;
         color: #4c3c63;
-        margin-bottom: 8px;
-        font-size: 12px;
+        margin-bottom: 5px;
+        font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    /* Select2 Skinning */
     .select2-container--default .select2-selection--single {
         border: 1px solid rgba(127, 0, 255, 0.15) !important;
-        border-radius: 12px !important;
-        height: 46px !important;
-        padding: 8px 12px !important;
+        border-radius: 10px !important;
+        height: 40px !important;
+        padding: 6px 12px !important;
     }
 
     .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 44px !important;
+        height: 38px !important;
     }
 
-    /* Elegant Table styles */
-    .table-premium {
-        border-collapse: separate;
-        border-spacing: 0 8px;
+    /* ── DSR Results Table ── */
+    .dsr-table {
         width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
     }
 
-    .table-premium thead th {
-        background-color: #f6f5fc !important;
-        border: none !important;
+    .dsr-table thead th {
+        background: #f3f0fa !important;
         color: #4c3c63 !important;
         font-weight: 700;
+        font-size: 10.5px;
         text-transform: uppercase;
-        font-size: 12px;
         letter-spacing: 0.6px;
-        padding: 14px 16px !important;
-        text-align: left;
+        padding: 9px 11px !important;
+        border-bottom: 2px solid rgba(127, 0, 255, 0.14) !important;
+        border-top: none !important;
+        white-space: nowrap;
     }
 
-    .table-premium tbody tr {
-        background-color: #ffffff;
-        box-shadow: 0 2px 6px rgba(127, 0, 255, 0.02);
-        transition: all 0.2s ease;
+    .dsr-table tbody tr {
+        border-bottom: 1px solid #ece8f8;
+        transition: background 0.12s ease;
     }
 
-    .table-premium tbody tr:hover {
-        background-color: #fdfbff !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(127, 0, 255, 0.05);
-    }
+    .dsr-table tbody tr:nth-child(even) { background: #faf8ff; }
+    .dsr-table tbody tr:hover { background: #f5f2ff !important; }
 
-    .table-premium tbody td {
-        border: none !important;
-        padding: 16px !important;
+    .dsr-table tbody td {
+        padding: 8px 11px !important;
         vertical-align: middle !important;
-        color: #495057;
-        font-size: 14px;
-        text-align: left;
+        color: #3d3355;
+        font-size: 12.5px;
+        border-top: none !important;
+        border-bottom: 1px solid #ece8f8 !important;
+        line-height: 1.45;
     }
 
-    .table-premium tbody tr td:first-child {
-        border-top-left-radius: 12px;
-        border-bottom-left-radius: 12px;
+    .dsr-company-name {
+        font-weight: 700;
+        font-size: 13px;
+        color: #2d1f4a;
+        display: block;
+        line-height: 1.3;
     }
 
-    .table-premium tbody tr td:last-child {
-        border-top-right-radius: 12px;
-        border-bottom-right-radius: 12px;
-    }
-
-    /* Gorgeous Status Badges */
+    /* ── Status Badges ── */
     .badge-status-premium {
-        padding: 6px 14px;
-        border-radius: 30px;
+        padding: 3px 9px;
+        border-radius: 20px;
         font-weight: 600;
-        font-size: 11px;
+        font-size: 10px;
         display: inline-block;
         text-transform: capitalize;
-        text-align: center;
+        white-space: nowrap;
+        line-height: 1.6;
     }
 
-    .badge-status-warm {
-        background-color: rgba(253, 126, 20, 0.08) !important;
-        color: #fd7e14 !important;
-    }
+    .badge-status-warm        { background: rgba(253,126,20,0.1)  !important; color: #c96110 !important; }
+    .badge-status-hot         { background: rgba(220,53,69,0.1)   !important; color: #c0392b !important; }
+    .badge-status-matured     { background: rgba(40,167,69,0.1)   !important; color: #1a7c3e !important; }
+    .badge-status-notinterested { background: rgba(108,117,125,0.1) !important; color: #545b62 !important; }
+    .badge-status-default     { background: rgba(0,123,255,0.08)  !important; color: #0062cc !important; }
 
-    .badge-status-hot {
-        background-color: rgba(220, 53, 69, 0.08) !important;
-        color: #dc3545 !important;
-    }
-
-    .badge-status-matured {
-        background-color: rgba(40, 167, 69, 0.08) !important;
-        color: #28a745 !important;
-    }
-
-    .badge-status-notinterested {
-        background-color: rgba(108, 117, 125, 0.08) !important;
-        color: #6c757d !important;
-    }
-
-    .badge-status-default {
-        background-color: rgba(0, 123, 255, 0.08) !important;
-        color: #007bff !important;
-    }
-
-    /* Modal Styling */
-    .modal-premium {
-        border-radius: 20px !important;
-        border: none;
-        overflow: hidden;
-    }
+    /* ── Modal ── */
+    .modal-premium { border-radius: 18px !important; overflow: hidden; border: none; }
 
     .modal-header-premium {
         background: var(--secondary-gradient);
         color: #ffffff;
         border-bottom: none;
-        padding: 22px 26px;
+        padding: 18px 24px;
     }
 
-    .modal-header-premium .modal-title {
-        color: #ffffff;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    }
+    .modal-header-premium .modal-title { color: #fff; font-weight: 700; font-size: 15px; }
+    .modal-header-premium .close { color: #fff; opacity: 0.8; text-shadow: none; }
+    .modal-header-premium .close:hover { opacity: 1; }
 
-    .modal-header-premium .close {
-        color: #ffffff;
-        opacity: 0.8;
-        text-shadow: none;
-        transition: opacity 0.2s;
-    }
-
-    .modal-header-premium .close:hover {
-        opacity: 1;
-    }
-
-    /* Highlight Card Style */
     .sts-metric-a {
+        color: #7F00FF; font-weight: 700;
+        padding: 5px 11px; border-radius: 7px;
+        background: rgba(127,0,255,0.06);
+        transition: all 0.18s; display: inline-block;
         text-decoration: none !important;
-        color: #7F00FF;
-        font-weight: 700;
-        padding: 6px 12px;
-        border-radius: 8px;
-        background: rgba(127, 0, 255, 0.06);
-        transition: all 0.2s;
-        display: inline-block;
-    }
-
-    .sts-metric-a:hover {
-        background: #7F00FF;
-        color: #ffffff;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(127,0,255,0.15);
-    }
-
-    /* Elegant table inside modal */
-    .table-mysts th {
-        color: #4c3c63;
-        font-weight: 700;
-        background-color: #f6f5fc;
-        text-align: center;
-        border: 1px solid rgba(127, 0, 255, 0.08) !important;
-        padding: 10px;
-        font-size: 11px;
-        text-transform: uppercase;
-    }
-    .table-mysts td {
-        color: #495057;
-        font-weight: 600;
-        background-color: #ffffff;
-        text-align: center;
-        border: 1px solid rgba(127, 0, 255, 0.08) !important;
-        padding: 12px 10px;
         font-size: 13px;
     }
 
-    /* Buttons styling */
+    .sts-metric-a:hover {
+        background: #7F00FF; color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(127,0,255,0.18);
+    }
+
+    .table-mysts th {
+        color: #4c3c63; font-weight: 700;
+        background: #f6f5fc; text-align: center;
+        border: 1px solid rgba(127,0,255,0.08) !important;
+        padding: 8px 10px; font-size: 11px; text-transform: uppercase;
+    }
+
+    .table-mysts td {
+        color: #495057; font-weight: 600;
+        background: #fff; text-align: center;
+        border: 1px solid rgba(127,0,255,0.08) !important;
+        padding: 9px 10px; font-size: 12.5px;
+    }
+
+    /* ── Action Buttons ── */
     .btn-premium-search {
-        background: var(--primary-gradient);
-        color: white;
-        border: none;
-        font-weight: 600;
-        padding: 12px 24px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(127, 0, 255, 0.25);
+        background: var(--primary-gradient); color: #fff;
+        border: none; font-weight: 600; font-size: 13px;
+        padding: 9px 22px; border-radius: 10px;
+        box-shadow: 0 4px 14px rgba(127,0,255,0.22);
         transition: all 0.2s ease;
     }
 
-    .btn-premium-search:hover {
-        color: white;
-        transform: translateY(-1.5px);
-        box-shadow: 0 6px 20px rgba(127, 0, 255, 0.35);
-    }
+    .btn-premium-search:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(127,0,255,0.32); }
 
     .btn-premium-outline {
-        background: transparent;
-        color: #7F00FF;
-        border: 1px solid rgba(127, 0, 255, 0.35);
-        font-weight: 600;
-        padding: 12px 24px;
-        border-radius: 12px;
+        background: transparent; color: #7F00FF;
+        border: 1px solid rgba(127,0,255,0.3);
+        font-weight: 600; font-size: 13px;
+        padding: 9px 22px; border-radius: 10px;
         transition: all 0.2s ease;
     }
 
-    .btn-premium-outline:hover {
-        background: rgba(127, 0, 255, 0.05);
-        border-color: #7F00FF;
-        color: #7F00FF;
-        transform: translateY(-1.5px);
-    }
+    .btn-premium-outline:hover { background: rgba(127,0,255,0.05); border-color: #7F00FF; color: #7F00FF; transform: translateY(-1px); }
 
     .btn-premium-solid {
-        background: #1e003c;
-        color: white;
-        border: none;
-        font-weight: 600;
-        padding: 12px 24px;
-        border-radius: 12px;
+        background: #1e003c; color: #fff;
+        border: none; font-weight: 600; font-size: 13px;
+        padding: 9px 22px; border-radius: 10px;
         transition: all 0.2s ease;
     }
 
-    .btn-premium-solid:hover {
-        background: #3200a8;
-        color: white;
-        transform: translateY(-1.5px);
-    }
+    .btn-premium-solid:hover { background: #3200a8; color: #fff; transform: translateY(-1px); }
+
+    /* ── DSR separator ── */
+    .dsr-divider { border: none; border-top: 1px dashed rgba(127,0,255,0.15); margin: 28px 0; }
 </style>
 @endsection
 
@@ -325,71 +251,71 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="card glass-card-premium border-0">
-                <div class="card-body p-4 p-md-5">
+                <div class="card-body p-3 p-md-4">
                     <form class="mb-4" id="frm-search-dsr" action="{{ route('report.searchdsr')}}">
                         <div class="row">
 
                             @if($user->hasRole('Sales-Executive'))
-                                <input type="hidden" name="employee" id="employee" value="{{ $user->id}}">
+                            <input type="hidden" name="employee" id="employee" value="{{ $user->id}}">
                             @elseif($user->hasRole('Team-Leader'))
-                                @php
-                                    $teams  =  DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
-                                    $fltUsers =  App\Models\TeamMembers::with('users.roles')
-                                                            ->whereHas('users.roles', function($query){
-                                                                $query->where('name', 'Sales-Executive');
-                                                            })
-                                                            ->whereIn('team', $teams)->where('status', true)->get();
-                                @endphp
-                                <div class="col-md-3 col-sm-12">
-                                    <div class="form-group mb-4">
-                                        <label class="font-weight-600">Select Executive</label>
-                                        <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
-                                            <option value="All">All Team Members</option>
-                                            @if($user->hasRole('Team-Leader'))
-                                                 <option value="{{ $user->id }}" @if( $search && $search['employee'] == $user->id ) selected @endif>Self</option>
-                                            @endif
-                                            @foreach ($fltUsers as $item)
-                                                <option value="{{ $item->users->id }}" @if( $search && $search['employee'] == $item->users->id ) selected @endif>
-                                                      {{ $item->users->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                            @php
+                            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+                            $fltUsers = App\Models\TeamMembers::with('users.roles')
+                            ->whereHas('users.roles', function($query){
+                            $query->where('name', 'Sales-Executive');
+                            })
+                            ->whereIn('team', $teams)->where('status', true)->get();
+                            @endphp
+                            <div class="col-md-3 col-sm-12">
+                                <div class="form-group mb-4">
+                                    <label class="font-weight-600">Select Executive</label>
+                                    <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
+                                        <option value="All">All Team Members</option>
+                                        @if($user->hasRole('Team-Leader'))
+                                        <option value="{{ $user->id }}" @if( $search && $search['employee']==$user->id ) selected @endif>Self</option>
+                                        @endif
+                                        @foreach ($fltUsers as $item)
+                                        <option value="{{ $item->users->id }}" @if( $search && $search['employee']==$item->users->id ) selected @endif>
+                                            {{ $item->users->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
                                 </div>
+                            </div>
                             @else
-                                @php
-                                    $fltUsers =  App\Models\User::whereHas('roles', function($query){
-                                                                    $query->whereIn('name', ['Sales-Executive', 'Team-Leader' ]);
-                                                                })
-                                                                ->whereHas('departments', function($query){
-                                                                    $query->where('department', 1);
-                                                                })
-                                                                ->get();
-                                @endphp
-                                <div class="col-md-4 col-sm-12">
-                                    <div class="form-group mb-4">
-                                        <label class="font-weight-600">Sales Executive / Manager</label>
-                                        <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
-                                            <option value="All">All Sales Employees</option>
-                                            @foreach ($fltUsers as $item)
-                                                <option value="{{ $item->id }}" @if( $search && $search['employee'] == $item->id ) selected @endif>
-                                                    {{ $item->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                            @php
+                            $fltUsers = App\Models\User::whereHas('roles', function($query){
+                            $query->whereIn('name', ['Sales-Executive', 'Team-Leader' ]);
+                            })
+                            ->whereHas('departments', function($query){
+                            $query->where('department', 1);
+                            })
+                            ->get();
+                            @endphp
+                            <div class="col-md-4 col-sm-12">
+                                <div class="form-group mb-4">
+                                    <label class="font-weight-600">Sales Executive / Manager</label>
+                                    <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
+                                        <option value="All">All Sales Employees</option>
+                                        @foreach ($fltUsers as $item)
+                                        <option value="{{ $item->id }}" @if( $search && $search['employee']==$item->id ) selected @endif>
+                                            {{ $item->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
                                 </div>
+                            </div>
                             @endif
 
                             <div class="col-md-4 col-sm-12">
                                 <div class="form-group mb-4">
                                     <label class="font-weight-600">DSR Status</label>
                                     <select class="form-control form-control-premium select-premium" name="category" id="category" required>
-                                        <option value="All" @if($search && $search['category'] == 'All') selected @endif>All Categories</option>
-                                        <option value="Warm Prespective" @if($search && $search['category'] == 'Warm Prespective') selected @endif>Warm Prespective</option>
-                                        <option value="Hot Prespective" @if($search && $search['category'] == 'Hot Prespective') selected @endif>Hot Prespective</option>
-                                        <option value="Matured" @if($search && $search['category'] == 'Matured') selected @endif>Matured Leads</option>
-                                        <option value="Not Interested" @if($search && $search['category'] == 'Not Interested') selected @endif>Not Interested</option>
+                                        <option value="All" @if($search && $search['category']=='All' ) selected @endif>All Categories</option>
+                                        <option value="Warm Prespective" @if($search && $search['category']=='Warm Prespective' ) selected @endif>Warm Prespective</option>
+                                        <option value="Hot Prespective" @if($search && $search['category']=='Hot Prespective' ) selected @endif>Hot Prespective</option>
+                                        <option value="Matured" @if($search && $search['category']=='Matured' ) selected @endif>Matured Leads</option>
+                                        <option value="Not Interested" @if($search && $search['category']=='Not Interested' ) selected @endif>Not Interested</option>
                                     </select>
                                 </div>
                             </div>
@@ -425,108 +351,108 @@
                         </div>
                     </form>
 
-                    <hr style="border-top: 1px dashed rgba(127, 0, 255, 0.15);" class="my-5">
+                    <hr class="dsr-divider">
 
                     @if(!$clients->isEmpty())
-                        <div class="table-responsive">
-                            <table class="table table-premium mb-0">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 5%">Sl</th>
-                                        <th style="width: 20%">Company Name</th>
-                                        @if($user->hasRole(["Admin","Team-Leader"]))
-                                        <th style="width: 15%">Referral</th>
+                    <div class="table-responsive">
+                        <table class="dsr-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%">Sl</th>
+                                    <th style="width: 20%">Company Name</th>
+                                    @if($user->hasRole(["Admin","Team-Leader"]))
+                                    <th style="width: 15%">Referral</th>
+                                    @endif
+                                    <th style="width: 15%">Status</th>
+                                    <th class="text-center" style="width: 15%">History Dt.</th>
+                                    <th style="width: 20%">Latest Remarks</th>
+                                    <th style="width: 12%" class="text-center">TBRO Date</th>
+                                    <th style="width: 5%" class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($clients as $key=>$items)
+                                @php
+                                $statusLower = strtolower(str_replace(' ', '', $items->status));
+                                $badgeClass = 'badge-status-default';
+                                if ($statusLower == 'warmprespective') $badgeClass = 'badge-status-warm';
+                                if ($statusLower == 'hotprespective') $badgeClass = 'badge-status-hot';
+                                if ($statusLower == 'matured') $badgeClass = 'badge-status-matured';
+                                if ($statusLower == 'notinterested') $badgeClass = 'badge-status-notinterested';
+                                @endphp
+                                <tr>
+                                    <td class="font-weight-600 text-muted"> {{ ($clients->currentpage()-1) * $clients->perpage() + $key + 1 }} </td>
+                                    <td>
+                                        <span class="dsr-company-name">{{ $items->name }}</span>
+                                    </td>
+                                    @if($user->hasRole(["Admin","Team-Leader"]))
+                                    <td>
+                                        <span class="badge badge-soft-primary px-2 py-1" style="border-radius: 6px;">
+                                            {{ $items->referral->name ?? 'Unassigned' }}
+                                        </span>
+                                    </td>
+                                    @endif
+
+                                    <td>
+                                        <span class="badge-status-premium {{ $badgeClass }}">
+                                            {{ $items->status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center font-size-13 text-muted">
+                                        @if($items->history)
+                                        <i class="mdi mdi-calendar-clock text-primary"></i>
+                                        {{ Carbon\Carbon::parse($items->history->created_at)->format('d M Y') }}
+                                        <span class="d-block font-size-11 text-muted">{{ $items->history->time ? Carbon\Carbon::parse($items->history->time)->format('h:i A') : '' }}</span>
+                                        @else
+                                        ---
                                         @endif
-                                        <th style="width: 15%">Status</th>
-                                        <th class="text-center" style="width: 15%">History Dt.</th>
-                                        <th style="width: 20%">Latest Remarks</th>
-                                        <th style="width: 12%" class="text-center">TBRO Date</th>
-                                        <th style="width: 5%" class="text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($clients as $key=>$items)
-                                    @php
-                                        $statusLower = strtolower(str_replace(' ', '', $items->status));
-                                        $badgeClass = 'badge-status-default';
-                                        if ($statusLower == 'warmprespective') $badgeClass = 'badge-status-warm';
-                                        if ($statusLower == 'hotprespective') $badgeClass = 'badge-status-hot';
-                                        if ($statusLower == 'matured') $badgeClass = 'badge-status-matured';
-                                        if ($statusLower == 'notinterested') $badgeClass = 'badge-status-notinterested';
-                                    @endphp
-                                    <tr>
-                                        <td class="font-weight-600 text-muted"> {{ ($clients->currentpage()-1) * $clients->perpage() + $key + 1 }} </td>
-                                        <td> 
-                                            <span class="font-weight-700 text-premium-dark">{{ $items->name }}</span>
-                                        </td>
-                                        @if($user->hasRole(["Admin","Team-Leader"]))
-                                        <td>
-                                            <span class="badge badge-soft-primary px-2 py-1" style="border-radius: 6px;">
-                                                {{ $items->referral->name ?? 'Unassigned' }}
-                                            </span>
-                                        </td>
+                                    </td>
+                                    <td class="text-muted font-size-13">
+                                        {{ $items->history->remarks ?? 'No remarks registered.' }}
+                                    </td>
+                                    <td class="text-center font-weight-600 font-size-13">
+                                        @if($items->history && $items->history->tbro)
+                                        <span class="badge badge-soft-warning px-2 py-1" style="border-radius: 6px;">
+                                            <i class="mdi mdi-clock-outline mr-1"></i>{{ Carbon\Carbon::parse($items->history->tbro)->format('d M Y') }}
+                                        </span>
+                                        @else
+                                        <span class="text-muted font-weight-400">---</span>
                                         @endif
+                                    </td>
 
-                                        <td>
-                                            <span class="badge-status-premium {{ $badgeClass }}">
-                                                {{ $items->status }}
-                                            </span>
-                                        </td>
-                                        <td class="text-center font-size-13 text-muted">
-                                            @if($items->history)
-                                                <i class="mdi mdi-calendar-clock text-primary"></i> 
-                                                {{ Carbon\Carbon::parse($items->history->created_at)->format('d M Y') }}
-                                                <span class="d-block font-size-11 text-muted">{{ $items->history->time ? Carbon\Carbon::parse($items->history->time)->format('h:i A') : '' }}</span>
-                                            @else
-                                                ---
-                                            @endif
-                                        </td>
-                                        <td class="text-muted font-size-13"> 
-                                            {{ $items->history->remarks ?? 'No remarks registered.' }}
-                                        </td>
-                                        <td class="text-center font-weight-600 font-size-13"> 
-                                            @if($items->history && $items->history->tbro) 
-                                                <span class="badge badge-soft-warning px-2 py-1" style="border-radius: 6px;">
-                                                    <i class="mdi mdi-clock-outline mr-1"></i>{{ Carbon\Carbon::parse($items->history->tbro)->format('d M Y') }}
-                                                </span>
-                                            @else 
-                                                <span class="text-muted font-weight-400">---</span> 
-                                            @endif
-                                        </td>
+                                    <td class="text-center">
+                                        <a type="button" class="btn btn-outline-primary btn-sm btn-rounded" target="_blank" href="{{ url('clients/'.base64_encode($items->id).'/'.'sts' ) }}"
+                                            data-toggle="tooltip" data-placement="bottom" title="Update STS" style="border-radius: 50%; width: 34px; height: 34px; padding: 6px 0;">
+                                            <i class="mdi mdi-plus"></i>
+                                        </a>
+                                    </td>
 
-                                        <td class="text-center">
-                                            <a type="button" class="btn btn-outline-primary btn-sm btn-rounded" target="_blank" href="{{ url('clients/'.base64_encode($items->id).'/'.'sts' ) }}"
-                                                data-toggle="tooltip" data-placement="bottom" title="Update STS" style="border-radius: 50%; width: 34px; height: 34px; padding: 6px 0;">
-                                                <i class="mdi mdi-plus"></i>
-                                            </a>
-                                        </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <img src="{{ asset('assets/images/no-data.png') }}" alt="" style="max-height: 80px;" class="mb-3 d-block mx-auto">
+                                        <span class="text-muted font-weight-500 font-size-15">No search DSR records exist for selected inputs.</span>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
 
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center py-5">
-                                            <img src="{{ asset('assets/images/no-data.png') }}" alt="" style="max-height: 80px;" class="mb-3 d-block mx-auto">
-                                            <span class="text-muted font-weight-500 font-size-15">No search DSR records exist for selected inputs.</span>
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                    <div class="row mt-4">
+                        <div class="col-12 d-flex justify-content-end">
+                            {{ $clients->links("pagination::bootstrap-4") }}
                         </div>
-
-                        <div class="row mt-4">
-                            <div class="col-12 d-flex justify-content-end">
-                                {{ $clients->links("pagination::bootstrap-4") }}
-                            </div>
-                        </div>
+                    </div>
                     @else
-                        <div class="row mt-5">
-                            <div class="col-12 text-center py-5">
-                                <i class="mdi mdi-alert-circle-outline text-muted" style="font-size: 56px;"></i>
-                                <h5 class="text-muted font-weight-600 mt-3 font-size-16">NO DSR LEADS FOUND</h5>
-                                <p class="text-muted-50 font-size-13 max-width-320 mx-auto">Try adjusting your executive selection, date timeframe, or status categories to search again.</p>
-                            </div>
+                    <div class="row mt-5">
+                        <div class="col-12 text-center py-5">
+                            <i class="mdi mdi-alert-circle-outline text-muted" style="font-size: 56px;"></i>
+                            <h5 class="text-muted font-weight-600 mt-3 font-size-16">NO DSR LEADS FOUND</h5>
+                            <p class="text-muted-50 font-size-13 max-width-320 mx-auto">Try adjusting your executive selection, date timeframe, or status categories to search again.</p>
                         </div>
+                    </div>
                     @endif
                 </div>
             </div>
@@ -551,11 +477,11 @@
                         <table class="table table-centered mb-0 table-mysts">
                             <thead>
                                 <tr>
-                                    <th rowspan="2" >Emp Id</th>
-                                    <th rowspan="2" > Name </th>
-                                    <th rowspan="2" >STS</th>
-                                    <th rowspan="2" >UnTouch</th>
-                                    <th rowspan="2" >Touch</th>
+                                    <th rowspan="2">Emp Id</th>
+                                    <th rowspan="2"> Name </th>
+                                    <th rowspan="2">STS</th>
+                                    <th rowspan="2">UnTouch</th>
+                                    <th rowspan="2">Touch</th>
                                     <th colspan="4" style="background: rgba(40,167,69,0.06); color: #28a745;">MET PIPELINE</th>
                                     <th colspan="4" style="background: rgba(127,0,255,0.06); color: #7F00FF;">NOT MET PIPELINE</th>
                                 </tr>
@@ -588,18 +514,18 @@
                     <h5 class="text-premium-dark font-size-15 font-weight-700 mb-4 d-flex align-items-center">
                         <i class="mdi mdi-filter-outline text-primary mr-2"></i> Filtered Segment Results
                     </h5>
-                    <table id="datatable" class="table table-bordered dt-responsive nowrap"
+                    <table id="datatable" class="table table-premium table-centered table-striped dt-responsive nowrap"
                         style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                         <thead>
-                        <tr>
-                            <th>Sl No</th>
-                            <th>Company</th>
-                            <th>Contact Info</th>
-                            <th>Mobile</th>
-                            <th>Status</th>
-                            <th>TBRO/Meet Fxd. Dt</th>
-                            <th>STS Update</th>
-                        </tr>
+                            <tr>
+                                <th>Sl No</th>
+                                <th>Company</th>
+                                <th>Contact Info</th>
+                                <th>Mobile</th>
+                                <th>Status</th>
+                                <th>TBRO/Meet Fxd. Dt</th>
+                                <th>STS Update</th>
+                            </tr>
                         </thead>
                         <tbody>
 

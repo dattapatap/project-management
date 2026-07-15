@@ -219,7 +219,7 @@
         background: #7F00FF;
         color: #ffffff;
         transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(127,0,255,0.15);
+        box-shadow: 0 4px 10px rgba(127, 0, 255, 0.15);
     }
 
     /* Elegant table inside modal */
@@ -233,6 +233,7 @@
         font-size: 11px;
         text-transform: uppercase;
     }
+
     .table-mysts td {
         color: #495057;
         font-weight: 600;
@@ -321,70 +322,70 @@
         <div class="col-lg-12">
             <div class="card glass-card-premium border-0">
                 <div class="card-body p-4 p-md-5">
-                    <form class="mb-4" id="frm-search-sts" action="{{ route('report.searchsts')}}" >
+                    <form class="mb-4" id="frm-search-sts" action="{{ route('report.searchsts')}}">
                         <div class="row">
 
                             @if($user->hasRole('Sales-Executive'))
-                                <input type="hidden" name="employee" id="employee" value="{{ $user->id}}">
+                            <input type="hidden" name="employee" id="employee" value="{{ $user->id}}">
                             @elseif($user->hasRole('Team-Leader'))
-                                @php
-                                    $teams  =  DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
-                                    $fltUsers =  App\Models\TeamMembers::with('users.roles')
-                                                            ->whereHas('users.roles', function($query){
-                                                                $query->where('name', 'Sales-Executive');
-                                                            })
-                                                            ->whereIn('team', $teams)->where('status', true)->get();
-                                @endphp
-                                <div class="col-md-3 col-sm-12">
-                                    <div class="form-group mb-4">
-                                        <label class="font-weight-600">Select Executive</label>
-                                        <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
-                                            <option value="All">All Team Members</option>
-                                            @if($user->hasRole('Team-Leader'))
-                                                 <option value="{{ $user->id }}" @if( $search && $search['employee'] == $user->id ) selected @endif>Self</option>
-                                            @endif
-                                            @foreach ($fltUsers as $item)
-                                                <option value="{{ $item->users->id }}" @if( $search && $search['employee'] == $item->users->id ) selected @endif>
-                                                      {{ $item->users->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                            @php
+                            $teams = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+                            $fltUsers = App\Models\TeamMembers::with('users.roles')
+                            ->whereHas('users.roles', function($query){
+                            $query->where('name', 'Sales-Executive');
+                            })
+                            ->whereIn('team', $teams)->where('status', true)->get();
+                            @endphp
+                            <div class="col-md-3 col-sm-12">
+                                <div class="form-group mb-4">
+                                    <label class="font-weight-600">Select Executive</label>
+                                    <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
+                                        <option value="All">All Team Members</option>
+                                        @if($user->hasRole('Team-Leader'))
+                                        <option value="{{ $user->id }}" @if( $search && $search['employee']==$user->id ) selected @endif>Self</option>
+                                        @endif
+                                        @foreach ($fltUsers as $item)
+                                        <option value="{{ $item->users->id }}" @if( $search && $search['employee']==$item->users->id ) selected @endif>
+                                            {{ $item->users->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
                                 </div>
+                            </div>
                             @else
-                                @php
-                                    $fltUsers =  App\Models\User::whereHas('roles', function($query){
-                                                                    $query->whereIn('name', ['Sales-Executive', 'Team-Leader' ]);
-                                                                })
-                                                                ->whereHas('departments', function($query){
-                                                                    $query->where('department', 1);
-                                                                })
-                                                                ->get();
-                                @endphp
-                                <div class="col-md-4 col-sm-12">
-                                    <div class="form-group mb-4">
-                                        <label class="font-weight-600">Team Member / Agent</label>
-                                        <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
-                                            <option value="All">All Sales Employees</option>
-                                            @foreach ($fltUsers as $item)
-                                                <option value="{{ $item->id }}" @if( $search && $search['employee'] == $item->id ) selected @endif>
-                                                    {{ $item->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                            @php
+                            $fltUsers = App\Models\User::whereHas('roles', function($query){
+                            $query->whereIn('name', ['Sales-Executive', 'Team-Leader' ]);
+                            })
+                            ->whereHas('departments', function($query){
+                            $query->where('department', 1);
+                            })
+                            ->get();
+                            @endphp
+                            <div class="col-md-4 col-sm-12">
+                                <div class="form-group mb-4">
+                                    <label class="font-weight-600">Team Member / Agent</label>
+                                    <select class="form-control form-control-premium select-premium" name="employee" id="employee" required>
+                                        <option value="All">All Sales Employees</option>
+                                        @foreach ($fltUsers as $item)
+                                        <option value="{{ $item->id }}" @if( $search && $search['employee']==$item->id ) selected @endif>
+                                            {{ $item->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
                                 </div>
+                            </div>
                             @endif
 
                             <div class="col-md-4 col-sm-12">
                                 <div class="form-group mb-4">
                                     <label class="font-weight-600">STS Status</label>
                                     <select class="form-control form-control-premium select-premium" name="category" id="category" required>
-                                        <option value="All" @if($search && $search['category'] == 'All') selected @endif>All Statuses</option>
-                                        <option value="Fresh" @if($search && $search['category'] == 'Fresh') selected @endif>Fresh Leads</option>
-                                        <option value="Followup" @if($search && $search['category'] == 'Followup') selected @endif>Follow-up</option>
-                                        <option value="Meeting Fixed" @if($search && $search['category'] == 'Meeting Fixed') selected @endif>Meeting Fixed</option>
-                                        <option value="Not Interested" @if($search && $search['category'] == 'Not Interested') selected @endif>Not Interested</option>
+                                        <option value="All" @if($search && $search['category']=='All' ) selected @endif>All Statuses</option>
+                                        <option value="Fresh" @if($search && $search['category']=='Fresh' ) selected @endif>Fresh Leads</option>
+                                        <option value="Followup" @if($search && $search['category']=='Followup' ) selected @endif>Follow-up</option>
+                                        <option value="Meeting Fixed" @if($search && $search['category']=='Meeting Fixed' ) selected @endif>Meeting Fixed</option>
+                                        <option value="Not Interested" @if($search && $search['category']=='Not Interested' ) selected @endif>Not Interested</option>
                                     </select>
                                 </div>
                             </div>
@@ -423,104 +424,104 @@
                     <hr style="border-top: 1px dashed rgba(127, 0, 255, 0.15);" class="my-5">
 
                     @if(!$clients->isEmpty())
-                        <div class="table-responsive">
-                            <table class="table table-premium mb-0">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 5%">Sl</th>
-                                        <th style="width: 20%">Company Name</th>
-                                        @if($user->hasRole(["Admin","Team-Leader"]))
-                                        <th style="width: 15%">Referral</th>
+                    <div class="table-responsive">
+                        <table class="table table-premium table-centered table-striped mb-0">
+                            <thead class="thead-custom-teal">
+                                <tr>
+                                    <th style="width: 5%">Sl</th>
+                                    <th style="width: 20%">Company Name</th>
+                                    @if($user->hasRole(["Admin","Team-Leader"]))
+                                    <th style="width: 15%">Referral</th>
+                                    @endif
+                                    <th style="width: 15%">Status</th>
+                                    <th class="text-center" style="width: 15%">History Dt.</th>
+                                    <th style="width: 20%">Latest Remarks</th>
+                                    <th style="width: 12%" class="text-center">TBRO Date</th>
+                                    <th style="width: 5%" class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($clients as $key=>$items)
+                                @php
+                                $stsLower = strtolower(str_replace(' ', '', $items->status));
+                                $badgeClass = 'badge-status-fresh';
+                                if ($stsLower == 'followup') $badgeClass = 'badge-status-followup';
+                                if ($stsLower == 'meetingfixed') $badgeClass = 'badge-status-meeting';
+                                if ($stsLower == 'notinterested') $badgeClass = 'badge-status-notinterested';
+                                @endphp
+                                <tr>
+                                    <td class="font-weight-600 text-muted"> {{ ($clients->currentpage()-1) * $clients->perpage() + $key + 1 }} </td>
+                                    <td>
+                                        <span class="font-weight-700 text-premium-dark">{{ $items->name }}</span>
+                                    </td>
+                                    @if($user->hasRole(["Admin","Team-Leader"]))
+                                    <td>
+                                        <span class="badge badge-soft-primary px-2 py-1" style="border-radius: 6px;">
+                                            {{ $items->referral->name ?? 'Unassigned' }}
+                                        </span>
+                                    </td>
+                                    @endif
+
+                                    <td>
+                                        <span class="badge-status-premium {{ $badgeClass }}">
+                                            {{ $items->status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center font-size-13 text-muted">
+                                        @if($items->history)
+                                        <i class="mdi mdi-calendar-clock text-primary"></i>
+                                        {{ Carbon\Carbon::parse($items->history->created_at)->format('d M Y') }}
+                                        <span class="d-block font-size-11 text-muted">{{ $items->history->time ? Carbon\Carbon::parse($items->history->time)->format('h:i A') : '' }}</span>
+                                        @else
+                                        ---
                                         @endif
-                                        <th style="width: 15%">Status</th>
-                                        <th class="text-center" style="width: 15%">History Dt.</th>
-                                        <th style="width: 20%">Latest Remarks</th>
-                                        <th style="width: 12%" class="text-center">TBRO Date</th>
-                                        <th style="width: 5%" class="text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($clients as $key=>$items)
-                                    @php
-                                        $stsLower = strtolower(str_replace(' ', '', $items->status));
-                                        $badgeClass = 'badge-status-fresh';
-                                        if ($stsLower == 'followup') $badgeClass = 'badge-status-followup';
-                                        if ($stsLower == 'meetingfixed') $badgeClass = 'badge-status-meeting';
-                                        if ($stsLower == 'notinterested') $badgeClass = 'badge-status-notinterested';
-                                    @endphp
-                                    <tr>
-                                        <td class="font-weight-600 text-muted"> {{ ($clients->currentpage()-1) * $clients->perpage() + $key + 1 }} </td>
-                                        <td> 
-                                            <span class="font-weight-700 text-premium-dark">{{ $items->name }}</span>
-                                        </td>
-                                        @if($user->hasRole(["Admin","Team-Leader"]))
-                                        <td>
-                                            <span class="badge badge-soft-primary px-2 py-1" style="border-radius: 6px;">
-                                                {{ $items->referral->name ?? 'Unassigned' }}
-                                            </span>
-                                        </td>
+                                    </td>
+                                    <td class="text-muted font-size-13">
+                                        {{ $items->history->remarks ?? 'No remarks registered.' }}
+                                    </td>
+                                    <td class="text-center font-weight-600 font-size-13">
+                                        @if($items->history && $items->history->tbro)
+                                        <span class="badge badge-soft-warning px-2 py-1" style="border-radius: 6px;">
+                                            <i class="mdi mdi-clock-outline mr-1"></i>{{ Carbon\Carbon::parse($items->history->tbro)->format('d M Y') }}
+                                        </span>
+                                        @else
+                                        <span class="text-muted font-weight-400">---</span>
                                         @endif
+                                    </td>
 
-                                        <td>
-                                            <span class="badge-status-premium {{ $badgeClass }}">
-                                                {{ $items->status }}
-                                            </span>
-                                        </td>
-                                        <td class="text-center font-size-13 text-muted">
-                                            @if($items->history)
-                                                <i class="mdi mdi-calendar-clock text-primary"></i> 
-                                                {{ Carbon\Carbon::parse($items->history->created_at)->format('d M Y') }}
-                                                <span class="d-block font-size-11 text-muted">{{ $items->history->time ? Carbon\Carbon::parse($items->history->time)->format('h:i A') : '' }}</span>
-                                            @else
-                                                ---
-                                            @endif
-                                        </td>
-                                        <td class="text-muted font-size-13"> 
-                                            {{ $items->history->remarks ?? 'No remarks registered.' }}
-                                        </td>
-                                        <td class="text-center font-weight-600 font-size-13"> 
-                                            @if($items->history && $items->history->tbro) 
-                                                <span class="badge badge-soft-warning px-2 py-1" style="border-radius: 6px;">
-                                                    <i class="mdi mdi-clock-outline mr-1"></i>{{ Carbon\Carbon::parse($items->history->tbro)->format('d M Y') }}
-                                                </span>
-                                            @else 
-                                                <span class="text-muted font-weight-400">---</span> 
-                                            @endif
-                                        </td>
+                                    <td class="text-center">
+                                        <a type="button" class="btn btn-outline-primary btn-sm btn-rounded" target="_blank" href="{{ url('clients/'.base64_encode($items->id).'/'.'sts' ) }}"
+                                            data-toggle="tooltip" data-placement="bottom" title="Update STS" style="border-radius: 50%; width: 34px; height: 34px; padding: 6px 0;">
+                                            <i class="mdi mdi-plus"></i>
+                                        </a>
+                                    </td>
 
-                                        <td class="text-center">
-                                            <a type="button" class="btn btn-outline-primary btn-sm btn-rounded" target="_blank" href="{{ url('clients/'.base64_encode($items->id).'/'.'sts' ) }}"
-                                                data-toggle="tooltip" data-placement="bottom" title="Update STS" style="border-radius: 50%; width: 34px; height: 34px; padding: 6px 0;">
-                                                <i class="mdi mdi-plus"></i>
-                                            </a>
-                                        </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <img src="{{ asset('assets/images/no-data.png') }}" alt="" style="max-height: 80px;" class="mb-3 d-block mx-auto">
+                                        <span class="text-muted font-weight-500 font-size-15">No Search STS records exist for selected inputs.</span>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
 
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center py-5">
-                                            <img src="{{ asset('assets/images/no-data.png') }}" alt="" style="max-height: 80px;" class="mb-3 d-block mx-auto">
-                                            <span class="text-muted font-weight-500 font-size-15">No Search STS records exist for selected inputs.</span>
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                    <div class="row mt-4">
+                        <div class="col-12 d-flex justify-content-end">
+                            {{ $clients->links("pagination::bootstrap-4") }}
                         </div>
-
-                        <div class="row mt-4">
-                            <div class="col-12 d-flex justify-content-end">
-                                {{ $clients->links("pagination::bootstrap-4") }}
-                            </div>
-                        </div>
+                    </div>
                     @else
-                        <div class="row mt-5">
-                            <div class="col-12 text-center py-5">
-                                <i class="mdi mdi-alert-circle-outline text-muted" style="font-size: 56px;"></i>
-                                <h5 class="text-muted font-weight-600 mt-3 font-size-16">NO STS LEADS FOUND</h5>
-                                <p class="text-muted-50 font-size-13 max-width-320 mx-auto">Try adjusting your executive selection, date timeframe, or categories to search again.</p>
-                            </div>
+                    <div class="row mt-5">
+                        <div class="col-12 text-center py-5">
+                            <i class="mdi mdi-alert-circle-outline text-muted" style="font-size: 56px;"></i>
+                            <h5 class="text-muted font-weight-600 mt-3 font-size-16">NO STS LEADS FOUND</h5>
+                            <p class="text-muted-50 font-size-13 max-width-320 mx-auto">Try adjusting your executive selection, date timeframe, or categories to search again.</p>
                         </div>
+                    </div>
                     @endif
                 </div>
             </div>
@@ -545,11 +546,11 @@
                         <table class="table table-centered mb-0 table-mysts">
                             <thead>
                                 <tr>
-                                    <th rowspan="2" >Emp Id</th>
-                                    <th rowspan="2" > Name </th>
-                                    <th rowspan="2" >STS</th>
-                                    <th rowspan="2" >UnTouch</th>
-                                    <th rowspan="2" >Touch</th>
+                                    <th rowspan="2">Emp Id</th>
+                                    <th rowspan="2"> Name </th>
+                                    <th rowspan="2">STS</th>
+                                    <th rowspan="2">UnTouch</th>
+                                    <th rowspan="2">Touch</th>
                                     <th colspan="4" style="background: rgba(40,167,69,0.06); color: #28a745;">MET PIPELINE</th>
                                     <th colspan="4" style="background: rgba(127,0,255,0.06); color: #7F00FF;">NOT MET PIPELINE</th>
                                 </tr>
@@ -582,18 +583,18 @@
                     <h5 class="text-premium-dark font-size-15 font-weight-700 mb-4 d-flex align-items-center">
                         <i class="mdi mdi-filter-outline text-primary mr-2"></i> Filtered Segment Results
                     </h5>
-                    <table id="datatable" class="table table-bordered dt-responsive nowrap"
+                    <table id="datatable" class="table table-premium table-centered table-striped dt-responsive nowrap"
                         style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-                        <thead>
-                        <tr>
-                            <th>Sl No</th>
-                            <th>Company</th>
-                            <th>Contact Info</th>
-                            <th>Mobile</th>
-                            <th>Status</th>
-                            <th>TBRO/Meet Fxd. Dt</th>
-                            <th>STS Update</th>
-                        </tr>
+                        <thead class="thead-custom-teal">
+                            <tr>
+                                <th>Sl No</th>
+                                <th>Company</th>
+                                <th>Contact Info</th>
+                                <th>Mobile</th>
+                                <th>Status</th>
+                                <th>TBRO/Meet Fxd. Dt</th>
+                                <th>STS Update</th>
+                            </tr>
                         </thead>
                         <tbody>
 
@@ -610,7 +611,7 @@
 @endsection
 
 @section('scripts')
-<script type="text/javascript" src="{{ asset('assets/js/moment.min.js') }}" ></script>
+<script type="text/javascript" src="{{ asset('assets/js/moment.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('assets/js/datepicket.min.js') }}"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 <script src="{{ asset('assets/libs/datatables.net/js/jquery.dataTables.min.js')}}"></script>
@@ -619,78 +620,83 @@
 <script src="{{ asset('assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js')}}"></script>
 
 <script>
-
     $(function() {
 
-            var start = moment();
-            var end = moment();
-            function cb(start, end) {
-                $('#from_date').val(start.format('DD/MM/YYYY') + ' - ' + end.format('DD/MM/YYYY'));
+        var start = moment();
+        var end = moment();
+
+        function cb(start, end) {
+            $('#from_date').val(start.format('DD/MM/YYYY') + ' - ' + end.format('DD/MM/YYYY'));
+        }
+        $('#from_date').daterangepicker({
+            startDate: start,
+            endDate: end,
+            maxDate: end,
+            ranges: {
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            },
+            autoUpdateInput: false,
+            locale: {
+                cancelLabel: 'Clear'
             }
-            $('#from_date').daterangepicker({
-                startDate: start,
-                endDate: end,
-                maxDate:end,
-                ranges: {
-                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-                    'This Month': [moment().startOf('month'), moment().endOf('month')],
-                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1,'month').endOf('month')],
-                },
-                autoUpdateInput: false,
-                locale: { cancelLabel: 'Clear' }
-            }, cb);
+        }, cb);
     });
 
-    $(document).ready(function(){
-        $("#mySTS").modal({show: false, backdrop: 'static'});
-        $('.mdlClose').click(function(){
+    $(document).ready(function() {
+        $("#mySTS").modal({
+            show: false,
+            backdrop: 'static'
+        });
+        $('.mdlClose').click(function() {
             $("#mySTS").modal('hide');
         });
-        $('.btn-my-sts-count').click(function(){
-                $('.table-mysts tbody').empty();
-                $('#mysts-placeholder').removeClass('d-none');
-                $('.content-filtermysts').addClass('d-none');
-                $.ajax({
-                    type: 'GET',
-                    url: "{{ route('report.get-count-my-sts') }}",
-                    beforeSend:function($e){
-                        $('.btn-my-sts-count').prop('disabled', true);
-                    },
-                    success: function(response) {
-                        $('.btn-my-sts-count').prop('disabled', false);
-                        if(response.status){
-                            let user = response.user;
-                            let sts = response.data;
+        $('.btn-my-sts-count').click(function() {
+            $('.table-mysts tbody').empty();
+            $('#mysts-placeholder').removeClass('d-none');
+            $('.content-filtermysts').addClass('d-none');
+            $.ajax({
+                type: 'GET',
+                url: "{{ route('report.get-count-my-sts') }}",
+                beforeSend: function($e) {
+                    $('.btn-my-sts-count').prop('disabled', true);
+                },
+                success: function(response) {
+                    $('.btn-my-sts-count').prop('disabled', false);
+                    if (response.status) {
+                        let user = response.user;
+                        let sts = response.data;
 
-                            let txtTr = '<tr>'+
-                                            '<td >'+ user.code +'</td>'+
-                                            '<td class="font-weight-700">'+ user.name +'</td>'+
-                                            '<td ><a href="javascript:void(0);" class="sts-metric-a mysts_client" category="sts" usercode="'+ user.id +'" >'+ sts.sts +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="untouch" usercode="'+ user.id +'" >'+ sts.unTouch +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="touch" usercode="'+ user.id +'" >'+ sts.touch +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrMet" usercode="'+ user.id +'" >'+ sts.dsrMet +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrMatured" usercode="'+ user.id +'" >'+ sts.dsrMatured +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrTbro" usercode="'+ user.id +'" >'+ sts.dsrTbro +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrReminder" usercode="'+ user.id +'" >'+ sts.dsrReminder +'</a></td>'+
+                        let txtTr = '<tr>' +
+                            '<td >' + user.code + '</td>' +
+                            '<td class="font-weight-700">' + user.name + '</td>' +
+                            '<td ><a href="javascript:void(0);" class="sts-metric-a mysts_client" category="sts" usercode="' + user.id + '" >' + sts.sts + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="untouch" usercode="' + user.id + '" >' + sts.unTouch + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="touch" usercode="' + user.id + '" >' + sts.touch + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrMet" usercode="' + user.id + '" >' + sts.dsrMet + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrMatured" usercode="' + user.id + '" >' + sts.dsrMatured + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrTbro" usercode="' + user.id + '" >' + sts.dsrTbro + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="dsrReminder" usercode="' + user.id + '" >' + sts.dsrReminder + '</a></td>' +
 
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsNotMet" usercode="'+ user.id +'" >'+ sts.stsNotMet +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsTbro" usercode="'+ user.id +'" >'+ sts.stsTBRO +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsReminder" usercode="'+ user.id +'" >'+ sts.stsReminder +'</a></td>'+
-                                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsMeetFixed" usercode="'+ user.id +'" >'+ sts.stsMeetingFixed +'</a></td>'+
-                                        '</tr>';
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsNotMet" usercode="' + user.id + '" >' + sts.stsNotMet + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsTbro" usercode="' + user.id + '" >' + sts.stsTBRO + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsReminder" usercode="' + user.id + '" >' + sts.stsReminder + '</a></td>' +
+                            '<td > <a href="javascript:void(0);" class="sts-metric-a mysts_client" category="stsMeetFixed" usercode="' + user.id + '" >' + sts.stsMeetingFixed + '</a></td>' +
+                            '</tr>';
 
-                            $('.table-mysts tbody').append(txtTr);
-                            $('#mySTS').modal('show');
-                        }else{
-                            $('.table-mysts tbody').append('<tr><td colspan="13"> NO STS RECORDS EXIST!</td></tr>');
-                            $('#mySTS').modal('show');
-                        }
-                    },
-                });
+                        $('.table-mysts tbody').append(txtTr);
+                        $('#mySTS').modal('show');
+                    } else {
+                        $('.table-mysts tbody').append('<tr><td colspan="13"> NO STS RECORDS EXIST!</td></tr>');
+                        $('#mySTS').modal('show');
+                    }
+                },
+            });
         });
 
-        $(document).on('click', '.mysts_client', function(){
+        $(document).on('click', '.mysts_client', function() {
             $('#mysts-placeholder').addClass('d-none');
             $('.content-filtermysts').addClass('d-none');
             let category = $(this).attr('category');
@@ -699,23 +705,62 @@
                 processing: true,
                 serverSide: true,
                 bDestroy: true,
-                pageLength : 5,
+                pageLength: 5,
                 lengthMenu: [5, 10, 20, 50],
-                ajax :{
-                        type: 'GET',
-                        data:{ 'category' : category, 'usercode': usercode},
-                        url: "{{ route('report.get-count-by-category') }}",
-                        error:function(err){ console.log(err);}
+                ajax: {
+                    type: 'GET',
+                    data: {
+                        'category': category,
+                        'usercode': usercode
+                    },
+                    url: "{{ route('report.get-count-by-category') }}",
+                    error: function(err) {
+                        console.log(err);
+                    }
                 },
-                columns: [
-                    {data: 'DT_RowIndex', name: 'Sl No', orderable: false, searchable: false},
-                    {data: 'name', name: 'name', orderable: false, searchable: true},
+                columns: [{
+                        data: 'DT_RowIndex',
+                        name: 'Sl No',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'name',
+                        name: 'name',
+                        orderable: false,
+                        searchable: true
+                    },
                     // {data: 'category', name: 'category', orderable: false, searchable: true},
-                    {data: 'contactinfo', name: 'cont_person', orderable: false, searchable: true},
-                    {data: 'mobile', name: 'mobile', orderable: false, searchable: true},
-                    {data: 'status', name: 'status', orderable: false, searchable: false},
-                    {data: 'tbro', name: 'history.tbro', orderable: false, searchable: true},
-                    {data: 'action',  name: 'action', orderable: false, searchable: false },
+                    {
+                        data: 'contactinfo',
+                        name: 'cont_person',
+                        orderable: false,
+                        searchable: true
+                    },
+                    {
+                        data: 'mobile',
+                        name: 'mobile',
+                        orderable: false,
+                        searchable: true
+                    },
+                    {
+                        data: 'status',
+                        name: 'status',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'tbro',
+                        name: 'history.tbro',
+                        orderable: false,
+                        searchable: true
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    },
                 ]
 
             });
@@ -728,12 +773,12 @@
     });
 
 
-    $(document).ready(function(){
-        $('.btn-sts-export').click(function(e){
+    $(document).ready(function() {
+        $('.btn-sts-export').click(function(e) {
             e.preventDefault();
             $.ajax({
                 type: 'GET',
-                url : base_url + '/exportsts',
+                url: base_url + '/exportsts',
                 data: $('#frm-search-sts').serialize(),
                 cache: false,
                 contentType: false,
@@ -771,8 +816,6 @@
             });
         });
     })
-
-
 </script>
 
 @endsection

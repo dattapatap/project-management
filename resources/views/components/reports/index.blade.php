@@ -28,14 +28,14 @@
                     <h4 class="header-title"> Reports </h4>
                 </div>
                 <div class="card-body">
-                    <form id="frmDownloadReport"  class="custom-validation" method="POST" novalidate>
+                    <form id="frmDownloadReport" class="custom-validation" method="POST" novalidate>
                         @csrf
                         <div class="row">
                             <div class="col-12">
                                 <div class="form-group">
                                     <label> Report Type<span class="text_required">*</span> </label>
                                     <select class="form-control" name="reporttype" id="reporttype" placeholder="Report Type"
-                                     required>
+                                        required>
                                         <option value=""> Select Report Type</option>
                                         <option value="product"> Product </option>
                                         <option value="batch"> Batches </option>
@@ -52,7 +52,7 @@
                                 <div class="form-group">
                                     <label>Report Category <span class="text_required">*</span></label>
                                     <select class="form-control" name="report_category" id="report_category" placeholder="Report Category"
-                                     required>
+                                        required>
                                         <option value=""> Select Report Category</option>
                                         <option value="batchwise"> Batch Wise </option>
                                         <option value="datewise"> Date Wise </option>
@@ -67,14 +67,14 @@
                                 <div class="form-group">
                                     <label>Batches <span class="text_required">*</span></label>
                                     <select class="form-control select2" name="batches" id="batches" placeholder="Batches" style="width: 100%">
-                                       <option value=""> Select Batch</option>
-                                       @foreach($batches as $items)
-                                            <option value="{{ $items }}"> {{ $items }} </option>
-                                       @endforeach
-                                   </select>
-                                   <span class="invalid-feedback" id="batches-input-error" role="alert">
+                                        <option value=""> Select Batch</option>
+                                        @foreach($batches as $items)
+                                        <option value="{{ $items }}"> {{ $items }} </option>
+                                        @endforeach
+                                    </select>
+                                    <span class="invalid-feedback" id="batches-input-error" role="alert">
                                         <strong></strong>
-                                   </span>
+                                    </span>
                                 </div>
                             </div>
 
@@ -105,90 +105,107 @@
 @endsection
 
 @section('scripts')
-<script type="text/javascript" src="{{ asset('assets/js/moment.min.js') }}" ></script>
+<script type="text/javascript" src="{{ asset('assets/js/moment.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('assets/js/datepicket.min.js') }}"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 <script>
     $(function() {
-            var start = moment().subtract(29, 'days');
-            var end = moment();
+        var start = moment().subtract(29, 'days');
+        var end = moment();
 
-            function cb(start, end) {
-                $('#date').val(start.format('D/M/YYYY') + ' - ' + end.format('D/M/YYYY'));
+        function cb(start, end) {
+            $('#date').val(start.format('D/M/YYYY') + ' - ' + end.format('D/M/YYYY'));
+        }
+
+        $('#date').daterangepicker({
+            startDate: start,
+            endDate: end,
+            ranges: {
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1,
+                    'month').endOf('month')]
+            },
+            autoUpdateInput: false,
+            locale: {
+                cancelLabel: 'Clear'
             }
-
-            $('#date').daterangepicker({
-                startDate: start,
-                endDate: end,
-                ranges: {
-                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-                    'This Month': [moment().startOf('month'), moment().endOf('month')],
-                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1,
-                        'month').endOf('month')]
-                },
-                autoUpdateInput: false,
-                locale: {
-                    cancelLabel: 'Clear'
-                }
-            }, cb);
+        }, cb);
 
     });
 
 
 
-    $(document).ready(function(){
+    $(document).ready(function() {
         $('.select2').select2();
 
         $('.btndownload').prop('disabled', true);
-        $('#reporttype').change(function(){
+        $('#reporttype').change(function() {
             $('#batchwise').hide();
             $('#datewise').hide();
 
-            if($(this).val() == 'product'){
-                $('.batchwise').hide(); $('#batches').val('');
-                $('.datewise').hide(); $('#date').val('');
-                $('.reportCategory').hide(); $('#report_category').val('');
+            if ($(this).val() == 'product') {
+                $('.batchwise').hide();
+                $('#batches').val('');
+                $('.datewise').hide();
+                $('#date').val('');
+                $('.reportCategory').hide();
+                $('#report_category').val('');
                 $('.btndownload').prop('disabled', false);
-            }else if($(this).val() == 'batch'){
-                $('.batchwise').hide(); $('#batches').val('');
-                $('.datewise').hide(); $('#date').val('');
-                $('.reportCategory').show();  $('#report_category').val('');
+            } else if ($(this).val() == 'batch') {
+                $('.batchwise').hide();
+                $('#batches').val('');
+                $('.datewise').hide();
+                $('#date').val('');
+                $('.reportCategory').show();
+                $('#report_category').val('');
                 $('.btndownload').prop('disabled', true);
 
-            }else{
-                $('.batchwise').hide(); $('#batches').val('');
-                $('.datewise').hide(); $('#date').val('');
-                $('.reportCategory').hide();  $('#report_category').val('');
+            } else {
+                $('.batchwise').hide();
+                $('#batches').val('');
+                $('.datewise').hide();
+                $('#date').val('');
+                $('.reportCategory').hide();
+                $('#report_category').val('');
                 $('.btndownload').prop('disabled', true);
             }
         });
 
-        $('#report_category').change(function(){
-            if($(this).val() == 'batchwise'){
-                $('.batchwise').show(); $('#batches').val('');
-                $('.datewise').hide();  $('#date').val('');
+        $('#report_category').change(function() {
+            if ($(this).val() == 'batchwise') {
+                $('.batchwise').show();
+                $('#batches').val('');
+                $('.datewise').hide();
+                $('#date').val('');
                 $('.btndownload').prop('disabled', false);
-            }else if($(this).val() == 'datewise'){
-                $('.batchwise').hide(); $('#date').val('');
-                $('.datewise').show(); $('#date').val('');
+            } else if ($(this).val() == 'datewise') {
+                $('.batchwise').hide();
+                $('#date').val('');
+                $('.datewise').show();
+                $('#date').val('');
                 $('.btndownload').prop('disabled', false);
-            }else{
-                $('.batchwise').hide(); $('#date').val('');
-                $('.datewise').hide(); $('#date').val('');
+            } else {
+                $('.batchwise').hide();
+                $('#date').val('');
+                $('.datewise').hide();
+                $('#date').val('');
                 $('.btndownload').prop('disabled', true);
             }
         })
 
-        $('#frmDownloadReport').submit(function(e){
+        $('#frmDownloadReport').submit(function(e) {
             e.preventDefault();
             var formData = new FormData($(this)[0]);
             $(".invalid-feedback").children("strong").text("");
 
             $.ajax({
                 type: 'POST',
-                url: '{{ route('batches.exportall') }}',
-                headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
+                url: "{{ route('batches.exportall') }}",
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
                 data: formData,
                 cache: false,
                 contentType: false,
@@ -206,9 +223,9 @@
                     console.log(result);
                     var disposition = xhr.getResponseHeader('content-disposition');
                     var matches = /"([^"]*)"/.exec(disposition);
-                    if($('#reporttype').val() == 'product'){
+                    if ($('#reporttype').val() == 'product') {
                         var filename = (matches != null && matches[1] ? matches[1] : 'Product_list.xlsx');
-                    }else{
+                    } else {
                         var filename = (matches != null && matches[1] ? matches[1] : 'Batch_list.xlsx');
                     }
 

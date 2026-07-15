@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @php
-    $user = Auth::user();
-    $isSalesTL = $user->hasRole('Team-Leader') && ($user->departments && $user->departments->department == 1);
+$user = Auth::user();
+$isSalesTL = $user->hasRole('Team-Leader') && ($user->departments && $user->departments->department == 1);
 @endphp
 
 @section('content')
@@ -31,12 +31,12 @@
                     <div id="yearMonthFilters" class="d-flex {{ ($range['preset'] ?? '') === 'custom' ? 'd-none' : '' }}">
                         <select name="year" id="yearSelect" class="year-select mr-2">
                             @for($y = date('Y'); $y >= date('Y')-5; $y--)
-                                <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>FY {{ $y }}</option>
+                            <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>FY {{ $y }}</option>
                             @endfor
                         </select>
                         <select name="month" id="monthSelect" class="year-select">
                             @foreach($months as $m)
-                                <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ $m }}</option>
+                            <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ $m }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -150,7 +150,7 @@
                         <button class="btn btn-sm range-btn" data-range="yearly">Yearly</button>
                     </div>
                 </div>
-                
+
                 <div class="table-responsive">
                     <table id="modern-employees-table" class="table modern-table mb-0">
                         <thead>
@@ -220,9 +220,8 @@
                     d.date_to = $('input[name=date_to]').val();
                 }
             },
-            columns: [
-                { 
-                    data: 'name', 
+            columns: [{
+                    data: 'name',
                     name: 'name',
                     render: function(data, type, row) {
                         return `<div class="d-flex align-items-center">
@@ -236,8 +235,8 @@
                                 </div>`;
                     }
                 },
-                { 
-                    data: 'departments', 
+                {
+                    data: 'departments',
                     name: 'departments.dept.name',
                     render: function(data, type, row) {
                         const dept = data && data.dept ? data.dept.name : 'Sales';
@@ -248,31 +247,29 @@
                                 </div>`;
                     }
                 },
-                @if($isSalesTL)
-                { 
-                    data: 'total_leads', 
+                @if($isSalesTL) {
+                    data: 'total_leads',
                     name: 'total_leads',
                     render: function(data) {
                         return `<span class="font-weight-bold text-primary font-size-14"><i class="mdi mdi-account-plus mr-1"></i>${data} Leads</span>`;
                     }
                 },
-                { 
-                    data: 'active_followups', 
+                {
+                    data: 'active_followups',
                     name: 'active_followups',
                     render: function(data) {
                         return `<span class="font-weight-bold text-warning font-size-14"><i class="mdi mdi-phone-in-talk mr-1"></i>${data} Followups</span>`;
                     }
                 },
-                { 
-                    data: 'matured_clients', 
+                {
+                    data: 'matured_clients',
                     name: 'matured_clients',
                     render: function(data) {
                         return `<span class="badge badge-soft-success px-3 py-1 rounded-pill font-size-13 font-weight-bold">${data} Matured</span>`;
                     }
                 },
-                @else
-                { 
-                    data: 'active_tasks', 
+                @else {
+                    data: 'active_tasks',
                     name: 'active_tasks',
                     render: function(data, type, row) {
                         const isSales = (row.departments && row.departments.department == 1);
@@ -288,15 +285,15 @@
                                 </div>`;
                     }
                 },
-                { 
-                    data: 'total_hours', 
+                {
+                    data: 'total_hours',
                     name: 'total_hours',
                     render: function(data) {
                         return `<span class="creator-identity"><i class="mdi mdi-timer-outline mr-2"></i>${data} Hrs</span>`;
                     }
                 },
-                { 
-                    data: 'performance', 
+                {
+                    data: 'performance',
                     name: 'productivity',
                     render: function(data, type, row) {
                         let color = row.productivity > 75 ? 'bg-success' : (row.productivity > 40 ? 'bg-primary' : 'bg-danger');
@@ -308,9 +305,8 @@
                                 </div>`;
                     }
                 },
-                @endif
-                { 
-                    data: 'action', 
+                @endif {
+                    data: 'action',
                     name: 'action',
                     orderable: false,
                     searchable: false,
@@ -336,55 +332,105 @@
             table.ajax.reload();
         });
 
+        var performanceTrend = @json($performanceTrend);
+
         // 📈 Dual-Track Efficiency Trend Chart
         var efficiencyOptions = {
             series: [
-                @if(!$isSalesTL)
-                {
+                @if(!$isSalesTL) {
                     name: 'Ops Delivery (Tasks)',
-                    data: [ @foreach($performanceTrend as $p) {{ $p->ops }}, @endforeach ]
+                    data: performanceTrend.map(function(item) {
+                        return item.ops;
+                    })
                 }
                 @endif
                 @if($showSales)
-                @if(!$isSalesTL),@endif
-                {
+                @if(!$isSalesTL), @endif {
                     name: 'Sales Maturity (Clients)',
-                    data: [ @foreach($performanceTrend as $p) {{ $p->sales }}, @endforeach ]
+                    data: performanceTrend.map(function(item) {
+                        return item.sales;
+                    })
                 }
                 @endif
             ],
-            chart: { 
-                height: 320, 
-                type: 'area', 
-                toolbar: { show: false },
-                dropShadow: { enabled: true, top: 10, blur: 15, opacity: 0.1 }
+            chart: {
+                height: 320,
+                type: 'area',
+                toolbar: {
+                    show: false
+                },
+                dropShadow: {
+                    enabled: true,
+                    top: 10,
+                    blur: 15,
+                    opacity: 0.1
+                }
             },
-            stroke: { curve: 'smooth', width: 4 },
-            colors: [@if($isSalesTL) '#34c38f' @else '#6366f1', '#34c38f' @endif],
-            fill: { 
-                type: 'gradient', 
-                gradient: { 
-                    shadeIntensity: 1, 
-                    opacityFrom: 0.4, 
-                    opacityTo: 0.0, 
+            stroke: {
+                curve: 'smooth',
+                width: 4
+            },
+            colors: [@if($isSalesTL)
+                '#34c38f'
+                @else '#6366f1', '#34c38f'
+                @endif
+            ],
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.4,
+                    opacityTo: 0.0,
                     stops: [0, 90, 100]
-                } 
+                }
             },
             xaxis: {
-                categories: [ @foreach($performanceTrend as $p) "{{ $p->month }}", @endforeach ],
-                axisBorder: { show: false },
-                labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
+                categories: performanceTrend.map(function(item) {
+                    return item.month;
+                }),
+                axisBorder: {
+                    show: false
+                },
+                labels: {
+                    style: {
+                        colors: '#94a3b8',
+                        fontWeight: 600
+                    }
+                }
             },
-            yaxis: { labels: { style: { colors: '#94a3b8', fontWeight: 600 } } },
-            grid: { borderColor: '#f1f5f9', strokeDashArray: 5 },
-            markers: { size: 4, strokeWidth: 3, hover: { size: 7 } },
-            legend: { show: false }
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: '#94a3b8',
+                        fontWeight: 600
+                    }
+                }
+            },
+            grid: {
+                borderColor: '#f1f5f9',
+                strokeDashArray: 5
+            },
+            markers: {
+                size: 4,
+                strokeWidth: 3,
+                hover: {
+                    size: 7
+                }
+            },
+            legend: {
+                show: false
+            }
         };
         new ApexCharts(document.querySelector("#efficiency-trend-chart"), efficiencyOptions).render();
     });
 </script>
 
 <style>
-.badge-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+    .badge-dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
 </style>
 @endsection

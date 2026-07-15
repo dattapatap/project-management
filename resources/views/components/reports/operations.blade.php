@@ -75,8 +75,8 @@
             </div>
         </div>
         <div class="table-responsive p-3">
-            <table id="operations-report-table" class="table table-hover mb-0">
-                <thead>
+            <table id="operations-report-table" class="table table-premium table-centered table-striped mb-0">
+                <thead class="thead-custom-teal">
                     <tr>
                         <th>Employee</th>
                         <th>Department</th>
@@ -112,102 +112,133 @@
 
 @section('scripts')
 <script>
-$(function () {
-    const presetInput = $('#presetInput');
-    const customFields = $('#customRangeFields');
+    $(function() {
+        const presetInput = $('#presetInput');
+        const customFields = $('#customRangeFields');
 
-    $('.range-preset').on('click', function () {
-        $('.range-preset').removeClass('active');
-        $(this).addClass('active');
-        const preset = $(this).data('preset');
-        presetInput.val(preset);
-        customFields.toggleClass('d-none', preset !== 'custom');
-        if (preset !== 'custom') {
-            $('#opsReportFilter').submit();
-        }
-    });
+        $('.range-preset').on('click', function() {
+            $('.range-preset').removeClass('active');
+            $(this).addClass('active');
+            const preset = $(this).data('preset');
+            presetInput.val(preset);
+            customFields.toggleClass('d-none', preset !== 'custom');
+            if (preset !== 'custom') {
+                $('#opsReportFilter').submit();
+            }
+        });
 
-    $('#operations-report-table').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: "{{ route('reports.operations.data') }}",
-            data: function (d) {
-                d.preset = presetInput.val();
-                d.department = $('select[name=department]').val();
-                d.date_from = $('input[name=date_from]').val();
-                d.date_to = $('input[name=date_to]').val();
-            }
-        },
-        columns: [
-            {
-                data: 'name',
-                render: function (data, type, row) {
-                    return `<div class="font-weight-bold">${data}</div><small class="text-muted">#EMP-${row.id}</small>`;
+        $('#operations-report-table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('reports.operations.data') }}",
+                data: function(d) {
+                    d.preset = presetInput.val();
+                    d.department = $('select[name=department]').val();
+                    d.date_from = $('input[name=date_from]').val();
+                    d.date_to = $('input[name=date_to]').val();
                 }
             },
-            {
-                data: 'departments',
-                render: function (data) {
-                    return data && data.dept ? data.dept.name : '—';
+            columns: [{
+                    data: 'name',
+                    render: function(data, type, row) {
+                        return `<div class="font-weight-bold">${data}</div><small class="text-muted">#EMP-${row.id}</small>`;
+                    }
+                },
+                {
+                    data: 'departments',
+                    render: function(data) {
+                        return data && data.dept ? data.dept.name : '—';
+                    }
+                },
+                @if($departmentId == 1) {
+                    data: 'leads_count',
+                    className: 'text-center'
+                },
+                {
+                    data: 'followups_count',
+                    className: 'text-center'
+                },
+                {
+                    data: 'matured_count',
+                    className: 'text-center'
+                },
+                {
+                    data: 'sales_amount',
+                    render: function(data) {
+                        return `<span class="font-weight-bold text-success">₹${parseFloat(data).toLocaleString()}</span>`;
+                    }
+                },
+                {
+                    data: 'callback_logs_count',
+                    className: 'text-center'
+                },
+                @elseif($departmentId == 3) {
+                    data: 'active_clients',
+                    className: 'text-center'
+                },
+                {
+                    data: 'comms_count',
+                    className: 'text-center'
+                },
+                {
+                    data: 'tickets_resolved',
+                    className: 'text-center'
+                },
+                {
+                    data: 'opportunities_won',
+                    className: 'text-center'
+                },
+                {
+                    data: 'collections_paid',
+                    className: 'text-center'
+                },
+                @else {
+                    data: 'days_worked',
+                    className: 'text-center'
+                },
+                {
+                    data: 'completed_tasks',
+                    className: 'text-center'
+                },
+                {
+                    data: 'total_hours',
+                    render: function(data) {
+                        return `<span class="font-weight-bold text-primary">${data} hrs</span>`;
+                    }
+                },
+                {
+                    data: 'avg_hours_per_day',
+                    className: 'text-center'
+                },
+                {
+                    data: 'log_entries',
+                    className: 'text-center'
+                },
+                @endif {
+                    data: 'productivity',
+                    render: function(data) {
+                        const color = data > 75 ? 'success' : (data > 40 ? 'primary' : 'danger');
+                        return `<span class="badge badge-${color}">${data}%</span>`;
+                    }
+                },
+                {
+                    data: 'action_link',
+                    orderable: false,
+                    searchable: false,
+                    render: function(url) {
+                        return `<a href="${url}" class="btn btn-sm btn-soft-primary">Full Report</a>`;
+                    }
                 }
-            },
-            @if($departmentId == 1)
-            { data: 'leads_count', className: 'text-center' },
-            { data: 'followups_count', className: 'text-center' },
-            { data: 'matured_count', className: 'text-center' },
-            {
-                data: 'sales_amount',
-                render: function (data) {
-                    return `<span class="font-weight-bold text-success">₹${parseFloat(data).toLocaleString()}</span>`;
-                }
-            },
-            { data: 'callback_logs_count', className: 'text-center' },
-            @elseif($departmentId == 3)
-            { data: 'active_clients', className: 'text-center' },
-            { data: 'comms_count', className: 'text-center' },
-            { data: 'tickets_resolved', className: 'text-center' },
-            { data: 'opportunities_won', className: 'text-center' },
-            { data: 'collections_paid', className: 'text-center' },
-            @else
-            { data: 'days_worked', className: 'text-center' },
-            { data: 'completed_tasks', className: 'text-center' },
-            {
-                data: 'total_hours',
-                render: function (data) {
-                    return `<span class="font-weight-bold text-primary">${data} hrs</span>`;
-                }
-            },
-            { data: 'avg_hours_per_day', className: 'text-center' },
-            { data: 'log_entries', className: 'text-center' },
-            @endif
-            {
-                data: 'productivity',
-                render: function (data) {
-                    const color = data > 75 ? 'success' : (data > 40 ? 'primary' : 'danger');
-                    return `<span class="badge badge-${color}">${data}%</span>`;
-                }
-            },
-            {
-                data: 'action_link',
-                orderable: false,
-                searchable: false,
-                render: function (url) {
-                    return `<a href="${url}" class="btn btn-sm btn-soft-primary">Full Report</a>`;
-                }
-            }
-        ],
-        order: [
-            @if($departmentId == 1)
-            [4, 'desc']
-            @elseif($departmentId == 3)
-            [2, 'desc']
-            @else
-            [4, 'desc']
-            @endif
-        ],
-        dom: 'frtip'
+            ],
+            order: [
+                @if($departmentId == 1)[4, 'desc']
+                @elseif($departmentId == 3)[2, 'desc']
+                @else[4, 'desc']
+                @endif
+            ],
+            dom: 'frtip'
+        });
     });
-});
 </script>
 @endsection

@@ -139,8 +139,8 @@
     <div class="card border shadow-sm">
         <div class="card-body p-4">
             <div class="table-responsive">
-                <table id="daily-targets-table" class="table custom-table mb-0 w-100">
-                    <thead>
+                <table id="daily-targets-table" class="table table-premium table-centered table-striped mb-0 w-100">
+                    <thead class="thead-custom-teal">
                         <tr>
                             <th>Date</th>
                             <th>Employee</th>
