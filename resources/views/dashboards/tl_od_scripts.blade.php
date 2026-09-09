@@ -2,11 +2,8 @@
 <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
 <script>
     // TL Project Health Chart (Updated with Completed)
-    document.addEventListener("DOMContentLoaded", function() {
+    function initHealthChart() {
         if (typeof ApexCharts !== 'undefined' && document.querySelector("#tl-project-health-chart")) {
-            console.log("Initializing Project Health Chart with data:", {
-                !!json_encode($adminData['project_health']) !!
-            });
             var tlHealth = {
                 series: [
                     Number('{{ $adminData["project_health"]["Completed"] ?? 0 }}'),
@@ -23,7 +20,7 @@
                 plotOptions: {
                     pie: {
                         donut: {
-                            size: '72%',
+                            size: '70%',
                             labels: {
                                 show: true,
                                 total: {
@@ -49,35 +46,41 @@
             var chart = new ApexCharts(document.querySelector("#tl-project-health-chart"), tlHealth);
             chart.render();
         }
+    }
 
-        // Nudge Functionality
-        $(document).on('click', '.nudge-btn', function() {
-            const btn = $(this);
-            const taskId = btn.data('task-id');
-            const originalHtml = btn.html();
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initHealthChart);
+    } else {
+        initHealthChart();
+    }
 
-            btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
+    // Nudge Functionality (Direct registration to document is safe from DOMContentLoaded race conditions)
+    $(document).on('click', '.nudge-btn', function() {
+        const btn = $(this);
+        const taskId = btn.data('task-id');
+        const originalHtml = btn.html();
 
-            $.ajax({
-                url: "{{ url('/projects/tasks/nudge') }}/" + taskId,
-                type: "POST",
-                data: {
-                    _token: "{{ csrf_token() }}"
-                },
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success(response.message);
-                    } else {
-                        toastr.error(response.message);
-                    }
-                },
-                error: function() {
-                    toastr.error("Failed to send nudge.");
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html(originalHtml);
+        btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
+
+        $.ajax({
+            url: "{{ url('/projects/tasks/nudge') }}/" + taskId,
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                } else {
+                    toastr.error(response.message);
                 }
-            });
+            },
+            error: function() {
+                toastr.error("Failed to send nudge.");
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalHtml);
+            }
         });
     });
 </script>

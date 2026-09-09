@@ -46,12 +46,28 @@ class EmployeeReportController extends Controller
             return redirect()->route('my-insights');
         }
 
-        $selectedYear = $request->get('year', date('Y'));
-        $selectedMonth = $request->get('month', 'All');
-        $range = $this->dateRange->resolve($request);
+        $startDateStr = $request->input('start_date', $request->input('date_from'));
+        $endDateStr = $request->input('end_date', $request->input('date_to'));
+        $deptId = $request->input('dept_id');
+
+        if (!$startDateStr || !$endDateStr) {
+            $startDate = Carbon::now()->startOfMonth();
+            $endDate = Carbon::now()->endOfDay();
+            $startDateStr = $startDate->format('Y-m-d');
+            $endDateStr = $endDate->format('Y-m-d');
+        } else {
+            $startDate = Carbon::parse($startDateStr)->startOfDay();
+            $endDate = Carbon::parse($endDateStr)->endOfDay();
+        }
 
         $departmentId = $user->departments->department ?? null;
         $query = $this->reportScope->visibleEmployeesQuery($user);
+
+        if (!empty($deptId)) {
+            $query->whereHas('departments', function ($q) use ($deptId) {
+                $q->where('department', $deptId);
+            });
+        }
 
         $showSales = true;
         if ($departmentId && $departmentId != 1 && !$user->hasBranchWideAccess()) {
@@ -59,26 +75,22 @@ class EmployeeReportController extends Controller
         }
 
         $employeesCount = $query->count();
-        $months = ['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $departments = \App\Models\Department::where('status', true)->get();
 
-        // 📊 Calculate Summary KPIs (scoped user IDs)
+        // 📊 Calculate Summary KPIs within the selected date range
         $visibleUserIds = $query->pluck('id')->toArray();
-        $opsQuery = Task::whereYear('updated_at', $selectedYear)->whereIn('assigned_to', $visibleUserIds);
-
-        $leadsQuery = DB::table('clients')->whereYear('created_at', $selectedYear)->whereIn('ref_user', $visibleUserIds);
-        $maturedQuery = DB::table('clients')->where('status', 'Matured')->whereYear('updated_at', $selectedYear)->whereIn('ref_user', $visibleUserIds);
+        $opsQuery = Task::whereBetween('updated_at', [$startDate, $endDate])->whereIn('assigned_to', $visibleUserIds);
+        $leadsQuery = DB::table('clients')->whereBetween('created_at', [$startDate, $endDate])->whereIn('ref_user', $visibleUserIds);
+        $maturedQuery = DB::table('clients')->where('status', 'Matured')->whereBetween('updated_at', [$startDate, $endDate])->whereIn('ref_user', $visibleUserIds);
         $activeFollowupQuery = DB::table('clients')->whereIn('status', ['Followup', 'Meeting Fixed'])->whereIn('ref_user', $visibleUserIds);
-
-        if ($selectedMonth != 'All') {
-            $monthNum = date('m', strtotime($selectedMonth));
-            $opsQuery->whereMonth('updated_at', $monthNum);
-            $leadsQuery->whereMonth('created_at', $monthNum);
-            $maturedQuery->whereMonth('updated_at', $monthNum);
-        }
 
         $totalOps = (clone $opsQuery)->count();
         $completedOps = (clone $opsQuery)->where('status', 'Completed')->count();
         $opsRate = $totalOps > 0 ? round(($completedOps / $totalOps) * 100) : 0;
+
+        $totalHoursLogged = (float) TaskLog::whereIn('userid', $visibleUserIds)
+            ->whereBetween('log_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('time_spend');
 
         $salesRate = 0;
         $totalLeadsCount = 0;
@@ -91,7 +103,8 @@ class EmployeeReportController extends Controller
             $salesRate = $totalLeadsCount > 0 ? round(($maturedCount / $totalLeadsCount) * 100) : 0;
         }
 
-        // 📈 12-Month Dual Trend (Operations vs Sales)
+        // 📈 12-Month Performance Trend (Current Year)
+        $selectedYear = (int) $startDate->format('Y');
         $trendMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         $opsTrendQ = Task::select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(updated_at, '%b') as month"))
@@ -100,7 +113,6 @@ class EmployeeReportController extends Controller
             ->groupBy('month');
         $opsTrendRaw = $opsTrendQ->get()->keyBy('month');
 
-        // 💰 Sales Trend
         $salesTrendRaw = collect();
         if ($showSales) {
             $salesTrendQ = DB::table('clients')->select(DB::raw('count(*) as count'), DB::raw("DATE_FORMAT(updated_at, '%b') as month"))
@@ -120,17 +132,20 @@ class EmployeeReportController extends Controller
 
         return view('components.reports.employees', compact(
             'employeesCount',
+            'departments',
             'performanceTrend',
             'selectedYear',
-            'selectedMonth',
-            'months',
+            'startDateStr',
+            'endDateStr',
+            'deptId',
             'showSales',
             'opsRate',
+            'completedOps',
+            'totalHoursLogged',
             'salesRate',
             'totalLeadsCount',
             'maturedCount',
-            'activeFollowupCount',
-            'range'
+            'activeFollowupCount'
         ));
     }
 
@@ -140,93 +155,41 @@ class EmployeeReportController extends Controller
     public function data(Request $request)
     {
         $user = Auth::user();
-        $range = $this->dateRange->resolve($request);
-        $year = (int) $request->get('year', date('Y'));
-        $monthName = $request->get('month', 'All');
 
-        $employees = $this->reportScope->visibleEmployeesQuery($user)->get()->map(function ($emp) use ($range, $year, $monthName) {
-            $performance = app(UserPerformanceService::class);
+        $startDateStr = $request->input('start_date', $request->input('date_from'));
+        $endDateStr = $request->input('end_date', $request->input('date_to'));
+        $deptId = $request->input('dept_id');
+
+        if (!$startDateStr || !$endDateStr) {
+            $startDate = Carbon::now()->startOfMonth();
+            $endDate = Carbon::now()->endOfDay();
+        } else {
+            $startDate = Carbon::parse($startDateStr)->startOfDay();
+            $endDate = Carbon::parse($endDateStr)->endOfDay();
+        }
+
+        $query = $this->reportScope->visibleEmployeesQuery($user);
+
+        if (!empty($deptId)) {
+            $query->whereHas('departments', function ($q) use ($deptId) {
+                $q->where('department', $deptId);
+            });
+        }
+
+        $performance = app(UserPerformanceService::class);
+
+        $employees = $query->with(['roles', 'departments.dept'])->get()->map(function ($emp) use ($performance, $startDate, $endDate) {
             $deptType = $performance->departmentType($emp);
+            $emp->dept_type = $deptType;
 
             if ($deptType === 'od') {
-                return $this->odWork->enrichEmployeeRow($emp, $range['from'], $range['to']);
-            }
-
-            if ($deptType === 'csd') {
-                $metrics = $performance->buildMetrics($emp, (int) $year, $monthName);
-                $emp->active_tasks = $metrics['open_tickets'] ?? 0;
-                $emp->completed_tasks = $metrics['tickets_resolved'] ?? 0;
-                $emp->matured_clients = $metrics['opportunities_won'] ?? 0;
-                $emp->total_leads = $metrics['active_clients'] ?? 0;
-                $emp->active_followups = $metrics['communications'] ?? 0;
-                $emp->total_hours = $metrics['collections_paid'] ?? 0;
-                $emp->productivity = $performance->performanceScore($metrics, 'csd');
-
-                return $emp;
-            }
-
-            $tasksQuery = Task::where('assigned_to', $emp->id);
-            $logsQuery = TaskLog::where('userid', $emp->id);
-            $leadsQuery = DB::table('clients')->where('ref_user', $emp->id);
-            $maturedClientsQuery = DB::table('clients')->where('ref_user', $emp->id)->where('status', 'Matured');
-            $activeFollowupsQuery = DB::table('clients')->where('ref_user', $emp->id)->whereIn('status', ['Followup', 'Meeting Fixed']);
-
-            if ($range['preset'] === 'daily') {
-                $tasksQuery->whereDate('created_at', $range['from']);
-                $logsQuery->whereDate('log_date', $range['from']);
-                $leadsQuery->whereDate('created_at', $range['from']);
-                $maturedClientsQuery->whereDate('updated_at', $range['from']);
-            } elseif ($range['preset'] === 'weekly') {
-                $tasksQuery->whereBetween('created_at', [$range['from'], $range['to']]);
-                $logsQuery->whereBetween('log_date', [$range['from']->toDateString(), $range['to']->toDateString()]);
-                $leadsQuery->whereBetween('created_at', [$range['from'], $range['to']]);
-                $maturedClientsQuery->whereBetween('updated_at', [$range['from'], $range['to']]);
-            } elseif ($range['preset'] === 'custom') {
-                $tasksQuery->whereBetween('created_at', [$range['from'], $range['to']]);
-                $logsQuery->whereBetween('log_date', [$range['from']->toDateString(), $range['to']->toDateString()]);
-                $leadsQuery->whereBetween('created_at', [$range['from'], $range['to']]);
-                $maturedClientsQuery->whereBetween('updated_at', [$range['from'], $range['to']]);
-            } elseif ($range['preset'] === 'yearly') {
-                $tasksQuery->whereYear('created_at', $year);
-                $logsQuery->whereYear('log_date', $year);
-                $leadsQuery->whereYear('created_at', $year);
-                $maturedClientsQuery->whereYear('updated_at', $year);
+                $emp = $this->odWork->enrichEmployeeRow($emp, $startDate, $endDate);
+            } elseif ($deptType === 'nsd') {
+                $emp = $this->nsdWork->enrichEmployeeRow($emp, $startDate, $endDate);
+            } elseif ($deptType === 'csd') {
+                $emp = $this->csdWork->enrichEmployeeRow($emp, $startDate, $endDate);
             } else {
-                $tasksQuery->whereYear('created_at', $year);
-                $logsQuery->whereYear('log_date', $year);
-                $leadsQuery->whereYear('created_at', $year);
-                $maturedClientsQuery->whereYear('updated_at', $year);
-
-                if ($monthName != 'All') {
-                    $monthNum = date('m', strtotime($monthName));
-                    $tasksQuery->whereMonth('created_at', $monthNum);
-                    $logsQuery->whereMonth('log_date', $monthNum);
-                    $leadsQuery->whereMonth('created_at', $monthNum);
-                    $maturedClientsQuery->whereMonth('updated_at', $monthNum);
-                }
-            }
-
-            $emp->active_tasks = (clone $tasksQuery)->where('status', 'InProgress')->count();
-            $emp->completed_tasks = (clone $tasksQuery)->where('status', 'Completed')->count();
-            $emp->matured_clients = $maturedClientsQuery->count();
-            $emp->total_leads = $leadsQuery->count();
-            $emp->active_followups = $activeFollowupsQuery->count();
-            $emp->total_hours = round((float) $logsQuery->sum('time_spend'), 2);
-
-            // Efficiency based on Role
-            if ($deptType === 'nsd' && $emp->hasRole(['Sales-Executive', 'Team-Leader'])) {
-                $target = 5;
-                $emp->productivity = min(round(($emp->matured_clients / $target) * 100), 100);
-            } else {
-                $targetHours = 160;
-                if ($range['preset'] === 'weekly') {
-                    $targetHours = 40;
-                } elseif ($range['preset'] === 'daily') {
-                    $targetHours = 8;
-                } elseif ($range['preset'] === 'custom') {
-                    $targetHours = max(1, $range['from']->diffInDays($range['to']) + 1) * 8;
-                }
-                $emp->productivity = $targetHours > 0 ? min(round(($emp->total_hours / $targetHours) * 100), 100) : 0;
+                $emp = $this->odWork->enrichEmployeeRow($emp, $startDate, $endDate);
             }
 
             return $emp;
@@ -234,15 +197,12 @@ class EmployeeReportController extends Controller
 
         return DataTables::of($employees)
             ->addIndexColumn()
-            ->addColumn('action_link', function ($row) use ($request) {
-                return route('reports.employee.detail', array_filter([
+            ->addColumn('action_link', function ($row) use ($startDate, $endDate) {
+                return route('reports.employee.detail', [
                     'id' => base64_encode($row->id),
-                    'preset' => $request->get('preset', $request->get('range')),
-                    'date_from' => $request->get('date_from'),
-                    'date_to' => $request->get('date_to'),
-                    'year' => $request->get('year'),
-                    'month' => $request->get('month'),
-                ]));
+                    'date_from' => $startDate->toDateString(),
+                    'date_to' => $endDate->toDateString(),
+                ]);
             })
             ->rawColumns(['action_link'])
             ->make(true);
@@ -274,10 +234,30 @@ class EmployeeReportController extends Controller
         $userId = base64_decode($id);
         $employee = User::with(['emp', 'departments.dept', 'roles'])->findOrFail($userId);
 
-        $selectedYear = (int) $request->get('year', date('Y'));
-        $selectedMonth = $request->get('month', 'All');
+        $startDateInput = $request->input('start_date', $request->input('date_from'));
+        $endDateInput = $request->input('end_date', $request->input('date_to'));
+
+        if ($startDateInput && $endDateInput) {
+            $startDate = Carbon::parse($startDateInput)->startOfDay();
+            $endDate = Carbon::parse($endDateInput)->endOfDay();
+        } else {
+            // Default to current month (e.g. 1st of month to today)
+            $startDate = Carbon::now()->startOfMonth();
+            $endDate = Carbon::now()->endOfDay();
+        }
+
+        $startDateStr = $startDate->toDateString();
+        $endDateStr = $endDate->toDateString();
+        $range = [
+            'from' => $startDate,
+            'to' => $endDate,
+            'preset' => 'custom',
+            'label' => $startDate->format('d M, Y') . ' – ' . $endDate->format('d M, Y'),
+        ];
+
+        $selectedYear = (int) $startDate->format('Y');
+        $selectedMonth = $startDate->format('M');
         $months = ['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $range = $this->dateRange->resolve($request);
 
         $user = Auth::user();
         if (!$this->reportScope->canViewEmployee($user, (int) $userId)) {
@@ -293,58 +273,206 @@ class EmployeeReportController extends Controller
         $stats = $performance->buildMetrics($employee, $selectedYear, $selectedMonth);
         $performanceScore = $performance->performanceScore($stats, $deptType);
 
+        // 🟢 1. Live Working Status (Is he working right now or not?)
+        $activeTaskLog = TaskLog::with('task.project.clients')
+            ->where('userid', $userId)
+            ->whereNull('endtime')
+            ->latest('id')
+            ->first();
+
+        $activeShiftLog = \App\Models\GlobalAttendanceLog::where('userid', $userId)
+            ->whereDate('log_date', Carbon::today())
+            ->whereNull('endtime')
+            ->latest('id')
+            ->first();
+
+        $lastActivityLog = TaskLog::with('task.project.clients')
+            ->where('userid', $userId)
+            ->latest('id')
+            ->first();
+
+        $liveStatus = [
+            'is_working' => false,
+            'status_label' => 'Offline / Idle',
+            'badge_class' => 'badge-soft-secondary',
+            'detail' => 'No active shift or running timer.',
+            'task_title' => null,
+            'project_name' => null,
+            'started_at' => null,
+        ];
+
+        if ($activeTaskLog) {
+            $liveStatus['is_working'] = true;
+            $liveStatus['status_label'] = 'Currently Working on Task';
+            $liveStatus['badge_class'] = 'badge-soft-success';
+            $liveStatus['task_title'] = $activeTaskLog->task->title ?? 'Active Task';
+            $liveStatus['project_name'] = $activeTaskLog->task->project->project_name ?? ($activeTaskLog->task->project->clients->name ?? 'Internal');
+            $liveStatus['started_at'] = $activeTaskLog->starttime ? Carbon::parse($activeTaskLog->starttime)->format('h:i A') : Carbon::parse($activeTaskLog->created_at)->format('h:i A');
+            $liveStatus['detail'] = "Working on \"{$liveStatus['task_title']}\" ({$liveStatus['project_name']}) since {$liveStatus['started_at']}";
+        } elseif ($activeShiftLog) {
+            $liveStatus['is_working'] = true;
+            $liveStatus['status_label'] = 'Shift Active (In-Between Tasks)';
+            $liveStatus['badge_class'] = 'badge-soft-primary';
+            $liveStatus['started_at'] = Carbon::parse($activeShiftLog->starttime)->format('h:i A');
+            $liveStatus['detail'] = "Shift started at {$liveStatus['started_at']}. Currently not recording a specific task.";
+        } elseif ($lastActivityLog) {
+            $lastSeenTime = Carbon::parse($lastActivityLog->updated_at)->diffForHumans();
+            $liveStatus['detail'] = "Last logged task activity {$lastSeenTime} on " . Carbon::parse($lastActivityLog->log_date)->format('d M, Y');
+        }
+
+        // 📅 2. Day-by-day Task Spend & Missing Day Closings (Excluding Sundays)
+        $closingsInRange = \App\Models\DayClosing::where('user_id', $userId)
+            ->whereBetween('closing_date', [$startDateStr, $endDateStr])
+            ->get()
+            ->keyBy(fn($dc) => Carbon::parse($dc->closing_date)->format('Y-m-d'));
+
+        $attendanceByDate = \App\Models\GlobalAttendanceLog::where('userid', $userId)
+            ->whereBetween('log_date', [$startDateStr, $endDateStr])
+            ->get()
+            ->groupBy(fn($l) => Carbon::parse($l->log_date)->format('Y-m-d'));
+
+        $taskLogsByDate = TaskLog::with('task.project.clients')
+            ->where('userid', $userId)
+            ->whereBetween('log_date', [$startDateStr, $endDateStr])
+            ->get()
+            ->groupBy(fn($l) => Carbon::parse($l->log_date)->format('Y-m-d'));
+
+        $dailyWorkDays = collect();
+        $totalWorkingDaysCount = 0;
+        $unsubmittedClosingDaysCount = 0;
+        $submittedClosingDaysCount = 0;
+        $totalTaskHoursLogged = 0.0;
+        $totalShiftHoursLogged = 0.0;
+
+        $cursor = $startDate->copy()->startOfDay();
+        $today = Carbon::today();
+        $todayDate = $today->toDateString();
+        $effectiveEndDate = $endDate->gt($today) ? $today->copy()->endOfDay() : $endDate;
+        $userJoinedDate = $employee->created_at ? Carbon::parse($employee->created_at)->startOfDay() : null;
+
+        while ($cursor->lte($effectiveEndDate)) {
+            $dateStr = $cursor->format('Y-m-d');
+            $isSunday = $cursor->isSunday();
+            $isBeforeJoin = $userJoinedDate && $cursor->lt($userJoinedDate);
+
+            // Skip Sundays completely from listing and calculations per requirement
+            if ($isSunday) {
+                $cursor->addDay();
+                continue;
+            }
+
+            $isCountableWorkingDay = !$isBeforeJoin;
+
+            $dayTaskLogs = $taskLogsByDate->get($dateStr, collect());
+            $dayAttendance = $attendanceByDate->get($dateStr, collect());
+            $dayClosing = $closingsInRange->get($dateStr);
+
+            $dayTaskHours = round((float) $dayTaskLogs->sum('time_spend'), 2);
+            $dayShiftHours = round((float) $dayAttendance->sum('time_spend'), 2);
+
+            $totalTaskHoursLogged += $dayTaskHours;
+            $totalShiftHoursLogged += $dayShiftHours;
+
+            $closingStatus = 'Not Submitted';
+            if ($dayClosing) {
+                $closingStatus = $dayClosing->status ?? 'Submitted';
+                if ($isCountableWorkingDay) {
+                    $submittedClosingDaysCount++;
+                }
+            } elseif ($isBeforeJoin) {
+                $closingStatus = 'Pre-Employment';
+            } else {
+                $closingStatus = 'Not Submitted';
+                $unsubmittedClosingDaysCount++;
+            }
+
+            if ($isCountableWorkingDay) {
+                $totalWorkingDaysCount++;
+            }
+
+            $dailyWorkDays->push((object)[
+                'date' => $dateStr,
+                'label' => $cursor->format('d M, Y'),
+                'day_name' => $cursor->format('l'),
+                'is_sunday' => false,
+                'is_today' => $dateStr === $todayDate,
+                'is_future' => false,
+                'task_hours' => $dayTaskHours,
+                'shift_hours' => $dayShiftHours,
+                'task_count' => $dayTaskLogs->unique('taskid')->count(),
+                'closing_status' => $closingStatus,
+                'target_status' => $dayClosing ? ($dayClosing->target_status ?? 'Met') : ($dayTaskHours >= 6.0 ? 'Met' : 'Not Met'),
+                'tasks' => $dayTaskLogs->map(function($log) {
+                    $task = $log->task;
+                    $project = $task?->project;
+                    $client = $project?->clients;
+
+                    $taskTitle = $task?->title ?? ('Task #' . $log->taskid);
+                    $projectName = $project?->project_name ?? 'Internal Project';
+                    $clientName = $client?->name ?? ($project?->project_name ?? 'Direct');
+
+                    return (object)[
+                        'task_id' => $log->taskid,
+                        'task_title' => $taskTitle,
+                        'task_name' => $taskTitle,
+                        'project_name' => $projectName,
+                        'client_name' => $clientName,
+                        'hours' => round((float)$log->time_spend, 2),
+                        'hours_formatted' => OdWorkReportService::formatToTimingHours((float)$log->time_spend),
+                        'description' => $log->log_description ?: 'No detailed note provided.',
+                        'starttime' => $log->starttime ? Carbon::parse($log->starttime)->format('h:i A') : '',
+                        'endtime' => $log->endtime ? Carbon::parse($log->endtime)->format('h:i A') : '',
+                        'time' => $log->created_at ? Carbon::parse($log->created_at)->format('h:i A') : '—',
+                    ];
+                }),
+            ]);
+
+            $cursor->addDay();
+        }
+
+        // ⏱️ 3. Average Hours & Task-Driven Performance Score
+        $avgDailyTaskHours = $totalWorkingDaysCount > 0 ? round($totalTaskHoursLogged / $totalWorkingDaysCount, 2) : 0;
+        $avgDailyShiftHours = $totalWorkingDaysCount > 0 ? round($totalShiftHoursLogged / $totalWorkingDaysCount, 2) : 0;
+
+        $totalTaskHoursFormatted = OdWorkReportService::formatToTimingHours($totalTaskHoursLogged);
+        $totalShiftHoursFormatted = OdWorkReportService::formatToTimingHours($totalShiftHoursLogged);
+        $avgDailyTaskHoursFormatted = OdWorkReportService::formatToTimingHours($avgDailyTaskHours);
+        $avgDailyShiftHoursFormatted = OdWorkReportService::formatToTimingHours($avgDailyShiftHours);
+
+        // Daily standard benchmark is 6.5 task hours / day
+        $expectedTaskHours = $totalWorkingDaysCount * 6.5;
+        $taskPerformanceScore = $expectedTaskHours > 0 ? min(100, (int) round(($totalTaskHoursLogged / $expectedTaskHours) * 100)) : 0;
+
         $odSummary = null;
         $odDailyBreakdown = collect();
         $odTaskBreakdown = collect();
         $currentProjects = collect();
 
         if ($isOd) {
-            $odSummary = $this->odWork->summaryForUser((int) $userId, $range['from'], $range['to']);
-            $odDailyBreakdown = $this->odWork->dailyBreakdown((int) $userId, $range['from'], $range['to']);
-            $odTaskBreakdown = $this->odWork->taskBreakdown((int) $userId, $range['from'], $range['to']);
+            $odSummary = $this->odWork->summaryForUser((int) $userId, $startDate, $endDate);
+            $odDailyBreakdown = $this->odWork->dailyBreakdown((int) $userId, $startDate, $endDate);
+            $odTaskBreakdown = $this->odWork->taskBreakdown((int) $userId, $startDate, $endDate);
             $currentProjects = $this->odWork->currentProjects((int) $userId);
             $stats = array_merge($stats, $odSummary);
-
-            // Range-aware productivity override
-            $targetHours = max(1, $range['from']->diffInDays($range['to']) + 1) * 8;
-            $performanceScore = $targetHours > 0 ? min(100, (int) round(($odSummary['total_hours'] / $targetHours) * 100)) : 0;
         } elseif ($isSales) {
-            $nsdSummary = $this->nsdWork->summaryForUser((int) $userId, $range['from'], $range['to']);
-            $odDailyBreakdown = $this->nsdWork->dailyBreakdown((int) $userId, $range['from'], $range['to']);
+            $nsdSummary = $this->nsdWork->summaryForUser((int) $userId, $startDate, $endDate);
+            $odDailyBreakdown = $this->nsdWork->dailyBreakdown((int) $userId, $startDate, $endDate);
             $currentProjects = $this->nsdWork->currentProjects((int) $userId);
             $stats = array_merge($stats, $nsdSummary);
-
-            // Range-aware productivity override
-            $targetMatured = 5;
-            $daysDiff = max(1, $range['from']->diffInDays($range['to']) + 1);
-            if ($daysDiff < 7) {
-                $targetMatured = 1;
-            } elseif ($daysDiff <= 31) {
-                $targetMatured = 5;
-            } else {
-                $targetMatured = ceil($daysDiff / 30) * 5;
-            }
-            $performanceScore = min(100, (int) round(($nsdSummary['matured_count'] / $targetMatured) * 100));
         } elseif ($isCsd) {
-            $csdSummary = $this->csdWork->summaryForUser((int) $userId, $range['from'], $range['to']);
-            $odDailyBreakdown = $this->csdWork->dailyBreakdown((int) $userId, $range['from'], $range['to']);
+            $csdSummary = $this->csdWork->summaryForUser((int) $userId, $startDate, $endDate);
+            $odDailyBreakdown = $this->csdWork->dailyBreakdown((int) $userId, $startDate, $endDate);
             $currentProjects = $this->csdWork->currentProjects((int) $userId);
             $stats = array_merge($stats, $csdSummary);
-
-            // Range-aware productivity override
-            $score = $csdSummary['active_clients'] * 3
-                + $csdSummary['comms_count'] * 2
-                + $csdSummary['tickets_resolved'] * 5
-                + $csdSummary['collections_paid'] * 4
-                + $csdSummary['opportunities_won'] * 10
-                + $csdSummary['change_requests_completed'] * 6;
-            $performanceScore = min(100, (int) $score);
         }
+
+        // 🔥 4. Identify Maximum Time Took Task
+        $maxTaskHours = $odTaskBreakdown->max('total_hours') ?? 0;
 
         $dailyLogs = collect();
         if ($isOd) {
             $dailyLogs = TaskLog::with('task.project.clients')->where('userid', $userId)
-                ->whereBetween('log_date', [$range['from']->toDateString(), $range['to']->toDateString()])
+                ->whereBetween('log_date', [$startDateStr, $endDateStr])
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->groupBy(function ($log) {
@@ -352,7 +480,7 @@ class EmployeeReportController extends Controller
                 });
         } elseif ($isSales) {
             $dailyLogs = \App\Models\ClientHistory::with('client')->where('created', $userId)
-                ->whereBetween('created_at', [$range['from'], $range['to']])
+                ->whereBetween('created_at', [$startDate, $endDate])
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->groupBy(function ($log) {
@@ -361,7 +489,7 @@ class EmployeeReportController extends Controller
         } elseif ($isCsd) {
             $dailyLogs = CsdCommunication::with('client')
                 ->where('created_by', $userId)
-                ->whereBetween('communication_date', [$range['from'], $range['to']])
+                ->whereBetween('communication_date', [$startDate, $endDate])
                 ->orderBy('communication_date', 'desc')
                 ->get()
                 ->groupBy(function ($log) {
@@ -379,26 +507,25 @@ class EmployeeReportController extends Controller
         $recentWonOpps = collect();
 
         if ($isSales) {
-            $recentMaturedQuery = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')
-                ->whereBetween('updated_at', [$range['from'], $range['to']]);
-            $salesLogsQuery = \App\Models\ClientHistory::with('client')->where('created', $userId)
-                ->whereBetween('created_at', [$range['from'], $range['to']]);
-
-            $recentMatured = $recentMaturedQuery->latest('updated_at')->take(10)->get();
-            $salesLogs = $salesLogsQuery->latest()->take(15)->get();
+            $recentMatured = DB::table('clients')->where('ref_user', $userId)->where('status', 'Matured')
+                ->whereBetween('updated_at', [$startDate, $endDate])
+                ->latest('updated_at')->take(10)->get();
+            $salesLogs = \App\Models\ClientHistory::with('client')->where('created', $userId)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->latest()->take(15)->get();
         }
 
         if ($isCsd) {
             $recentCsdComms = CsdCommunication::with('client')
                 ->where('created_by', $userId)
-                ->whereBetween('communication_date', [$range['from'], $range['to']])
+                ->whereBetween('communication_date', [$startDate, $endDate])
                 ->latest('communication_date')
                 ->take(15)
                 ->get();
             $recentWonOpps = CsdOpportunity::with('clients')
                 ->where('assigned_to', $userId)
                 ->where('status', 'won')
-                ->whereBetween('updated_at', [$range['from'], $range['to']])
+                ->whereBetween('updated_at', [$startDate, $endDate])
                 ->latest('updated_at')
                 ->take(10)
                 ->get();
@@ -424,16 +551,33 @@ class EmployeeReportController extends Controller
             'isOd',
             'deptType',
             'performanceScore',
+            'taskPerformanceScore',
             'recentMatured',
             'recentCsdComms',
             'recentWonOpps',
             'activities',
             'range',
+            'startDateStr',
+            'endDateStr',
             'odSummary',
             'odDailyBreakdown',
             'odTaskBreakdown',
+            'maxTaskHours',
             'currentProjects',
-            'pastClosings'
+            'pastClosings',
+            'liveStatus',
+            'dailyWorkDays',
+            'totalWorkingDaysCount',
+            'unsubmittedClosingDaysCount',
+            'submittedClosingDaysCount',
+            'totalTaskHoursLogged',
+            'totalShiftHoursLogged',
+            'avgDailyTaskHours',
+            'avgDailyShiftHours',
+            'totalTaskHoursFormatted',
+            'totalShiftHoursFormatted',
+            'avgDailyTaskHoursFormatted',
+            'avgDailyShiftHoursFormatted'
         );
     }
 }

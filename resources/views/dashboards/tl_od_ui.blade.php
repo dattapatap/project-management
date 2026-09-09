@@ -83,7 +83,7 @@
 <!-- Active Team Projects Oversight -->
 <div class="row">
     <div class="col-12">
-        <div class="card pm-dashboard-custom-card trendy-card shadow-sm border-0">
+        <div class="card pm-dashboard-custom-card trendy-card shadow-sm border-0 mb-4">
             <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center justify-content-between">
                 <h5 class="font-size-15 mb-0 text-dark font-weight-bold">
                     <i class="mdi mdi-rocket-launch-outline mr-1 text-primary"></i> Ongoing Team Projects
@@ -156,7 +156,7 @@
 </div>
 
 <!-- Analytics & Team Oversight -->
-<div class="row">
+<div class="row mt-2">
     <div class="col-lg-8">
         <div class="card pm-dashboard-custom-card trendy-card shadow-sm">
             <div class="card-header bg-transparent border-bottom py-3">
@@ -277,7 +277,7 @@
 
 {{-- Workload Heatmap Widget --}}
 @if(!empty($adminData['workload_heatmap']) && $adminData['workload_heatmap']->count())
-<div class="row mb-4">
+<div class="row mb-4 pt-2">
     <div class="col-12">
         <div class="card pm-dashboard-custom-card shadow-sm border-0">
             <div class="card-header bg-transparent border-bottom py-3 d-flex align-items-center justify-content-between">
@@ -292,49 +292,49 @@
                 <div class="row">
                     @foreach($adminData['workload_heatmap'] as $member)
                     @php
-                        $active = $member->todo_count + $member->inprogress_count;
-                        $loadColor = match(true) {
-                            $active === 0         => '#f0fff4',
-                            $active <= 2          => '#c6f6d5',
-                            $active <= 4          => '#fef9c3',
-                            $active <= 6          => '#fed7aa',
-                            default               => '#feb2b2',
-                        };
-                        $textColor = match(true) {
-                            $active === 0         => '#2f855a',
-                            $active <= 2          => '#276749',
-                            $active <= 4          => '#744210',
-                            $active <= 6          => '#7b341e',
-                            default               => '#c53030',
-                        };
-                        $loadLabel = match(true) {
-                            $active === 0 => 'Idle',
-                            $active <= 2  => 'Light',
-                            $active <= 4  => 'Moderate',
-                            $active <= 6  => 'High',
-                            default       => 'Overloaded',
-                        };
-                    @endphp
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="d-flex align-items-center p-3 rounded" style="background:{{ $loadColor }};border-radius:10px!important;">
-                            <img src="{{ Avatar::create($member->name)->toBase64() }}" class="rounded-circle mr-3" style="width:38px;height:38px;border:2px solid rgba(0,0,0,.08);">
-                            <div class="flex-grow-1 min-width-0">
-                                <div class="font-weight-bold text-dark text-truncate" style="font-size:.85rem;">{{ $member->name }}</div>
-                                <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
-                                    <span class="badge" style="background:{{ $textColor }};color:#fff;font-size:.68rem;padding:2px 7px;border-radius:20px;">{{ $loadLabel }}</span>
-                                    <small class="text-muted">{{ $active }} active · {{ $member->completed_count }} done</small>
-                                </div>
-                                @if($member->overdue_count > 0)
-                                <small class="text-danger font-weight-bold"><i class="mdi mdi-alert-circle-outline"></i> {{ $member->overdue_count }} overdue</small>
-                                @endif
-                            </div>
-                            <div class="text-right ml-2" style="min-width:36px;">
-                                <div class="font-weight-bold" style="font-size:1.3rem;line-height:1;color:{{ $textColor }};">{{ $active }}</div>
-                                <small style="font-size:.65rem;color:#718096;">tasks</small>
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
+                    $active = $member->todo_count + $member->inprogress_count;
+                    $loadColor = match(true) {
+                    $active === 0 => '#f0fff4',
+                    $active <= 2=> '#c6f6d5',
+                        $active <= 4=> '#fef9c3',
+                            $active <= 6=> '#fed7aa',
+                                default => '#feb2b2',
+                                };
+                                $textColor = match(true) {
+                                $active === 0 => '#2f855a',
+                                $active <= 2=> '#276749',
+                                    $active <= 4=> '#744210',
+                                        $active <= 6=> '#7b341e',
+                                            default => '#c53030',
+                                            };
+                                            $loadLabel = match(true) {
+                                            $active === 0 => 'Idle',
+                                            $active <= 2=> 'Light',
+                                                $active <= 4=> 'Moderate',
+                                                    $active <= 6=> 'High',
+                                                        default => 'Overloaded',
+                                                        };
+                                                        @endphp
+                                                        <div class="col-md-3 col-sm-6 mb-3">
+                                                            <div class="d-flex align-items-center p-3 rounded" style="background:{{ $loadColor }};border-radius:10px!important;">
+                                                                <img src="{{ Avatar::create($member->name)->toBase64() }}" class="rounded-circle mr-3" style="width:38px;height:38px;border:2px solid rgba(0,0,0,.08);">
+                                                                <div class="flex-grow-1 min-width-0">
+                                                                    <div class="font-weight-bold text-dark text-truncate" style="font-size:.85rem;">{{ $member->name }}</div>
+                                                                    <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                                                                        <span class="badge" style="background:{{ $textColor }};color:#fff;font-size:.68rem;padding:2px 7px;border-radius:20px;">{{ $loadLabel }}</span>
+                                                                        <small class="text-muted">{{ $active }} active · {{ $member->completed_count }} done</small>
+                                                                    </div>
+                                                                    @if($member->overdue_count > 0)
+                                                                    <small class="text-danger font-weight-bold"><i class="mdi mdi-alert-circle-outline"></i> {{ $member->overdue_count }} overdue</small>
+                                                                    @endif
+                                                                </div>
+                                                                <div class="text-right ml-2" style="min-width:36px;">
+                                                                    <div class="font-weight-bold" style="font-size:1.3rem;line-height:1;color:{{ $textColor }};">{{ $active }}</div>
+                                                                    <small style="font-size:.65rem;color:#718096;">tasks</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        @endforeach
                 </div>
                 {{-- Mini legend --}}
                 <div class="d-flex gap-3 flex-wrap pb-1" style="gap:12px;">
@@ -350,7 +350,7 @@
 @endif
 
 <!-- Urgent Deadlines Table -->
-<div class="row mb-5 pb-4 pt-4">
+<div class="row mb-5 pb-4">
     <div class="col-12">
         <div class="card pm-dashboard-custom-card shadow-sm border-0">
             <div class="card-body">

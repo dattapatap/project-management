@@ -46,18 +46,32 @@ Route::get('/cache-clear', function () {
 
     Artisan::call('config:cache');
     Artisan::call('view:cache');
-
-    // Artisan::call('migrate');
+    Artisan::call('route:cache');
 
     return "All Laravel caches and configurations cleared successfully!";
 });
+
+
+
+// Route::get('/migrate', function () {
+//     Artisan::call('migrate', ['--force' => true]);
+//     return "Migration completed!";
+// });
+
+// Route::get('/down-service', function () {
+//     Artisan::call('down');
+//     return "Down completed!";
+// });
+
+// Route::get('/up-service', function () {
+//     Artisan::call('up');
+//     return "Application is now LIVE!";
+// });
 
 // Route::get('/storage-link', function () {
 //     Artisan::call('storage:link');
 //     return "Storage folder symlink created successfully on the server!";
 // });
-
-
 
 
 Route::get('/', function () {
@@ -318,6 +332,20 @@ Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
     Route::get('/teams/teammembers', [TeamsController::class, 'teammembers']);
     Route::resource('/teams', TeamsController::class);
 
+    // Project Categories & Sub-Categories Management (Administration)
+    Route::prefix('administration')->name('administration.')->group(function () {
+        Route::get('/project-categories', [\App\Http\Controllers\ProjectCategoryController::class, 'index'])->name('project-categories.index');
+        Route::post('/project-categories/category', [\App\Http\Controllers\ProjectCategoryController::class, 'storeCategory'])->name('project-categories.category.store');
+        Route::put('/project-categories/category/{id}', [\App\Http\Controllers\ProjectCategoryController::class, 'updateCategory'])->name('project-categories.category.update');
+        Route::delete('/project-categories/category/{id}', [\App\Http\Controllers\ProjectCategoryController::class, 'destroyCategory'])->name('project-categories.category.destroy');
+
+        Route::post('/project-categories/sub-category', [\App\Http\Controllers\ProjectCategoryController::class, 'storeSubCategory'])->name('project-categories.sub-category.store');
+        Route::put('/project-categories/sub-category/{id}', [\App\Http\Controllers\ProjectCategoryController::class, 'updateSubCategory'])->name('project-categories.sub-category.update');
+        Route::delete('/project-categories/sub-category/{id}', [\App\Http\Controllers\ProjectCategoryController::class, 'destroySubCategory'])->name('project-categories.sub-category.destroy');
+
+        Route::post('/project-categories/toggle-status', [\App\Http\Controllers\ProjectCategoryController::class, 'toggleStatus'])->name('project-categories.toggle-status');
+    });
+
     // Legacy domains URL → CSD Renewals
     Route::redirect('/domains', '/csd/renewals');
     Route::redirect('/domains/getalldomains', '/csd/renewals');
@@ -342,6 +370,7 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('/daily-targets/configure', [DailyTargetController::class, 'configure'])->name('daily-targets.configure');
         Route::post('/daily-targets/store', [DailyTargetController::class, 'store'])->name('daily-targets.store');
         Route::get('/daily-targets/data', [DailyTargetController::class, 'getData'])->name('daily-targets.data');
+        Route::get('/daily-targets/export', [DailyTargetController::class, 'export'])->name('daily-targets.export');
     });
 
     // Sales Target Planner & Leaderboards (viewable by Sales, CSD, Admin, Branch-Manager, Team-Leaders)
@@ -350,8 +379,44 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('sales/leaderboard', [\App\Http\Controllers\Sales\SalesTargetController::class, 'leaderboard'])->name('sales.targets.leaderboard');
     });
 
+    // Admin & Branch Manager: Attendances & Live Workforce Monitoring
+    Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
+        Route::get('/admin/attendances', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'index'])->name('admin.attendances.index');
+        Route::get('/admin/attendances/data', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'getData'])->name('admin.attendances.data');
+        Route::get('/admin/attendances/export', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'export'])->name('admin.attendances.export');
+    });
+
     // Sales Target Creation (Restricted to Admins and Branch-Managers only)
     Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
         Route::post('sales/targets', [\App\Http\Controllers\Sales\SalesTargetController::class, 'store'])->name('sales.targets.store');
+    });
+
+    // Settings Administration (Admin & Branch Manager)
+    Route::group(['middleware' => ['role:Admin|Branch-Manager'], 'prefix' => 'settings', 'as' => 'settings.'], function () {
+        // Holidays Management
+        Route::resource('holidays', \App\Http\Controllers\Settings\HolidayController::class)->except(['create', 'show', 'edit']);
+
+        // Leave Types Management
+        Route::resource('leave-types', \App\Http\Controllers\Settings\LeaveTypeController::class)->except(['create', 'show', 'edit']);
+
+        // Project Categories under Settings
+        Route::get('project-categories', [\App\Http\Controllers\ProjectCategoryController::class, 'index'])->name('project-categories.index');
+    });
+
+    // HRMS Suite
+    Route::group(['prefix' => 'hrms', 'as' => 'hrms.'], function () {
+        // Employee Leaves
+        Route::get('my-leaves', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'index'])->name('my-leaves.index');
+        Route::post('my-leaves', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'store'])->name('my-leaves.store');
+
+        // Admin & Branch Manager HRMS Workflows
+        Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
+            Route::get('leaves/approvals', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'approvals'])->name('my-leaves.approvals');
+            Route::post('leaves/{leave}/status', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'updateStatus'])->name('my-leaves.update-status');
+
+            // Date-Range Attendance Export
+            Route::get('attendance-export', [\App\Http\Controllers\Hrms\AttendanceExportController::class, 'index'])->name('attendance-export.index');
+            Route::get('attendance-export/download', [\App\Http\Controllers\Hrms\AttendanceExportController::class, 'export'])->name('attendance-export.download');
+        });
     });
 });

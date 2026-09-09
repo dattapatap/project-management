@@ -1,10 +1,10 @@
 {{-- Branch Manager — cross-department oversight (NSD · CSD · OD) --}}
 @php
-    $nsd = $adminData['nsd'] ?? [];
-    $csd = $adminData['csd'] ?? [];
-    $od = $adminData['od'] ?? [];
-    $dept = $adminData['dept_headcount'] ?? ['nsd' => 0, 'csd' => 0, 'od' => 0];
-    $overview = $adminData['department_overview'] ?? [];
+$nsd = $adminData['nsd'] ?? [];
+$csd = $adminData['csd'] ?? [];
+$od = $adminData['od'] ?? [];
+$dept = $adminData['dept_headcount'] ?? ['nsd' => 0, 'csd' => 0, 'od' => 0];
+$overview = $adminData['department_overview'] ?? [];
 @endphp
 
 <div class="row erp-dash-header mb-3 align-items-center">
@@ -73,254 +73,386 @@
             </div>
         </div>
     </div>
+
 </div>
 
-{{-- Overview charts --}}
-<div class="row mt-3">
-    <div class="col-lg-4">
-        <div class="card pm-dashboard-custom-card h-100">
-            <div class="card-body">
-                <h5 class="card-title font-size-15 mb-3"><i class="mdi mdi-account-multiple-outline text-primary mr-1"></i> Staff by Department</h5>
-                <div id="bm-dept-staff-chart" class="apex-charts" style="min-height: 260px;"></div>
+<div class="row">
+    @include('dashboards.widgets.employee_status')
+
+    {{-- Overview charts --}}
+    <div class="col-6">
+        <div class="row mt-3">
+            <div class="col-lg-6">
+                <div class="card pm-dashboard-custom-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title font-size-15 mb-3"><i class="mdi mdi-briefcase-outline text-info mr-1"></i> Active Workload</h5>
+                        <div id="bm-dept-workload-chart" class="apex-charts" style="min-height: 260px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card pm-dashboard-custom-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title font-size-15 mb-3"><i class="mdi mdi-chart-line text-success mr-1"></i> NSD Matured Sales ({{ $adminData['selected_year'] ?? date('Y') }})</h5>
+                        <div id="bm-nsd-trend-chart" class="apex-charts" style="min-height: 260px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-4">
-        <div class="card pm-dashboard-custom-card h-100">
-            <div class="card-body">
-                <h5 class="card-title font-size-15 mb-3"><i class="mdi mdi-briefcase-outline text-info mr-1"></i> Active Workload</h5>
-                <div id="bm-dept-workload-chart" class="apex-charts" style="min-height: 260px;"></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card pm-dashboard-custom-card h-100">
-            <div class="card-body">
-                <h5 class="card-title font-size-15 mb-3"><i class="mdi mdi-chart-line text-success mr-1"></i> NSD Matured Sales ({{ $adminData['selected_year'] ?? date('Y') }})</h5>
-                <div id="bm-nsd-trend-chart" class="apex-charts" style="min-height: 260px;"></div>
-            </div>
-        </div>
-    </div>
+
 </div>
 
-<ul class="nav nav-tabs dashboard-tabs mt-4" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link active" data-toggle="tab" href="#bm-nsd" role="tab"><i class="mdi mdi-chart-line"></i> NSD (Sales)</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#bm-csd" role="tab"><i class="mdi mdi-account-heart-outline"></i> CSD</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#bm-od" role="tab"><i class="mdi mdi-briefcase-outline"></i> OD</a>
-    </li>
-</ul>
 
-<div class="tab-content tab-content-animate mt-3">
-    {{-- NSD TAB --}}
-    <div class="tab-pane fade show active" id="bm-nsd" role="tabpanel">
-        <div class="row">
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Fresh Leads</h6><h3 class="mb-0 text-primary">{{ $nsd['fresh_leads'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Active Pipeline</h6><h3 class="mb-0">{{ $nsd['total_active_leads'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Matured {{ $adminData['selected_year'] ?? date('Y') }}</h6><h3 class="mb-0 text-success">{{ $nsd['matured_year'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Overdue Callbacks</h6><h3 class="mb-0 {{ ($nsd['overdue_tbros_count'] ?? 0) > 0 ? 'text-danger' : '' }}">{{ $nsd['overdue_tbros_count'] ?? 0 }}</h3></div></div></div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-lg-5">
-                <div class="card pm-dashboard-custom-card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3">Lead Stage Distribution</h5>
-                        <div id="bm-nsd-stage-chart" class="apex-charts" style="min-height: 280px;"></div>
+<div class="col-12">
+
+    <ul class="nav nav-tabs dashboard-tabs mt-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#bm-nsd" role="tab"><i class="mdi mdi-chart-line"></i> NSD (Sales)</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#bm-csd" role="tab"><i class="mdi mdi-account-heart-outline"></i> CSD</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#bm-od" role="tab"><i class="mdi mdi-briefcase-outline"></i> OD</a>
+        </li>
+    </ul>
+
+    <div class="tab-content tab-content-animate mt-3">
+        {{-- NSD TAB --}}
+        <div class="tab-pane fade show active" id="bm-nsd" role="tabpanel">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Fresh Leads</h6>
+                            <h3 class="mb-0 text-primary">{{ $nsd['fresh_leads'] ?? 0 }}</h3>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-7">
-                <div class="card pm-dashboard-custom-card h-100">
-                    <div class="card-body">
-                        <h4 class="card-title mb-3">NSD Sales Performance</h4>
-                        <div class="table-responsive">
-                            <table class="table table-sm trendy-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Executive</th>
-                                        <th>Active Leads</th>
-                                        <th>Matured (Year)</th>
-                                        <th>Today CB</th>
-                                        <th>Overdue</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($nsd['team_performance_matrix'] ?? [] as $member)
-                                    <tr>
-                                        <td>{{ $member->name }}</td>
-                                        <td>{{ $member->active_leads_count ?? 0 }}</td>
-                                        <td><span class="badge badge-soft-success">{{ $member->matured_leads_count ?? 0 }}</span></td>
-                                        <td>{{ $member->today_callbacks_count ?? 0 }}</td>
-                                        <td class="{{ ($member->overdue_callbacks_count ?? 0) > 0 ? 'text-danger font-weight-bold' : '' }}">{{ $member->overdue_callbacks_count ?? 0 }}</td>
-                                    </tr>
-                                    @empty
-                                    <tr><td colspan="5" class="text-center text-muted">No NSD staff linked to this branch.</td></tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Active Pipeline</h6>
+                            <h3 class="mb-0">{{ $nsd['total_active_leads'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Matured {{ $adminData['selected_year'] ?? date('Y') }}</h6>
+                            <h3 class="mb-0 text-success">{{ $nsd['matured_year'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Overdue Callbacks</h6>
+                            <h3 class="mb-0 {{ ($nsd['overdue_tbros_count'] ?? 0) > 0 ? 'text-danger' : '' }}">{{ $nsd['overdue_tbros_count'] ?? 0 }}</h3>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="row mt-3">
+                <div class="col-lg-5">
+                    <div class="card pm-dashboard-custom-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Lead Stage Distribution</h5>
+                            <div id="bm-nsd-stage-chart" class="apex-charts" style="min-height: 280px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card pm-dashboard-custom-card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title mb-3">NSD Sales Performance</h4>
+                            <div class="table-responsive">
+                                <table class="table table-sm trendy-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Executive</th>
+                                            <th>Active Leads</th>
+                                            <th>Matured (Year)</th>
+                                            <th>Today CB</th>
+                                            <th>Overdue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($nsd['team_performance_matrix'] ?? [] as $member)
+                                        <tr>
+                                            <td>{{ $member->name }}</td>
+                                            <td>{{ $member->active_leads_count ?? 0 }}</td>
+                                            <td><span class="badge badge-soft-success">{{ $member->matured_leads_count ?? 0 }}</span></td>
+                                            <td>{{ $member->today_callbacks_count ?? 0 }}</td>
+                                            <td class="{{ ($member->overdue_callbacks_count ?? 0) > 0 ? 'text-danger font-weight-bold' : '' }}">{{ $member->overdue_callbacks_count ?? 0 }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No NSD staff linked to this branch.</td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card pm-dashboard-custom-card mt-3">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Recent Matured Clients</h4>
+                    <div class="table-responsive">
+                        <table class="table table-sm trendy-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Executive</th>
+                                    <th>Matured On</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($nsd['recent_matured'] ?? [] as $client)
+                                <tr>
+                                    <td>{{ $client->name }}</td>
+                                    <td>{{ optional($client->referral)->name ?? '—' }}</td>
+                                    <td>{{ $client->updated_at ? $client->updated_at->format('d M Y') : '—' }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No matured clients in {{ $adminData['selected_year'] ?? date('Y') }}.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card pm-dashboard-custom-card mt-3">
-            <div class="card-body">
-                <h4 class="card-title mb-3">Recent Matured Clients</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm trendy-table mb-0">
-                        <thead><tr><th>Company</th><th>Executive</th><th>Matured On</th></tr></thead>
-                        <tbody>
-                            @forelse($nsd['recent_matured'] ?? [] as $client)
-                            <tr>
-                                <td>{{ $client->name }}</td>
-                                <td>{{ optional($client->referral)->name ?? '—' }}</td>
-                                <td>{{ $client->updated_at ? $client->updated_at->format('d M Y') : '—' }}</td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="3" class="text-center text-muted">No matured clients in {{ $adminData['selected_year'] ?? date('Y') }}.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+
+        {{-- CSD TAB --}}
+        <div class="tab-pane fade" id="bm-csd" role="tabpanel">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Active Clients</h6>
+                            <h3 class="mb-0">{{ $csd['active_clients'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Outstanding</h6>
+                            <h3 class="mb-0">₹ {{ number_format($csd['outstanding_amount'] ?? 0, 0) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Open Tickets</h6>
+                            <h3 class="mb-0">{{ $csd['open_tickets'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">At-Risk Clients</h6>
+                            <h3 class="mb-0 text-warning">{{ $csd['at_risk_clients'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-lg-4">
+                    <div class="card pm-dashboard-custom-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">CSD Health Snapshot</h5>
+                            <div id="bm-csd-health-chart" class="apex-charts" style="min-height: 280px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="card pm-dashboard-custom-card h-100">
+                        <div class="card-body">
+                            <div class="row text-center mb-3">
+                                <div class="col-4"><small class="text-muted d-block">Renewals Due (30d)</small><strong>{{ $csd['renewal_due_clients'] ?? 0 }}</strong></div>
+                                <div class="col-4"><small class="text-muted d-block">Collections This Month</small><strong>₹ {{ number_format($csd['collections_this_month'] ?? 0, 0) }}</strong></div>
+                                <div class="col-4"><small class="text-muted d-block">New Clients (Month)</small><strong>{{ $csd['new_clients_this_month'] ?? 0 }}</strong></div>
+                            </div>
+                            <h4 class="card-title mb-3">CSD Team Performance</h4>
+                            <div class="table-responsive">
+                                <table class="table table-sm trendy-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Executive</th>
+                                            <th>Active Clients</th>
+                                            <th>At Risk</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($csd['team_performance_matrix'] ?? [] as $member)
+                                        <tr>
+                                            <td>{{ $member->name }}</td>
+                                            <td>{{ $member->active_clients_count ?? 0 }}</td>
+                                            <td class="{{ ($member->at_risk_count ?? 0) > 0 ? 'text-danger' : '' }}">{{ $member->at_risk_count ?? 0 }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">No CSD staff in this branch yet.</td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card pm-dashboard-custom-card mt-3">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Unassigned Handoffs</h4>
+                    <div class="table-responsive">
+                        <table class="table table-sm trendy-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Project</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($csd['unassigned_handoffs'] ?? [] as $handoff)
+                                <tr>
+                                    <td>{{ $handoff->client->name ?? '—' }}</td>
+                                    <td>{{ optional($handoff->project)->project_name ?? '—' }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">No unassigned handoffs.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- OD TAB --}}
+        <div class="tab-pane fade" id="bm-od" role="tabpanel">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">To Do</h6>
+                            <h3 class="mb-0">{{ $od['projects_todo'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">In Progress</h6>
+                            <h3 class="mb-0 text-warning">{{ $od['projects_in_progress'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">Completed</h6>
+                            <h3 class="mb-0 text-success">{{ $od['projects_completed'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-1">OD Team</h6>
+                            <h3 class="mb-0">{{ $od['team_size'] ?? 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-lg-4">
+                    <div class="card pm-dashboard-custom-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Project Status</h5>
+                            <div id="bm-od-project-chart" class="apex-charts" style="min-height: 280px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="card pm-dashboard-custom-card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title mb-3">OD Team Performance</h4>
+                            <div class="table-responsive">
+                                <table class="table table-sm trendy-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Member</th>
+                                            <th>Active Tasks</th>
+                                            <th>Completed</th>
+                                            <th>Hours Logged</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($od['team_performance_matrix'] ?? [] as $member)
+                                        <tr>
+                                            <td>{{ $member->name }}</td>
+                                            <td>{{ $member->active_tasks ?? 0 }}</td>
+                                            <td>{{ $member->completed_tasks ?? 0 }}</td>
+                                            <td>{{ number_format($member->total_hours ?? 0, 1) }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No OD staff in this branch yet.</td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card pm-dashboard-custom-card mt-3">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Projects Near Deadline</h4>
+                    <div class="table-responsive">
+                        <table class="table table-sm trendy-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Project</th>
+                                    <th>Client</th>
+                                    <th>End Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($od['near_deadline_projects'] ?? [] as $project)
+                                <tr>
+                                    <td>{{ $project->project_name ?? '—' }}</td>
+                                    <td>{{ optional($project->clients)->name ?? '—' }}</td>
+                                    <td>{{ $project->end_date ? \Carbon\Carbon::parse($project->end_date)->format('d M Y') : '—' }}</td>
+                                    <td><span class="badge badge-soft-warning">{{ $project->status }}</span></td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No upcoming deadlines in this branch.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- CSD TAB --}}
-    <div class="tab-pane fade" id="bm-csd" role="tabpanel">
-        <div class="row">
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Active Clients</h6><h3 class="mb-0">{{ $csd['active_clients'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Outstanding</h6><h3 class="mb-0">₹ {{ number_format($csd['outstanding_amount'] ?? 0, 0) }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Open Tickets</h6><h3 class="mb-0">{{ $csd['open_tickets'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">At-Risk Clients</h6><h3 class="mb-0 text-warning">{{ $csd['at_risk_clients'] ?? 0 }}</h3></div></div></div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-lg-4">
-                <div class="card pm-dashboard-custom-card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3">CSD Health Snapshot</h5>
-                        <div id="bm-csd-health-chart" class="apex-charts" style="min-height: 280px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-8">
-                <div class="card pm-dashboard-custom-card h-100">
-                    <div class="card-body">
-                        <div class="row text-center mb-3">
-                            <div class="col-4"><small class="text-muted d-block">Renewals Due (30d)</small><strong>{{ $csd['renewal_due_clients'] ?? 0 }}</strong></div>
-                            <div class="col-4"><small class="text-muted d-block">Collections This Month</small><strong>₹ {{ number_format($csd['collections_this_month'] ?? 0, 0) }}</strong></div>
-                            <div class="col-4"><small class="text-muted d-block">New Clients (Month)</small><strong>{{ $csd['new_clients_this_month'] ?? 0 }}</strong></div>
-                        </div>
-                        <h4 class="card-title mb-3">CSD Team Performance</h4>
-                        <div class="table-responsive">
-                            <table class="table table-sm trendy-table mb-0">
-                                <thead><tr><th>Executive</th><th>Active Clients</th><th>At Risk</th></tr></thead>
-                                <tbody>
-                                    @forelse($csd['team_performance_matrix'] ?? [] as $member)
-                                    <tr>
-                                        <td>{{ $member->name }}</td>
-                                        <td>{{ $member->active_clients_count ?? 0 }}</td>
-                                        <td class="{{ ($member->at_risk_count ?? 0) > 0 ? 'text-danger' : '' }}">{{ $member->at_risk_count ?? 0 }}</td>
-                                    </tr>
-                                    @empty
-                                    <tr><td colspan="3" class="text-center text-muted">No CSD staff in this branch yet.</td></tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card pm-dashboard-custom-card mt-3">
-            <div class="card-body">
-                <h4 class="card-title mb-3">Unassigned Handoffs</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm trendy-table mb-0">
-                        <thead><tr><th>Client</th><th>Project</th></tr></thead>
-                        <tbody>
-                            @forelse($csd['unassigned_handoffs'] ?? [] as $handoff)
-                            <tr>
-                                <td>{{ $handoff->client->name ?? '—' }}</td>
-                                <td>{{ optional($handoff->project)->project_name ?? '—' }}</td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="2" class="text-center text-muted">No unassigned handoffs.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- OD TAB --}}
-    <div class="tab-pane fade" id="bm-od" role="tabpanel">
-        <div class="row">
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">To Do</h6><h3 class="mb-0">{{ $od['projects_todo'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">In Progress</h6><h3 class="mb-0 text-warning">{{ $od['projects_in_progress'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">Completed</h6><h3 class="mb-0 text-success">{{ $od['projects_completed'] ?? 0 }}</h3></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm"><div class="card-body text-center"><h6 class="text-muted mb-1">OD Team</h6><h3 class="mb-0">{{ $od['team_size'] ?? 0 }}</h3></div></div></div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-lg-4">
-                <div class="card pm-dashboard-custom-card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3">Project Status</h5>
-                        <div id="bm-od-project-chart" class="apex-charts" style="min-height: 280px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-8">
-                <div class="card pm-dashboard-custom-card h-100">
-                    <div class="card-body">
-                        <h4 class="card-title mb-3">OD Team Performance</h4>
-                        <div class="table-responsive">
-                            <table class="table table-sm trendy-table mb-0">
-                                <thead><tr><th>Member</th><th>Active Tasks</th><th>Completed</th><th>Hours Logged</th></tr></thead>
-                                <tbody>
-                                    @forelse($od['team_performance_matrix'] ?? [] as $member)
-                                    <tr>
-                                        <td>{{ $member->name }}</td>
-                                        <td>{{ $member->active_tasks ?? 0 }}</td>
-                                        <td>{{ $member->completed_tasks ?? 0 }}</td>
-                                        <td>{{ number_format($member->total_hours ?? 0, 1) }}</td>
-                                    </tr>
-                                    @empty
-                                    <tr><td colspan="4" class="text-center text-muted">No OD staff in this branch yet.</td></tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card pm-dashboard-custom-card mt-3">
-            <div class="card-body">
-                <h4 class="card-title mb-3">Projects Near Deadline</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm trendy-table mb-0">
-                        <thead><tr><th>Project</th><th>Client</th><th>End Date</th><th>Status</th></tr></thead>
-                        <tbody>
-                            @forelse($od['near_deadline_projects'] ?? [] as $project)
-                            <tr>
-                                <td>{{ $project->project_name ?? '—' }}</td>
-                                <td>{{ optional($project->clients)->name ?? '—' }}</td>
-                                <td>{{ $project->end_date ? \Carbon\Carbon::parse($project->end_date)->format('d M Y') : '—' }}</td>
-                                <td><span class="badge badge-soft-warning">{{ $project->status }}</span></td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="4" class="text-center text-muted">No upcoming deadlines in this branch.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>

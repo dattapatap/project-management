@@ -18,24 +18,18 @@ use App\Models\TeamMembers;
 use App\Models\TaskLog;
 use App\Models\DayClosing;
 use App\Models\CsdClientAssignment;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
+
     public function __construct()
     {
         $this->middleware('auth');
     }
 
-    /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable
-     */
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -75,7 +69,7 @@ class HomeController extends Controller
 
         // 🔀 Modular Routing for Dashboard Role-Based Data Loading
         if ($user->hasRole('Admin')) {
-            $adminData = $this->getAdminDashboardData($selectedYear);
+            $adminData = $this->getAdminDashboardData($selectedYear, $request);
         } elseif ($user->hasRole('Project-Manager')) {
             $adminData = $this->getPMDashboardData($selectedYear);
         } elseif ($user->hasRole('Team-Leader')) {
@@ -120,155 +114,408 @@ class HomeController extends Controller
     /* =========================================================================
      * 👑 ADMIN DASHBOARD DATA LOADER
      * ========================================================================= */
-    private function getAdminDashboardData($selectedYear)
+    private function getAdminDashboardData($selectedYear, $request = null)
     {
-        $adminData = [];
-        $adminData['total_users'] = User::count();
-        $adminData['total_departments'] = Department::count();
-        $adminData['total_projects'] = DepartmentProjects::count();
-        $adminData['total_tasks'] = Task::count();
-        $adminData['total_clients'] = Clients::count();
+        $preset = $request ? $request->input('preset', 'today') : 'today';
+        $customDate = $request ? $request->input('date') : null;
 
-        $adminData['recent_projects'] = DepartmentProjects::with(['projectCategory', 'clients'])->latest()->take(5)->get();
-
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $startOfLastMonth = Carbon::now()->subMonth()->startOfMonth();
-        $endOfLastMonth = Carbon::now()->subMonth()->endOfMonth();
-
-        $adminData['proj_todo'] = DepartmentProjects::where('status', 'ToDo')->count();
-        $adminData['proj_in_progress'] = DepartmentProjects::where('status', 'InProgress')->count();
-        $adminData['proj_completed'] = DepartmentProjects::where('status', 'Completed')->count();
-
-        $sevenDaysFromNow = Carbon::now()->addDays(7);
-        $adminData['near_deadline_projects'] = DepartmentProjects::with('clients')
-            ->where('status', '!=', 'Completed')
-            ->where('end_date', '<=', $sevenDaysFromNow)
-            ->orderBy('end_date', 'asc')
-            ->take(5)
-            ->get();
-
-        // Sales Performance (Department 1) - Comparing This Month vs Last Month
-        $adminData['sales_performance'] = User::whereHas('departments', function ($q) {
-            $q->where('department', 1);
-        })
-            ->withCount(['clients as total_matured' => function ($q) {
-                $q->where('status', 'Matured');
-            }])
-            ->withCount(['clients as followup_clients' => function ($q) {
-                $q->where('status', 'Followup');
-            }])
-            ->withCount(['clients as this_month_matured' => function ($q) use ($startOfMonth) {
-                $q->where('status', 'Matured')->where('created_at', '>=', $startOfMonth);
-            }])
-            ->withCount(['clients as last_month_matured' => function ($q) use ($startOfLastMonth, $endOfLastMonth) {
-                $q->where('status', 'Matured')->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth]);
-            }])
-            ->orderBy('this_month_matured', 'desc')
-            ->take(5)
-            ->get();
-
-        // OD Performance (Department 2) - Comparing This Month vs Last Month
-        $adminData['od_performance'] = User::whereHas('departments', function ($q) {
-            $q->where('department', 2);
-        })
-            ->withCount(['tasks as total_completed' => function ($q) {
-                $q->where('status', 'Completed');
-            }])
-            ->withCount(['tasks as active_tasks' => function ($q) {
-                $q->where('status', 'InProgress');
-            }])
-            ->withSum('taskLogs as total_hours', 'time_spend')
-            ->withCount(['tasks as this_month_completed' => function ($q) use ($startOfMonth) {
-                $q->where('status', 'Completed')->where('created_at', '>=', $startOfMonth);
-            }])
-            ->withCount(['tasks as last_month_completed' => function ($q) use ($startOfLastMonth, $endOfLastMonth) {
-                $q->where('status', 'Completed')->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth]);
-            }])
-            ->orderBy('this_month_completed', 'desc')
-            ->take(5)
-            ->get();
-
-        // Team-wise Performance (OD Department Only)
-        $odDept = Department::where('name', 'OD')->first();
-        $odDeptId = $odDept ? $odDept->id : 2;
-
-        $adminData['team_performance'] = Teams::where('department', $odDeptId)
-            ->with(['teammembers.users' => function ($q) {
-                $q->withCount(['tasks as active_tasks' => function ($sq) {
-                    $sq->whereIn('status', ['ToDo', 'InProgress']);
-                }])
-                    ->withCount(['tasks as completed_tasks' => function ($sq) {
-                        $sq->where('status', 'Completed');
-                    }])
-                    ->withSum('taskLogs as total_hours', 'time_spend')
-                    ->with(['taskLogs' => function ($sq) {
-                        $sq->latest()->with('task');
-                    }]);
-            }])->get();
-
-        // CSD Client Health Metrics for Donut Chart
-        $adminData['csd_healthy'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'healthy')->count();
-        $adminData['csd_at_risk'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'at_risk')->count();
-        $adminData['csd_churning'] = \App\Models\CsdClientAssignment::where('status', 'active')->where('health_status', 'churning')->count();
-
-        // ── Extra KPI counters ──────────────────────────────────────────────────
-        $adminData['total_matured_clients'] = Clients::where('status', 'Matured')->count();
-        $adminData['total_active_tasks']    = Task::where('status', 'InProgress')->count();
-        $adminData['pending_approvals']     = DayClosing::where('status', 'pending')->count();
-        $adminData['csd_active_count']      = CsdClientAssignment::where('status', 'active')->count();
-
-        // ── 12-month task completion trend ─────────────────────────────────────
-        $taskTrend = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $month = Carbon::now()->subMonths($i);
-            $taskTrend[] = [
-                'month' => $month->format('M Y'),
-                'count' => Task::where('status', 'Completed')
-                    ->whereYear('updated_at', $month->year)
-                    ->whereMonth('updated_at', $month->month)
-                    ->count(),
-            ];
+        if (!empty($customDate)) {
+            $preset = 'custom';
+            $startDate = Carbon::parse($customDate)->startOfDay();
+            $endDate = Carbon::parse($customDate)->endOfDay();
+            $filterLabel = 'Custom: ' . $startDate->format('d M Y');
+        } elseif ($preset === 'yesterday') {
+            $startDate = Carbon::yesterday()->startOfDay();
+            $endDate = Carbon::yesterday()->endOfDay();
+            $filterLabel = 'Yesterday: ' . $startDate->format('d M Y');
+        } elseif ($preset === 'this_week') {
+            $startDate = Carbon::today()->startOfWeek();
+            $endDate = Carbon::today()->endOfWeek();
+            $filterLabel = 'This Week (' . $startDate->format('d M') . ' - ' . $endDate->format('d M') . ')';
+        } elseif ($preset === 'this_month') {
+            $startDate = Carbon::today()->startOfMonth();
+            $endDate = Carbon::today()->endOfMonth();
+            $filterLabel = 'This Month (' . $startDate->format('M Y') . ')';
+        } else {
+            $preset = 'today';
+            $startDate = Carbon::today()->startOfDay();
+            $endDate = Carbon::today()->endOfDay();
+            $filterLabel = 'Today: ' . $startDate->format('d M Y');
         }
-        $adminData['task_completion_trend'] = $taskTrend;
 
-        // ── Category-wise project distribution ────────────────────────────────
-        $adminData['dept_project_distribution'] = DB::table('department_projects')
-            ->join('project_category', 'department_projects.category', '=', 'project_category.id')
-            ->whereNull('department_projects.deleted_at')
-            ->select('project_category.category as name', DB::raw('count(*) as projects_count'))
-            ->groupBy('project_category.category')
-            ->orderByDesc('projects_count')
-            ->get();
+        $dateKey = $preset . '_' . $startDate->format('Y-m-d') . '_' . $endDate->format('Y-m-d');
+        $cacheKey = 'wms_admin_dashboard_' . $selectedYear . '_' . $dateKey . '_' . date('H_') . floor(date('i') / 5);
 
-        // ── Today's pending day-closings ───────────────────────────────────────
-        $todayDate = Carbon::today()->toDateString();
-        $submittedUserIds = DayClosing::where('closing_date', $todayDate)->pluck('user_id')->toArray();
-        $adminData['pending_day_closings'] = User::whereNotIn('id', $submittedUserIds)
-            ->where('id', '!=', 1)
-            ->whereNull('deleted_at')
-            ->select('id', 'name', 'email')
-            ->get();
+        return Cache::remember($cacheKey, 300, function () use ($selectedYear, $preset, $startDate, $endDate, $filterLabel, $customDate) {
+            $adminData = [];
+            $adminData['selected_preset'] = $preset;
+            $adminData['filter_label'] = $filterLabel;
+            $adminData['custom_date_val'] = $customDate ?? $startDate->format('Y-m-d');
 
-        // ── CSD at-risk / churning alerts ──────────────────────────────────────
-        $adminData['csd_alerts'] = CsdClientAssignment::with(['client', 'assignee'])
-            ->where('status', 'active')
-            ->whereIn('health_status', ['at_risk', 'churning'])
-            ->latest('updated_at')
-            ->take(5)
-            ->get();
+            $adminData['total_users'] = User::count();
+            $adminData['total_departments'] = Department::count();
+            $adminData['total_projects'] = DepartmentProjects::count();
+            $adminData['total_tasks'] = Task::count();
+            $adminData['total_clients'] = Clients::count();
 
-        // ── Top performers this month ──────────────────────────────────────────
-        $adminData['top_sales_performer'] = User::whereHas('departments', fn($q) => $q->where('department', 1))
-            ->withCount(['clients as this_month_matured' => fn($q) => $q->where('status', 'Matured')->where('created_at', '>=', $startOfMonth)])
-            ->orderByDesc('this_month_matured')
-            ->first();
+            $adminData['recent_projects'] = DepartmentProjects::with(['projectCategory', 'clients'])->latest()->take(5)->get();
 
-        $adminData['top_od_performer'] = User::whereHas('departments', fn($q) => $q->where('department', 2))
-            ->withCount(['tasks as this_month_completed' => fn($q) => $q->where('status', 'Completed')->where('updated_at', '>=', $startOfMonth)])
-            ->orderByDesc('this_month_completed')
-            ->first();
+            // ── Date Markers ──────────────────────────────────────────────────────
+            $todayDate = $startDate->format('Y-m-d');
+            $isSingleDay = in_array($preset, ['today', 'yesterday', 'custom']);
+            $isSunday = $startDate->isSunday();
+            $sevenDaysFromNow = $endDate->copy()->addDays(7);
 
-        return $adminData;
+            // Previous Period calculation for comparisons
+            if ($preset === 'this_month') {
+                $startOfPrevPeriod = $startDate->copy()->subMonth()->startOfMonth();
+                $endOfPrevPeriod = $startDate->copy()->subMonth()->endOfMonth();
+            } elseif ($preset === 'this_week') {
+                $startOfPrevPeriod = $startDate->copy()->subWeek()->startOfWeek();
+                $endOfPrevPeriod = $startDate->copy()->subWeek()->endOfWeek();
+            } elseif ($preset === 'yesterday') {
+                $startOfPrevPeriod = $startDate->copy()->subDay()->startOfDay();
+                $endOfPrevPeriod = $startDate->copy()->subDay()->endOfDay();
+            } else {
+                $startOfPrevPeriod = Carbon::yesterday()->startOfDay();
+                $endOfPrevPeriod = Carbon::yesterday()->endOfDay();
+            }
+
+            // ── 1. Top 5 KPI Metrics ──────────────────────────────────────────────
+            $totalStaff = User::where('status', 'Active')
+                ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+                ->count();
+            $adminData['employees_count'] = $totalStaff;
+
+            if ($isSingleDay) {
+                $presentCount = \App\Models\GlobalAttendanceLog::where('log_date', $todayDate)->distinct('userid')->count('userid');
+                $onLeaveCount = \App\Models\EmployeeLeave::where('status', 'approved')
+                    ->where('start_date', '<=', $todayDate)
+                    ->where('end_date', '>=', $todayDate)
+                    ->count();
+            } else {
+                $presentCount = \App\Models\GlobalAttendanceLog::whereBetween('log_date', [$startDate->toDateString(), $endDate->toDateString()])->distinct('userid')->count('userid');
+                $onLeaveCount = \App\Models\EmployeeLeave::where('status', 'approved')
+                    ->where('start_date', '<=', $endDate->toDateString())
+                    ->where('end_date', '>=', $startDate->toDateString())
+                    ->distinct('user_id')
+                    ->count('user_id');
+            }
+
+            $adminData['present_today_count'] = $presentCount;
+            $adminData['present_today_pct'] = $totalStaff > 0 ? round(($presentCount / $totalStaff) * 100) : 0;
+            $adminData['on_leave_today_count'] = $onLeaveCount;
+            $adminData['on_leave_today_pct'] = $totalStaff > 0 ? round(($onLeaveCount / $totalStaff) * 100) : 0;
+            $absentCount = $isSunday ? 0 : max(0, $totalStaff - $presentCount - $onLeaveCount);
+            $adminData['absent_today_count'] = $absentCount;
+            $adminData['absent_today_pct'] = $totalStaff > 0 ? round(($absentCount / $totalStaff) * 100) : 0;
+
+            // Won Deals
+            $adminData['won_deals_total'] = Clients::where('status', 'Matured')->where('created_at', '<=', $endDate)->count();
+            $wonThisPeriod = Clients::where('status', 'Matured')->whereBetween('created_at', [$startDate, $endDate])->count();
+            $wonPrevPeriod = Clients::where('status', 'Matured')->whereBetween('created_at', [$startOfPrevPeriod, $endOfPrevPeriod])->count();
+            $adminData['won_deals_this_month'] = $wonThisPeriod;
+            $adminData['won_deals_growth_pct'] = $wonPrevPeriod > 0 ? round((($wonThisPeriod - $wonPrevPeriod) / $wonPrevPeriod) * 100, 1) : ($wonThisPeriod > 0 ? 100 : 0);
+
+            // Leads (Pipeline)
+            $adminData['leads_total'] = Clients::where('created_at', '<=', $endDate)->count();
+            $leadsThisPeriod = Clients::whereBetween('created_at', [$startDate, $endDate])->count();
+            $leadsPrevPeriod = Clients::whereBetween('created_at', [$startOfPrevPeriod, $endOfPrevPeriod])->count();
+            $adminData['leads_this_month'] = $leadsThisPeriod;
+            $adminData['leads_growth_pct'] = $leadsPrevPeriod > 0 ? round((($leadsThisPeriod - $leadsPrevPeriod) / $leadsPrevPeriod) * 100, 1) : ($leadsThisPeriod > 0 ? 100 : 0);
+
+            // Active Projects & Overdue
+            $adminData['active_projects_count'] = DepartmentProjects::where('status', 'InProgress')->count();
+            $adminData['overdue_projects_count'] = DepartmentProjects::where('status', '!=', 'Completed')->where('end_date', '<', $endDate)->count();
+
+            // Customers (CSD accounts)
+            $csdActiveAccounts = CsdClientAssignment::where('status', 'active')->count();
+            $adminData['customers_count'] = $csdActiveAccounts > 0 ? $csdActiveAccounts : max(1, Clients::where('status', 'Matured')->count());
+            $adminData['customers_at_risk_count'] = CsdClientAssignment::where('status', 'active')->whereIn('health_status', ['at_risk', 'churning'])->count();
+
+            // ── 2. Needs Your Attention ───────────────────────────────────────────
+            $adminData['leads_no_followup_count'] = Clients::where('status', 'Fresh')->where('created_at', '<=', $endDate)->count();
+            if ($isSingleDay) {
+                $submittedUserIds = DayClosing::where('closing_date', $todayDate)->pluck('user_id')->toArray();
+            } else {
+                $submittedUserIds = DayClosing::whereBetween('closing_date', [$startDate->toDateString(), $endDate->toDateString()])->pluck('user_id')->toArray();
+            }
+            $adminData['pending_closing_users_count'] = User::whereNotIn('id', $submittedUserIds)
+                ->where('status', 'Active')
+                ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+                ->whereNull('deleted_at')
+                ->count();
+
+            // ── 3. Today's Priorities ─────────────────────────────────────────────
+            $adminData['day_closings_count'] = $adminData['pending_closing_users_count'];
+            $adminData['closing_approvals_count'] = DayClosing::where('status', 'pending')->count();
+            $adminData['leave_approvals_count'] = \App\Models\EmployeeLeave::where('status', 'pending')->count();
+            $adminData['project_deadlines_count'] = DepartmentProjects::where('status', '!=', 'Completed')
+                ->whereBetween('end_date', [$startDate, $sevenDaysFromNow])
+                ->count();
+
+            // ── 4. NSD (Sales) Overview ───────────────────────────────────────────
+            $adminData['nsd_leads'] = $adminData['leads_total'];
+            $adminData['nsd_qualified'] = Clients::whereIn('status', ['Followup', 'Matured'])->where('created_at', '<=', $endDate)->count();
+            $adminData['nsd_won'] = $adminData['won_deals_total'];
+            $adminData['nsd_conversion_pct'] = $adminData['leads_total'] > 0 ? round(($adminData['nsd_won'] / $adminData['leads_total']) * 100, 1) : 0;
+
+            // Sales Funnel
+            $adminData['funnel_new_leads'] = Clients::where('status', 'Fresh')->where('created_at', '<=', $endDate)->count();
+            $adminData['funnel_contacted'] = Clients::where('status', 'Followup')->where('created_at', '<=', $endDate)->count();
+            $adminData['funnel_qualified'] = Clients::whereNotIn('status', ['Fresh', 'Not Interested'])->where('created_at', '<=', $endDate)->count();
+            $adminData['funnel_proposals'] = Clients::whereIn('status', ['Matured', 'Followup'])->where('created_at', '<=', $endDate)->count();
+            $adminData['funnel_won'] = Clients::where('status', 'Matured')->where('created_at', '<=', $endDate)->count();
+
+            // ── 5. OD (Operations) Overview ───────────────────────────────────────
+            $adminData['od_on_track'] = DepartmentProjects::where('status', 'InProgress')->where('end_date', '>=', $sevenDaysFromNow)->count();
+            $adminData['od_at_risk'] = DepartmentProjects::where('status', 'InProgress')->whereBetween('end_date', [$startDate, $sevenDaysFromNow])->count();
+            $adminData['od_overdue'] = $adminData['overdue_projects_count'];
+            $adminData['od_total_active'] = $adminData['active_projects_count'] > 0 ? $adminData['active_projects_count'] : 1;
+
+            // Upcoming Deadlines with Progress
+            $upcomingProjects = DepartmentProjects::with(['clients', 'tasks', 'projectCategory'])
+                ->where('status', '!=', 'Completed')
+                ->whereNotNull('end_date')
+                ->orderBy('end_date', 'asc')
+                ->take(5)
+                ->get();
+            $adminData['upcoming_deadlines'] = $upcomingProjects->map(function ($p) use ($startDate) {
+                $endDate = Carbon::parse($p->end_date)->endOfDay();
+                $now = $startDate->copy();
+
+                if ($endDate->isPast() && !$endDate->isSameDay($now)) {
+                    $daysAgo = max(1, (int) abs($now->diffInDays($endDate, false)));
+                    $chipText = 'Overdue ' . $daysAgo . 'd';
+                    $chipClass = 'danger';
+                } elseif ($endDate->isSameDay($now)) {
+                    $chipText = 'Due Today';
+                    $chipClass = 'danger';
+                } elseif ($endDate->isSameDay($now->copy()->addDay())) {
+                    $chipText = 'Due Tomorrow';
+                    $chipClass = 'warning';
+                } else {
+                    $daysLeft = max(1, (int) ceil($now->diffInDays($endDate, false)));
+                    $chipText = 'In ' . $daysLeft . ' days';
+                    $chipClass = $daysLeft <= 3 ? 'warning' : 'primary';
+                }
+
+                $totalTasks = $p->tasks->count();
+                $doneTasks = $p->tasks->where('status', 'Completed')->count();
+                $progressPct = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
+
+                return (object)[
+                    'id' => $p->id,
+                    'name' => $p->project_name,
+                    'client' => optional($p->clients)->name ?? 'Internal Client',
+                    'category' => optional($p->projectCategory)->category_name ?? 'Web App',
+                    'due_text' => (string) $chipText,
+                    'due_class' => $chipClass,
+                    'progress' => $progressPct,
+                    'end_date' => $endDate->format('d M'),
+                ];
+            });
+
+            // ── 6. CSD (Customer Success) Overview ────────────────────────────────
+            $healthyCount = CsdClientAssignment::where('status', 'active')->where('health_status', 'healthy')->count();
+            $attentionCount = CsdClientAssignment::where('status', 'active')->where('health_status', 'at_risk')->count();
+            $churningCount = CsdClientAssignment::where('status', 'active')->where('health_status', 'churning')->count();
+            $adminData['csd_healthy'] = $healthyCount;
+            $adminData['csd_attention'] = $attentionCount;
+            $adminData['csd_at_risk'] = $churningCount;
+
+            // At-risk customers list (Real records only, no dummy data)
+            $adminData['at_risk_customers'] = CsdClientAssignment::with(['client'])
+                ->where('status', 'active')
+                ->whereIn('health_status', ['at_risk', 'churning'])
+                ->take(5)
+                ->get()
+                ->map(function ($a) {
+                    return (object)[
+                        'name' => optional($a->client)->name ?? 'Customer Account',
+                        'reason' => $a->health_status === 'churning' ? 'Payment overdue / Inactive' : 'Pending escalations',
+                        'risk_level' => $a->health_status === 'churning' ? 'High Risk' : 'Medium Risk',
+                        'risk_class' => $a->health_status === 'churning' ? 'danger' : 'warning',
+                    ];
+                });
+
+            // ── 7. Today's Employee Status Mini Table ─────────────────────────────
+            $activeRunningTimers = TaskLog::whereNull('endtime')
+                ->with(['task.project.clients'])
+                ->get()
+                ->keyBy('userid');
+
+            $recentAttendanceUsers = User::where('status', 'Active')
+                ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+                ->with(['departments.dept'])
+                ->take(8)
+                ->get()
+                ->map(function ($u) use ($todayDate, $isSingleDay, $startDate, $endDate, $activeRunningTimers) {
+                    if ($isSingleDay) {
+                        $log = \App\Models\GlobalAttendanceLog::where('userid', $u->id)->where('log_date', $todayDate)->first();
+                        $leave = \App\Models\EmployeeLeave::where('user_id', $u->id)
+                            ->where('status', 'approved')
+                            ->where('start_date', '<=', $todayDate)
+                            ->where('end_date', '>=', $todayDate)
+                            ->first();
+                        $taskHours = round((float) TaskLog::where('userid', $u->id)->where('log_date', $todayDate)->sum('time_spend'), 1);
+                    } else {
+                        $log = \App\Models\GlobalAttendanceLog::where('userid', $u->id)->whereBetween('log_date', [$startDate->toDateString(), $endDate->toDateString()])->latest('log_date')->first();
+                        $leave = \App\Models\EmployeeLeave::where('user_id', $u->id)
+                            ->where('status', 'approved')
+                            ->where('start_date', '<=', $endDate->toDateString())
+                            ->where('end_date', '>=', $startDate->toDateString())
+                            ->first();
+                        $taskHours = round((float) TaskLog::where('userid', $u->id)->whereBetween('log_date', [$startDate->toDateString(), $endDate->toDateString()])->sum('time_spend'), 1);
+                    }
+
+                    $runningTimer = $activeRunningTimers->get($u->id);
+                    $isWorkingNow = ($runningTimer !== null);
+                    $activeTaskTitle = null;
+                    $activeProjectTitle = null;
+                    if ($isWorkingNow && $runningTimer->task) {
+                        $activeTaskTitle = $runningTimer->task->title ?? $runningTimer->task->task_name ?? 'Active Task';
+                        $activeProjectTitle = optional($runningTimer->task->project)->project_name ?? 'Active Project';
+
+                        $now = Carbon::now();
+                        $logDate = $runningTimer->log_date ? Carbon::parse($runningTimer->log_date)->format('Y-m-d') : Carbon::parse($runningTimer->created_at)->format('Y-m-d');
+                        $startedAt = Carbon::parse($logDate . ' ' . ($runningTimer->starttime ?: $runningTimer->created_at->format('H:i:s')));
+                        if ($now->gt($startedAt)) {
+                            $taskHours = round($taskHours + ($startedAt->diffInSeconds($now) / 3600), 1);
+                        }
+                    }
+
+                    $status = 'Absent';
+                    $statusClass = 'danger';
+                    $checkIn = '-';
+                    $checkOut = '-';
+                    $punctuality = null;
+
+                    if ($log) {
+                        $status = 'Present';
+                        $statusClass = 'success';
+                        if ($log->starttime) {
+                            $cIn = Carbon::parse($log->starttime);
+                            $checkIn = $cIn->format('h:i A');
+                            $punctuality = ($cIn->format('H:i:s') > '09:45:00') ? 'Late' : 'On Time';
+                        }
+                        $checkOut = $log->endtime ? Carbon::parse($log->endtime)->format('h:i A') : '-';
+                    } elseif ($leave) {
+                        $status = 'On Leave';
+                        $statusClass = 'warning';
+                    }
+
+                    $shiftHours = $log ? round((float) $log->time_spend, 1) : 0;
+
+                    return (object)[
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'dept' => optional(optional($u->departments)->dept)->name ?? 'Operations',
+                        'status' => $status,
+                        'status_class' => $statusClass,
+                        'is_working_now' => $isWorkingNow,
+                        'active_task' => $activeTaskTitle,
+                        'active_project' => $activeProjectTitle,
+                        'check_in' => $checkIn,
+                        'check_out' => $checkOut,
+                        'punctuality' => $punctuality,
+                        'task_hours' => $taskHours,
+                        'shift_hours' => $shiftHours,
+                    ];
+                });
+            $adminData['employee_status_list'] = $recentAttendanceUsers;
+
+            // ── 8. Top Performers (NSD, OD, CSD) ──────────────────────────────────
+            $adminData['top_nsd_performers'] = User::where('status', 'Active')
+                ->whereHas('departments', fn($q) => $q->where('department', 1))
+                ->with(['roles'])
+                ->withCount([
+                    'clients as deals_count' => fn($q) => $q->where('status', 'Matured')->whereBetween('created_at', [$startDate, $endDate]),
+                    'clients as leads_count' => fn($q) => $q->whereBetween('created_at', [$startDate, $endDate]),
+                ])
+                ->orderByDesc('deals_count')
+                ->take(5)
+                ->get()
+                ->map(function ($u) {
+                    $u->role_name = optional($u->roles->first())->name ?? 'Sales Executive';
+                    return $u;
+                });
+
+            $adminData['top_od_performers'] = User::where('status', 'Active')
+                ->whereHas('departments', fn($q) => $q->where('department', 2))
+                ->with(['roles'])
+                ->withCount([
+                    'tasks as tasks_count' => fn($q) => $q->where('status', 'Completed')->whereBetween('updated_at', [$startDate, $endDate]),
+                    'tasks as active_tasks_count' => fn($q) => $q->where('status', 'InProgress'),
+                ])
+                ->withSum(['taskLogs as total_hours' => fn($q) => $q->whereBetween('created_at', [$startDate, $endDate])], 'time_spend')
+                ->orderByDesc('total_hours')
+                ->orderByDesc('tasks_count')
+                ->take(5)
+                ->get()
+                ->map(function ($u) {
+                    $u->formatted_hours = round((float) ($u->total_hours ?? 0), 1);
+                    $u->role_name = optional($u->roles->first())->name ?? 'Developer';
+                    return $u;
+                });
+
+            $adminData['top_csd_performers'] = User::where('status', 'Active')
+                ->whereHas('departments', fn($q) => $q->where('department', 3))
+                ->with(['roles'])
+                ->withCount(['csdAssignments as retentions_count' => fn($q) => $q->where('status', 'active')])
+                ->orderByDesc('retentions_count')
+                ->take(5)
+                ->get()
+                ->map(function ($u) {
+                    $u->role_name = optional($u->roles->first())->name ?? 'CSD Executive';
+                    return $u;
+                });
+
+            // ── 9. Real Recent Activity Feed ───────────────────────────────────────
+            $realActivities = collect();
+
+            $recentLeads = Clients::latest()->take(3)->get();
+            foreach ($recentLeads as $lead) {
+                $realActivities->push((object)[
+                    'icon' => 'mdi-account-plus',
+                    'color' => 'success',
+                    'bg' => '#ecfdf5',
+                    'text' => 'New lead "' . Str::limit($lead->name, 22) . '" added to pipeline',
+                    'time' => $lead->created_at ? $lead->created_at->diffForHumans(null, true) : 'Recently',
+                    'timestamp' => $lead->created_at ? $lead->created_at->timestamp : 0,
+                ]);
+            }
+
+            $recentTaskLogs = TaskLog::with(['task'])->latest()->take(3)->get();
+            foreach ($recentTaskLogs as $tLog) {
+                if ($tLog->task) {
+                    $realActivities->push((object)[
+                        'icon' => 'mdi-check-circle',
+                        'color' => 'primary',
+                        'bg' => '#eff6ff',
+                        'text' => 'Task "' . Str::limit($tLog->task->title ?? $tLog->task->task_name, 22) . '" worked on',
+                        'time' => $tLog->created_at ? $tLog->created_at->diffForHumans(null, true) : 'Recently',
+                        'timestamp' => $tLog->created_at ? $tLog->created_at->timestamp : 0,
+                    ]);
+                }
+            }
+
+            $recentClosings = DayClosing::with(['user'])->latest()->take(2)->get();
+            foreach ($recentClosings as $cl) {
+                $realActivities->push((object)[
+                    'icon' => 'mdi-clipboard-check',
+                    'color' => 'warning',
+                    'bg' => '#fffbeb',
+                    'text' => 'Daily closing report submitted by ' . optional($cl->user)->name,
+                    'time' => $cl->created_at ? $cl->created_at->diffForHumans(null, true) : 'Recently',
+                    'timestamp' => $cl->created_at ? $cl->created_at->timestamp : 0,
+                ]);
+            }
+
+            $adminData['recent_activities'] = $realActivities->sortByDesc('timestamp')->take(5)->values();
+
+            return $adminData;
+        });
     }
 
     /* =========================================================================

@@ -1,7 +1,7 @@
 {{-- Employee Dashboard Scripts --}}
 <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    function initEmployeeGrowthChart() {
         // Year filter logic
         const yearFilter = document.getElementById('employee_dashboard_year_filter');
         if (yearFilter) {
@@ -77,5 +77,11 @@
             chart.render();
         }
         @endif
-    });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initEmployeeGrowthChart);
+    } else {
+        initEmployeeGrowthChart();
+    }
 </script>

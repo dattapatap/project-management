@@ -196,7 +196,7 @@
                 </div>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item">Projects</li>
+                        <li class="breadcrumb-item"><a href="{{ url('/projects') }}">Projects</a></li>
                         <li class="breadcrumb-item active">Task Board</li>
                     </ol>
                 </div>
@@ -204,7 +204,114 @@
         </div>
     </div>
 
+    @php
+        $totalProjectTasks = $project->tasks->count();
+        $todoCount = count($todo);
+        $inProgressCount = count($inprocess);
+        $completedCount = count($completed);
+        $projectProgress = $totalProjectTasks > 0 ? round(($completedCount / $totalProjectTasks) * 100) : 0;
+        $workingDevs = $project->working_devs;
+        $timeline = $project->timeline_performance;
+        $timeSpentFormatted = $project->total_time_spent_formatted;
+    @endphp
 
+    <!-- Project Details & Overview Banner on Taskboard -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border shadow-sm mb-2" style="border-radius: 12px; background: #ffffff;">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <!-- 1. Client & Category -->
+                        <div class="col-xl-3 col-lg-3 col-md-6 mb-2 mb-lg-0 border-right">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm mr-3 flex-shrink-0">
+                                    <span class="avatar-title rounded-circle bg-soft-primary text-primary font-size-18">
+                                        <i class="mdi mdi-office-building"></i>
+                                    </span>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <p class="text-muted mb-0 small text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Client & Category</p>
+                                    <h6 class="text-dark font-weight-bold mb-1 text-truncate" title="{{ $project->clients->name ?? 'No Client' }}">
+                                        {{ $project->clients->name ?? 'No Client' }}
+                                    </h6>
+                                    <div class="d-flex align-items-center" style="gap: 4px;">
+                                        <span class="badge badge-soft-info px-2 py-0.5 font-size-11">
+                                            <i class="mdi mdi-tag-outline mr-0.5"></i>{{ $project->projectCategory->category ?? 'General' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Timeline (Start & End Date + Timeline Performance) -->
+                        <div class="col-xl-3 col-lg-3 col-md-6 mb-2 mb-lg-0 border-right">
+                            <p class="text-muted mb-1 small text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">
+                                <i class="mdi mdi-calendar-range mr-1 text-primary"></i> Timeline Schedule
+                            </p>
+                            <div class="d-flex align-items-center justify-content-between font-size-12 mb-1">
+                                <span class="text-muted font-size-11">Start: <strong class="text-dark">{{ \Carbon\Carbon::parse($project->start_date)->format('d M Y') }}</strong></span>
+                                <span class="text-muted font-size-11">Due: <strong class="text-dark">{{ \Carbon\Carbon::parse($project->end_date)->format('d M Y') }}</strong></span>
+                            </div>
+                            <div>
+                                <span class="badge {{ $timeline['badge'] }} px-2 py-1 font-size-11 font-weight-semibold">
+                                    <i class="mdi {{ $timeline['icon'] }} mr-1"></i>{{ $timeline['label'] }} ({{ $timeline['detail'] }})
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 3. Total Tasks & Progress -->
+                        <div class="col-xl-3 col-lg-3 col-md-6 mb-2 mb-lg-0 border-right">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <p class="text-muted mb-0 small text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">
+                                    <i class="mdi mdi-checkbox-marked-circle-outline mr-1 text-primary"></i> Total Tasks: <strong class="text-dark">{{ $totalProjectTasks }}</strong>
+                                </p>
+                                <span class="font-weight-bold text-primary font-size-12">{{ $projectProgress }}%</span>
+                            </div>
+                            <div class="progress mb-1.5" style="height: 6px; border-radius: 6px; background-color: #f0f2f8;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $projectProgress }}%; border-radius: 6px;"></div>
+                            </div>
+                            <div class="d-flex align-items-center font-size-11 text-muted justify-content-between flex-wrap" style="gap: 4px;">
+                                <span class="badge badge-soft-danger px-1.5 py-0.5">ToDo: {{ $todoCount }}</span>
+                                <span class="badge badge-soft-warning px-1.5 py-0.5">In Progress: {{ $inProgressCount }}</span>
+                                <span class="badge badge-soft-success px-1.5 py-0.5">Done: {{ $completedCount }}</span>
+                                <span class="badge badge-light border text-dark px-1.5 py-0.5" title="Total Time Spent"><i class="mdi mdi-clock-outline text-primary mr-0.5"></i>{{ $timeSpentFormatted }}</span>
+                            </div>
+                        </div>
+
+                        <!-- 4. Working Devs & Quick Details Link -->
+                        <div class="col-xl-3 col-lg-3 col-md-6">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <p class="text-muted mb-0 small text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">
+                                    <i class="mdi mdi-account-group-outline mr-1 text-primary"></i> Working Devs ({{ $workingDevs->count() }})
+                                </p>
+                                <a href="{{ url('/projects/' . base64_encode($project->id) . '/history') }}" class="btn btn-sm btn-soft-primary px-2 py-0.5 font-size-11" title="View Full Project History & Details">
+                                    <i class="mdi mdi-eye-outline mr-1"></i> Details
+                                </a>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                                @forelse($workingDevs->take(5) as $dev)
+                                    <div class="d-inline-flex align-items-center" title="{{ $dev->name }} ({{ $dev->roles->pluck('name')->first() ?? 'Developer' }})">
+                                        @if($dev->profile)
+                                            <img src="{{ asset('storage/' . $dev->profile) }}" alt="{{ $dev->name }}" class="rounded-circle border border-white shadow-sm" style="width: 28px; height: 28px; object-fit: cover;" data-toggle="tooltip" data-placement="top" title="{{ $dev->name }}">
+                                        @else
+                                            <img src="{{ Avatar::create($dev->name)->toBase64() }}" alt="{{ $dev->name }}" class="rounded-circle border border-white shadow-sm" style="width: 28px; height: 28px;" data-toggle="tooltip" data-placement="top" title="{{ $dev->name }}">
+                                        @endif
+                                    </div>
+                                @empty
+                                    <span class="text-muted font-size-11 italic"><i class="mdi mdi-account-off-outline mr-1"></i>No devs assigned</span>
+                                @endforelse
+                                @if($workingDevs->count() > 5)
+                                    <span class="avatar-title rounded-circle bg-light border text-muted font-size-10 font-weight-bold" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;" data-toggle="tooltip" data-placement="top" title="+{{ $workingDevs->count() - 5 }} more devs">
+                                        +{{ $workingDevs->count() - 5 }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="row">
         <div id="kanbanCustomBoard" class="js-kanban">

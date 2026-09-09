@@ -217,4 +217,26 @@ function client_category_active(string $slug): bool
     return current_client_category_slug() === $slug;
 }
 
+if (!function_exists('format_timing_hours')) {
+    /**
+     * Format decimal hours to timing format (e.g. 15.75 decimal hrs -> "15.45" hrs, representing 15 hours and 45 minutes)
+     */
+    function format_timing_hours($decimalHours): string
+    {
+        if (!$decimalHours || $decimalHours <= 0) {
+            return '0.00';
+        }
+
+        $hours = floor($decimalHours);
+        $minutes = (int) round(($decimalHours - $hours) * 60);
+
+        if ($minutes >= 60) {
+            $hours += 1;
+            $minutes = 0;
+        }
+
+        return sprintf('%d.%02d', $hours, $minutes);
+    }
+}
+
 ?>

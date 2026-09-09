@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DailyTargetsExport;
 use App\Models\DailyTarget;
 use App\Models\User;
 use App\Services\BranchScopeService;
 use App\Services\DailyClosingService;
 use App\Services\UserPerformanceService;
 use Auth;
+use Carbon\Carbon;
+use Excel;
 use Illuminate\Http\Request;
 use Validator;
 
@@ -144,9 +147,12 @@ class DailyTargetController extends Controller
             $endDate = $startDate->copy()->addDays(31);
         }
 
-        // Generate date list desc (most recent first)
+        // Generate date list desc (most recent first), excluding Sundays
         $dateList = [];
         for ($d = $endDate->copy(); $d->gte($startDate); $d->subDay()) {
+            if ($d->isSunday()) {
+                continue;
+            }
             $dateList[] = $d->format('Y-m-d');
         }
 
@@ -175,9 +181,11 @@ class DailyTargetController extends Controller
         $employeeIds = $allEmployees->pluck('id')->toArray();
         $dayClosings = \App\Models\DayClosing::whereIn('user_id', $employeeIds)
             ->whereBetween('closing_date', [$startDateStr, $endDateStr])
+            ->with('approver')
             ->get()
             ->groupBy(function ($dc) {
-                return $dc->user_id . '_' . $dc->closing_date;
+                $date = $dc->closing_date instanceof \Carbon\Carbon ? $dc->closing_date->format('Y-m-d') : \Carbon\Carbon::parse($dc->closing_date)->format('Y-m-d');
+                return $dc->user_id . '_' . $date;
             });
 
         // 4. Generate all rows combinations
@@ -236,7 +244,48 @@ class DailyTargetController extends Controller
         $length = intval($request->input('length', 25));
         $paginatedRows = array_slice($allRows, $start, $length);
 
-        // 7. Format Output Data
+        // 7. Calculate Summary Metrics (especially when specific user is selected)
+        $selectedEmp = null;
+        if ($request->filled('employee_id')) {
+            $selectedEmp = $allEmployees->firstWhere('id', (int) $request->employee_id);
+        }
+
+        $todayStr = \Carbon\Carbon::today()->format('Y-m-d');
+        $totalWorkingDays = 0;
+        $submittedDaysCount = 0;
+        $missedDaysCount = 0;
+        $metTargetsCount = 0;
+        $missedDates = [];
+
+        if ($selectedEmp) {
+            foreach ($dateList as $dStr) {
+                $dCarbon = \Carbon\Carbon::parse($dStr);
+                if ($dCarbon->gt(\Carbon\Carbon::today())) {
+                    continue;
+                }
+
+                $key = $selectedEmp->id . '_' . $dStr;
+                $dc = isset($dayClosings[$key]) ? $dayClosings[$key]->first() : null;
+
+                $totalWorkingDays++;
+                if ($dc) {
+                    $submittedDaysCount++;
+                    if ($dc->target_status === 'Met') {
+                        $metTargetsCount++;
+                    }
+                } else {
+                    if ($dStr < $todayStr) {
+                        $missedDaysCount++;
+                        $missedDates[] = [
+                            'date' => $dStr,
+                            'formatted' => $dCarbon->format('d M (D)'),
+                        ];
+                    }
+                }
+            }
+        }
+
+        // 8. Format Output Data
         $formattedData = [];
         foreach ($paginatedRows as $row) {
             $dateStr = $row['date'];
@@ -260,7 +309,7 @@ class DailyTargetController extends Controller
                 $metrics = $this->closingService->getTodayMetrics($emp, $dateStr);
                 $remarks = '-';
 
-                if ($dateStr === \Carbon\Carbon::today()->format('Y-m-d')) {
+                if ($dateStr === $todayStr) {
                     $targetStatus = 'Pending';
                     $closingStatus = 'Not Submitted';
                 } else {
@@ -269,63 +318,67 @@ class DailyTargetController extends Controller
                 }
             }
 
-            // Build Target Parameters presentation
+            // Build Target Parameters presentation with timing format (Calculated values only)
             $paramHTML = '<div class="font-size-12" style="line-height: 1.6;">';
             if ($deptUpper === 'NSD') {
                 $actualSts = $metrics['sts'] ?? 0;
-                $targetSts = $userTargets['sts_updates'] ?? 45;
                 $actualDsr = $metrics['dsr'] ?? 0;
-                $targetDsr = $userTargets['dsr_updates'] ?? 2;
 
-                $paramHTML .= '<div>STS: <strong>' . $actualSts . '</strong> / ' . $targetSts . '</div>';
-                $paramHTML .= '<div>DSR: <strong>' . $actualDsr . '</strong> / ' . $targetDsr . '</div>';
+                $paramHTML .= '<div class="d-flex justify-content-between"><span class="text-muted mr-2">STS Updates:</span> <strong>' . $actualSts . '</strong></div>';
+                $paramHTML .= '<div class="d-flex justify-content-between"><span class="text-muted mr-2">DSR Updates:</span> <strong>' . $actualDsr . '</strong></div>';
             } elseif ($deptUpper === 'CSD') {
-                $actualGlobal = $metrics['global_hours'] ?? 0;
-                $targetGlobal = $userTargets['global_hours'] ?? 7;
+                $actualGlobal = format_timing_hours($metrics['global_hours'] ?? 0);
                 $actualComms = $metrics['communications'] ?? 0;
-                $targetComms = $userTargets['communications'] ?? 15;
 
-                $paramHTML .= '<div>Work Hours: <strong>' . $actualGlobal . 'h</strong> / ' . $targetGlobal . 'h</div>';
-                $paramHTML .= '<div>Comms: <strong>' . $actualComms . '</strong> / ' . $targetComms . '</div>';
+                $paramHTML .= '<div class="d-flex justify-content-between"><span class="text-muted mr-2">Work Hours:</span> <strong>' . $actualGlobal . 'h</strong></div>';
+                $paramHTML .= '<div class="d-flex justify-content-between"><span class="text-muted mr-2">Communications:</span> <strong>' . $actualComms . '</strong></div>';
             } elseif ($deptUpper === 'OD') {
-                $actualGlobal = $metrics['global_hours'] ?? 0;
-                $targetGlobal = $userTargets['global_hours'] ?? 7;
-                $actualHours = $metrics['hours'] ?? 0;
-                $targetHours = $userTargets['hours_logged'] ?? 6;
+                $actualGlobal = format_timing_hours($metrics['global_hours'] ?? 0);
+                $actualHours = format_timing_hours($metrics['hours'] ?? 0);
                 $actualTasks = $metrics['tasks'] ?? 0;
-                $targetTasks = $userTargets['tasks_completed'] ?? 1;
 
-                $paramHTML .= '<div>Work Hours: <strong>' . $actualGlobal . 'h</strong> / ' . $targetGlobal . 'h</div>';
-                $paramHTML .= '<div>Task Hours: <strong>' . $actualHours . 'h</strong> / ' . $targetHours . 'h</div>';
-                $paramHTML .= '<div>Tasks: <strong>' . $actualTasks . '</strong> / ' . $targetTasks . '</div>';
+                $paramHTML .= '<div class="d-flex justify-content-between"><span class="text-muted mr-2">Work Hours:</span> <strong>' . $actualGlobal . 'h</strong></div>';
+                $paramHTML .= '<div class="d-flex justify-content-between"><span class="text-muted mr-2">Task Hours:</span> <strong>' . $actualHours . 'h</strong></div>';
+                $paramHTML .= '<div class="d-flex justify-content-between"><span class="text-muted mr-2">Tasks Done:</span> <strong>' . $actualTasks . '</strong></div>';
             }
             $paramHTML .= '</div>';
 
             // Target Status Badge
             $targetStatusBadge = '';
             if ($targetStatus === 'Met') {
-                $targetStatusBadge = '<span class="badge badge-soft-success px-2.5 py-1">Met</span>';
+                $targetStatusBadge = '<span class="badge badge-soft-success px-2.5 py-1 font-size-11 font-weight-bold"><i class="mdi mdi-check-circle mr-0.5"></i> Met</span>';
             } elseif ($targetStatus === 'Not Met') {
-                $targetStatusBadge = '<span class="badge badge-soft-danger px-2.5 py-1">Not Met</span>';
+                $targetStatusBadge = '<span class="badge badge-soft-danger px-2.5 py-1 font-size-11 font-weight-bold"><i class="mdi mdi-close-circle mr-0.5"></i> Not Met</span>';
             } else {
-                $targetStatusBadge = '<span class="badge badge-soft-warning px-2.5 py-1">' . htmlspecialchars($targetStatus) . '</span>';
+                $targetStatusBadge = '<span class="badge badge-soft-warning px-2.5 py-1 font-size-11 font-weight-medium">' . htmlspecialchars($targetStatus) . '</span>';
             }
 
             // Approval Status Badge
             $approvalBadge = '';
             if ($closingStatus === 'Approved') {
-                $approvalBadge = '<span class="badge badge-success px-2 py-0.5">Approved</span>';
+                $approverName = $item?->approver?->name;
+                $approvalBadge = '<span class="badge badge-soft-success px-2.5 py-1 font-size-11 font-weight-medium"><i class="mdi mdi-check-decagram mr-0.5"></i> Approved</span>';
+                if ($approverName) {
+                    $approvalBadge .= '<br><small class="text-muted font-size-11 mt-0.5 d-inline-block"><i class="mdi mdi-account-check mr-0.5 text-success"></i> by ' . htmlspecialchars($approverName) . '</small>';
+                }
             } elseif ($closingStatus === 'Pending') {
-                $approvalBadge = '<span class="badge badge-warning px-2 py-0.5">Pending</span>';
+                $approvalBadge = '<span class="badge badge-soft-warning px-2.5 py-1 font-size-11 font-weight-medium"><i class="mdi mdi-timer-sand mr-0.5"></i> Awaiting Approval</span>';
             } elseif ($closingStatus === 'Not Submitted') {
-                $approvalBadge = '<span class="badge badge-soft-secondary px-2 py-0.5" style="background-color: rgba(108, 117, 125, 0.15); color: #6c757d;">Not Submitted</span>';
+                if ($dateStr === $todayStr) {
+                    $approvalBadge = '<span class="badge badge-soft-info px-2.5 py-1 font-size-11 font-weight-medium"><i class="mdi mdi-clock-outline mr-0.5"></i> Pending Today</span>';
+                } else {
+                    $approvalBadge = '<span class="badge badge-soft-danger px-2.5 py-1 font-size-11 font-weight-bold" style="background-color: #fee2e2; color: #dc2626;"><i class="mdi mdi-alert-circle mr-0.5"></i> Submission Missed</span>';
+                }
             } else {
-                $approvalBadge = '<span class="badge badge-danger px-2 py-0.5">' . htmlspecialchars($closingStatus) . '</span>';
+                $approvalBadge = '<span class="badge badge-soft-secondary px-2.5 py-1 font-size-11">' . htmlspecialchars($closingStatus) . '</span>';
             }
 
+            $dateCarbon = \Carbon\Carbon::parse($dateStr);
+            $dateFormatted = '<strong>' . $dateCarbon->format('d-M-Y') . '</strong><br><small class="text-muted font-size-11">' . $dateCarbon->format('l') . '</small>';
+
             $formattedData[] = [
-                'date' => \Carbon\Carbon::parse($dateStr)->format('d-M-Y'),
-                'employee' => '<strong>' . htmlspecialchars($emp->name) . '</strong>',
+                'date' => $dateFormatted,
+                'employee' => '<strong>' . htmlspecialchars($emp->name) . '</strong><br><small class="text-muted">#EMP-' . ($emp->id + 1000) . '</small>',
                 'department' => '<span class="badge badge-dept text-uppercase badge-' . strtolower($deptType) . '">' . htmlspecialchars($deptType) . '</span><br><small class="text-muted">' . htmlspecialchars($roleName) . '</small>',
                 'parameters' => $paramHTML,
                 'target_status' => $targetStatusBadge,
@@ -339,6 +392,17 @@ class DailyTargetController extends Controller
             'recordsTotal' => $totalRecords,
             'recordsFiltered' => $totalRecords,
             'data' => $formattedData,
+            'summary' => [
+                'has_employee' => !is_null($selectedEmp),
+                'employee_name' => $selectedEmp?->name,
+                'department' => strtoupper($selectedEmp?->dept_type ?? ''),
+                'total_working_days' => $totalWorkingDays,
+                'submitted_days_count' => $submittedDaysCount,
+                'missed_days_count' => $missedDaysCount,
+                'missed_dates' => $missedDates,
+                'met_targets_count' => $metTargetsCount,
+                'submission_rate' => $totalWorkingDays > 0 ? round(($submittedDaysCount / $totalWorkingDays) * 100) : 0,
+            ]
         ]);
     }
 
@@ -393,5 +457,23 @@ class DailyTargetController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    public function export(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user->isGlobalAdmin() && !$user->hasRole('Branch-Manager')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $employeeId = $request->input('employee_id');
+        $startDateStr = $request->input('start_date');
+        $endDateStr = $request->input('end_date');
+
+        return Excel::download(
+            new DailyTargetsExport($employeeId, $startDateStr, $endDateStr, $user),
+            Carbon::today()->toDateString() . '_daily_targets.xlsx',
+            \Maatwebsite\Excel\Excel::XLSX
+        );
     }
 }

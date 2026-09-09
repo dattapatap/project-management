@@ -25,7 +25,7 @@ class TaskController extends Controller
     public function index(Request $request)
     {
         $project_id = base64_decode($request->project);
-        $project    = DepartmentProjects::findOrFail($project_id);
+        $project    = DepartmentProjects::with(['clients', 'projectCategory', 'tasks.user', 'tasks.logs.user'])->findOrFail($project_id);
         $user       = Auth::user();
 
         // Scope tasks to user if they are a regular employee
@@ -44,6 +44,14 @@ class TaskController extends Controller
     }
 
     public function create(Task $task) {}
+
+    public function listAllTasks(Request $request)
+    {
+        $user = Auth::user();
+        $data = $this->taskService->getTaskListingData($user, $request);
+
+        return view('components.tasks.index', $data);
+    }
 
     public function addtask(TaskRequest $request)
     {
@@ -76,11 +84,22 @@ class TaskController extends Controller
     public function edit(Task $task)
     {
         if ($task) {
-            $isAssignedToTl = $task->user ? $task->user->hasRole('Team-Leader') : false;
+            $user = Auth::user();
+            $isAssignedOutsideOwnTeam = false;
+
+            if ($user->hasRole('Team-Leader')) {
+                $currentTeam = \App\Models\TeamMembers::where('user', $user->id)->where('status', true)->value('team');
+                $assignedTeam = \App\Models\TeamMembers::where('user', $task->assigned_to)->where('status', true)->value('team');
+                $isAssignedToTl = $task->user ? $task->user->hasRole('Team-Leader') : false;
+                $isAssignedOutsideOwnTeam = ($isAssignedToTl && $task->assigned_to != $user->id) || ($currentTeam && $assignedTeam && $currentTeam != $assignedTeam);
+            } else {
+                $isAssignedOutsideOwnTeam = $task->user ? $task->user->hasRole('Team-Leader') : false;
+            }
+
             return response()->json([
                 'success' => true, 
                 'task' => $task,
-                'is_assigned_to_tl' => $isAssignedToTl
+                'is_assigned_to_tl' => $isAssignedOutsideOwnTeam
             ]);
         } else {
             return response()->json(['success' => false, 'message' => "Task not exist"]);

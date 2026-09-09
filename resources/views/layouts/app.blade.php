@@ -158,9 +158,9 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                     @endif
                     {{-- End Global Timer Widget --}}
 
-                    {{-- Start Add Task Shortcut Button --}}
+                    {{-- Start Add Task Shortcut Button (Excluded for Admin) --}}
                     @auth
-                    @if($user->hasRole(['Admin', 'Branch-Manager', 'Project-Manager']) || ($user->hasRole('Team-Leader') && optional($user->departments)->department == 2))
+                    @if(!$user->hasRole('Admin') && ($user->hasRole(['Branch-Manager', 'Project-Manager']) || ($user->hasRole('Team-Leader') && optional($user->departments)->department == 2)))
                     <div class="d-inline-flex align-items-center mr-3" style="align-self: center;">
                         <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-weight-bold btn_header_add_task" style="height: 36px; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: none;">
                             <i class="mdi mdi-plus-circle font-size-14 text-white"></i> Add Task
@@ -465,12 +465,53 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
     <script type="module">
         window.Echo.private('post_like.{{ $user->id }}')
             .notification((notification) => {
-                let notif = notification.notifications;
-                swal(notif.header)
-                    .then((value) => {
-                        window.location.href = notif.link;
+                let notif = notification.notifications || notification;
+                let title = notif.header || notif.title || 'New Notification';
+                let message = notif.data || notif.message || notif.body || 'You have received a new update.';
+                let link = notif.link || null;
+
+                // Dynamically update the unread notification badge in navbar if present
+                let badge = $('#page-header-notifications-dropdown .badge');
+                if (badge.length) {
+                    let currentText = badge.text().trim().replace('+', '').replace('New ', '');
+                    let currentCount = parseInt(currentText) || 0;
+                    badge.text(currentCount + 1 > 99 ? '+99' : (currentCount + 1)).show();
+                }
+
+                // Show action popup with Cancel and Open options
+                if (typeof swal === 'function') {
+                    swal({
+                        title: title,
+                        text: message,
+                        icon: "info",
+                        buttons: {
+                            cancel: {
+                                text: "Cancel",
+                                value: false,
+                                visible: true,
+                                className: "btn btn-secondary waves-effect shadow-sm",
+                                closeModal: true,
+                            },
+                            confirm: {
+                                text: "Open",
+                                value: true,
+                                visible: true,
+                                className: "btn btn-primary waves-effect waves-light shadow-sm",
+                                closeModal: true,
+                            }
+                        },
+                        closeOnClickOutside: true,
+                        closeOnEsc: true,
+                    }).then((isConfirm) => {
+                        // Only navigate if user explicitly clicked 'Open'
+                        if (isConfirm === true && link) {
+                            window.location.href = link;
+                        }
                     });
-            })
+                } else if (typeof showModernToast === 'function') {
+                    showModernToast('info', title + ': ' + message);
+                }
+            });
     </script>
     <!-- JAVASCRIPT -->
     <script src="{{ asset('assets/libs/metismenu/metisMenu.min.js') }}"></script>
@@ -786,6 +827,14 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                     });
                 })();
             @endif
+
+            // Global Modal Close Fix for all Bootstrap / jQuery modals
+            $(document).on('click', '[data-dismiss="modal"], [data-bs-dismiss="modal"], .btnmdlclose, .close', function(e) {
+                var modal = $(this).closest('.modal');
+                if (modal.length) {
+                    modal.modal('hide');
+                }
+            });
         });
     </script>
 

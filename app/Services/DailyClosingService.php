@@ -36,7 +36,7 @@ class DailyClosingService
         if ($activeLog) {
             $now = Carbon::now();
             $startedAt = Carbon::parse($activeLog->log_date . ' ' . $activeLog->starttime);
-            $capTime = Carbon::parse($activeLog->log_date . ' 21:00:00');
+            $capTime = Carbon::parse($activeLog->log_date . ' 23:00:00');
 
             if ($now->gt($capTime)) {
                 $endTime = $capTime;
@@ -87,9 +87,44 @@ class DailyClosingService
         }
 
         // Default: OD
-        $hoursLogged = TaskLog::where('userid', $userId)
-            ->whereDate('created_at', $date)
+        $hoursLogged = (float) TaskLog::where('userid', $userId)
+            ->where(function ($q) use ($date) {
+                $q->whereDate('log_date', $date)
+                  ->orWhereDate('created_at', $date);
+            })
+            ->whereNotNull('endtime')
             ->sum('time_spend');
+
+        // Include ongoing/running task timer up to the current moment
+        $activeTaskLog = TaskLog::where('userid', $userId)
+            ->where(function ($q) use ($date) {
+                $q->whereDate('log_date', $date)
+                  ->orWhereDate('created_at', $date);
+            })
+            ->whereNull('endtime')
+            ->latest('id')
+            ->first();
+
+        if ($activeTaskLog) {
+            $now = Carbon::now();
+            $logDate = $activeTaskLog->log_date ? Carbon::parse($activeTaskLog->log_date)->format('Y-m-d') : Carbon::parse($activeTaskLog->created_at)->format('Y-m-d');
+            $startedAt = Carbon::parse($logDate . ' ' . ($activeTaskLog->starttime ?: $activeTaskLog->created_at->format('H:i:s')));
+            $capTime = Carbon::parse($logDate . ' 23:00:00');
+
+            if ($now->gt($capTime)) {
+                $endTime = $capTime;
+            } else {
+                $endTime = $now;
+            }
+
+            if ($startedAt->gt($endTime)) {
+                $endTime = $startedAt;
+            }
+
+            $durationSeconds = $startedAt->diffInSeconds($endTime);
+            $runningHours = $durationSeconds / 3600;
+            $hoursLogged += $runningHours;
+        }
 
         $tasksCompleted = Task::where('assigned_to', $userId)
             ->where('status', 'Completed')

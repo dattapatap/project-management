@@ -377,10 +377,17 @@
                 <ul class="list-unstyled mb-0">
                     <li class="mb-4">
                         <p class="text-muted mb-2 small uppercase font-weight-bold">
-                            <i class="mdi mdi-calendar-range mr-1"></i> Timeline
+                            <i class="mdi mdi-calendar-range mr-1"></i> Timeline (Est.)
                         </p>
-                        <div class="font-weight-medium">
-                            {{ \Carbon\Carbon::parse($task->startdate)->format('d M y') }} - {{ \Carbon\Carbon::parse($task->enddate)->format('d M y') }}
+                        <div class="font-size-12">
+                            <div class="mb-1.5 text-dark">
+                                <span class="text-muted font-size-11 d-block">Start Date & Time:</span>
+                                <span class="font-weight-semibold"><i class="mdi mdi-clock-start text-primary mr-1"></i>{{ \Carbon\Carbon::parse($task->startdate)->format('d M Y, h:i A') }}</span>
+                            </div>
+                            <div class="text-dark">
+                                <span class="text-muted font-size-11 d-block">Due Date & Time:</span>
+                                <span class="font-weight-semibold"><i class="mdi mdi-clock-end text-danger mr-1"></i>{{ \Carbon\Carbon::parse($task->enddate)->format('d M Y, h:i A') }}</span>
+                            </div>
                         </div>
                     </li>
 
@@ -389,12 +396,12 @@
                             <i class="mdi mdi-account-star mr-1"></i> Assigned To
                         </p>
                         <div class="d-flex align-items-center">
-                            @if ($task->user->profile)
+                            @if ($task->user && $task->user->profile)
                             <img class="rounded-circle mr-2" style="width: 30px; height: 30px;" src="{{ asset('storage/' . $task->user->profile) }}">
                             @else
-                            <img class="rounded-circle mr-2" style="width: 30px; height: 30px;" src="{{ Avatar::create($task->user->name)->toBase64() }}">
+                            <img class="rounded-circle mr-2" style="width: 30px; height: 30px;" src="{{ Avatar::create($task->user->name ?? 'Unassigned')->toBase64() }}">
                             @endif
-                            <span class="font-weight-bold">{{ $task->user->name }}</span>
+                            <span class="font-weight-bold">{{ $task->user->name ?? 'Unassigned' }}</span>
                         </div>
                     </li>
 
@@ -412,8 +419,8 @@
                         <p class="text-muted mb-2 small uppercase font-weight-bold">
                             <i class="mdi mdi-calendar-check mr-1"></i> Actual Start
                         </p>
-                        <div class="text-success font-weight-medium">
-                            {{ \Carbon\Carbon::parse($task->act_startdate)->format('d M y') }}
+                        <div class="text-success font-weight-semibold font-size-12">
+                            <i class="mdi mdi-clock-start mr-1"></i>{{ \Carbon\Carbon::parse($task->act_startdate)->format('d M Y, h:i A') }}
                         </div>
                     </li>
                     @endif
@@ -431,13 +438,13 @@
                         </div>
                     </li>
 
-                    @if ($task->status == 'Completed')
+                    @if ($task->status == 'Completed' && $task->act_enddate)
                     <li class="mb-4 p-3 rounded" style="background: rgba(52, 195, 143, 0.05); border-left: 3px solid #34c38f;">
                         <p class="text-success mb-1 small uppercase font-weight-bold">
                             <i class="mdi mdi-check-decagram mr-1"></i> Completed On
                         </p>
-                        <div class="font-weight-bold text-success">
-                            {{ \Carbon\Carbon::parse($task->act_enddate)->format('d M y') }}
+                        <div class="font-weight-bold text-success font-size-12">
+                            <i class="mdi mdi-clock-check-outline mr-1"></i>{{ \Carbon\Carbon::parse($task->act_enddate)->format('d M Y, h:i A') }}
                         </div>
                     </li>
                     @endif
@@ -446,14 +453,19 @@
                         <p class="text-muted mb-2 small uppercase font-weight-bold">
                             <i class="mdi mdi-account-edit mr-1"></i> Created By
                         </p>
-                        <div class="d-flex align-items-center">
-                            @if ($task->createdby->profile)
+                        <div class="d-flex align-items-center mb-1">
+                            @if ($task->createdby && $task->createdby->profile)
                             <img class="rounded-circle mr-2" style="width: 24px; height: 24px;" src="{{ asset('storage/' . $task->createdby->profile) }}">
                             @else
-                            <img class="rounded-circle mr-2" style="width: 24px; height: 24px;" src="{{ Avatar::create($task->createdby->name)->toBase64() }}">
+                            <img class="rounded-circle mr-2" style="width: 24px; height: 24px;" src="{{ Avatar::create($task->createdby->name ?? 'Admin')->toBase64() }}">
                             @endif
-                            <span class="text-muted small">{{ $task->createdby->name }}</span>
+                            <span class="text-dark font-weight-bold font-size-12">{{ $task->createdby->name ?? 'Admin' }}</span>
                         </div>
+                        @if($task->created_at)
+                        <small class="text-muted d-block font-size-11">
+                            <i class="mdi mdi-clock-outline mr-1"></i>{{ \Carbon\Carbon::parse($task->created_at)->format('d M Y, h:i A') }}
+                        </small>
+                        @endif
                     </li>
                 </ul>
             </div>
@@ -513,7 +525,7 @@
                                     </div>
                                     <div class="d-flex gap-2 align-items-center">
                                         @if($task->assigned_to == Auth::id())
-                                        @php $activeTimer = $task->activeTimerForUser(Auth::id()); @endphp
+                                         @php $activeTimer = $task->activeTimerForUser(Auth::id()); @endphp
                                         <div class="task-timer-widget {{ $activeTimer ? 'timer-running' : '' }}" data-task-id="{{ $task->id }}" style="margin-top: 0;">
                                             @if($activeTimer)
                                                 <span class="timer-rec-dot"></span>
@@ -599,15 +611,40 @@
                             @php
                             $activities = collect();
                             // Add History (Status/Progress changes)
-                            foreach($task->histories as $history) {
-                            $activities->push([
-                            'type' => 'history',
-                            'date' => $history->created_at,
-                            'user' => $history->user->name ?? 'User',
-                            'title' => 'System Update',
-                            'description' => $history->comments,
-                            'raw' => $history
-                            ]);
+                            if ($task->histories) {
+                                foreach($task->histories as $history) {
+                                    $activities->push([
+                                        'type' => 'history',
+                                        'date' => $history->created_at,
+                                        'user' => $history->user->name ?? 'User',
+                                        'title' => 'System Update',
+                                        'description' => $history->comments,
+                                        'raw' => $history
+                                    ]);
+                                }
+                            }
+                            // Add Task Time Logs
+                            if ($task->logs) {
+                                foreach($task->logs as $log) {
+                                    $timeWindow = '';
+                                    if ($log->starttime && $log->endtime) {
+                                        $timeWindow = \Carbon\Carbon::parse($log->starttime)->format('h:i A') . ' - ' . \Carbon\Carbon::parse($log->endtime)->format('h:i A');
+                                    } elseif ($log->starttime) {
+                                        $timeWindow = 'Started at ' . \Carbon\Carbon::parse($log->starttime)->format('h:i A') . ' (In Progress)';
+                                    }
+                                    $logDate = $log->created_at ?? ($log->log_date ? \Carbon\Carbon::parse($log->log_date . ' ' . ($log->starttime ?: '00:00:00')) : now());
+                                    $activities->push([
+                                        'type' => 'log',
+                                        'date' => $logDate,
+                                        'user' => $log->user->name ?? 'User',
+                                        'title' => 'Work Time Log',
+                                        'description' => $log->log_description ?: 'Worked on task',
+                                        'duration' => $log->time_spend,
+                                        'time_window' => $timeWindow,
+                                        'is_running' => is_null($log->endtime),
+                                        'raw' => $log
+                                    ]);
+                                }
                             }
                             $activities = $activities->sortByDesc('date');
                             @endphp
@@ -615,31 +652,33 @@
                             @forelse ($activities as $item)
                             <div class="activity-item pb-4 border-left ml-2 pl-4 position-relative" style="border-left: 2px solid #e9ecef !important;">
                                 <div class="activity-dot {{ $item['type'] == 'log' ? 'bg-primary' : 'bg-warning' }}" style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%;"></div>
-                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap">
                                     <h6 class="mb-0 font-weight-bold text-dark">{{ $item['title'] }}</h6>
-                                    <small class="text-muted font-size-12">
-                                        <i class="mdi mdi-clock-outline mr-1"></i>{{ $item['date']->diffForHumans() }}
-                                    </small>
+                                    <span class="badge badge-light border text-muted font-size-11 font-weight-normal px-2 py-1">
+                                        <i class="mdi mdi-calendar-clock mr-1 text-primary"></i>{{ \Carbon\Carbon::parse($item['date'])->format('d M Y, h:i A') }}
+                                    </span>
                                 </div>
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="avatar-xs mr-2">
+                                <div class="d-flex align-items-center mb-2 flex-wrap" style="gap: 4px;">
+                                    <div class="avatar-xs mr-1.5">
                                         <span class="avatar-title rounded-circle bg-soft-primary text-primary font-size-10">
                                             {{ substr($item['user'], 0, 1) }}
                                         </span>
                                     </div>
-                                    <span class="font-size-12 text-muted font-weight-medium">by {{ $item['user'] }}</span>
+                                    <span class="font-size-12 text-muted font-weight-medium mr-2">by {{ $item['user'] }}</span>
                                     @if($item['type'] == 'log')
-                                    <span class="mx-2 text-muted">•</span>
-                                    @if(!empty($item['is_running']))
-                                    <span class="badge badge-soft-danger font-size-11"><i class="mdi mdi-record mr-1" style="animation: rec-blink 1s ease-in-out infinite;"></i> Running</span>
-                                    @else
-                                    @php
-                                    $itemMinutes = round(($item['duration'] ?? 0) * 60);
-                                    $itemH = floor($itemMinutes / 60);
-                                    $itemM = $itemMinutes % 60;
-                                    @endphp
-                                    <span class="badge badge-soft-success font-size-11">{{ $itemH }}h {{ $itemM }}m</span>
-                                    @endif
+                                        @if(!empty($item['is_running']))
+                                            <span class="badge badge-soft-danger font-size-11"><i class="mdi mdi-record mr-1" style="animation: rec-blink 1s ease-in-out infinite;"></i> Running</span>
+                                        @else
+                                            @php
+                                            $itemMinutes = round(($item['duration'] ?? 0) * 60);
+                                            $itemH = floor($itemMinutes / 60);
+                                            $itemM = $itemMinutes % 60;
+                                            @endphp
+                                            <span class="badge badge-soft-success font-size-11">{{ $itemH }}h {{ $itemM }}m</span>
+                                        @endif
+                                        @if(!empty($item['time_window']))
+                                            <span class="badge badge-light border font-size-11 text-dark"><i class="mdi mdi-clock-outline mr-0.5 text-primary"></i> {{ $item['time_window'] }}</span>
+                                        @endif
                                     @endif
                                 </div>
                                 <p class="mb-0 text-muted" style="font-size: 14px;">{{ $item['description'] }}</p>
@@ -662,15 +701,17 @@
                         <div class="comments-list mb-4">
                             @foreach ($task->comments as $item)
                             <div class="comment-bubble">
-                                @if ($item->user->profile)
+                                @if ($item->user && $item->user->profile)
                                 <img class="comment-avatar border" src="{{ asset('storage/' . $item->user->profile) }}">
                                 @else
-                                <img class="comment-avatar border" src="{{ Avatar::create($item->user->name)->toBase64() }}">
+                                <img class="comment-avatar border" src="{{ Avatar::create($item->user->name ?? 'User')->toBase64() }}">
                                 @endif
                                 <div class="comment-body shadow-none border">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="comment-author text-dark">{{ $item->user->name }}</span>
-                                        <span class="text-muted small"><i class="mdi mdi-clock-outline mr-1"></i>{{ \Carbon\Carbon::parse($item->created_at)->diffForHumans() }}</span>
+                                    <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap">
+                                        <span class="comment-author text-dark font-weight-bold">{{ $item->user->name ?? 'User' }}</span>
+                                        <span class="badge badge-light border text-muted font-size-11 font-weight-normal px-2 py-1">
+                                            <i class="mdi mdi-calendar-clock mr-1 text-primary"></i>{{ \Carbon\Carbon::parse($item->created_at)->format('d M Y, h:i A') }}
+                                        </span>
                                     </div>
                                     <div class="text-muted" style="font-size: 14px;">
                                         {{ $item->comment }}

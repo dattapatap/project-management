@@ -125,15 +125,9 @@
                 <div class="card-body p-4 p-md-5">
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <h4 class="text-premium-dark font-size-16 mb-0">📊 Today's Progress Report ({{ date('d-M-Y') }})</h4>
-                        @if($targetStatus === 'Met')
-                        <span class="badge badge-soft-success status-badge-lg">
-                            <i class="mdi mdi-check-decagram mr-1"></i> Target Met
+                        <span class="badge badge-soft-primary status-badge-lg">
+                            <i class="mdi mdi-clock-check mr-1"></i> Today's Summary
                         </span>
-                        @else
-                        <span class="badge badge-soft-warning status-badge-lg">
-                            <i class="mdi mdi-alert-circle-outline mr-1"></i> Target Not Met
-                        </span>
-                        @endif
                     </div>
 
                     <!-- Realtime parameters listing -->
@@ -145,7 +139,7 @@
                                     <i class="mdi mdi-phone-classic text-primary font-size-32 mb-2 d-block"></i>
                                     <h6 class="text-muted font-size-12 mb-1">STS Touchpoints Done</h6>
                                     <h3 class="text-premium-dark mb-2">{{ $metrics['sts'] }}</h3>
-                                    <span class="badge badge-soft-primary px-3 py-1 font-size-11">Target: {{ $targets['sts_updates'] }}</span>
+                                    <span class="badge badge-soft-primary px-3 py-1 font-size-11">Touchpoints</span>
                                 </div>
                             </div>
                         </div>
@@ -155,7 +149,7 @@
                                     <i class="mdi mdi-shield-account-outline text-success font-size-32 mb-2 d-block"></i>
                                     <h6 class="text-muted font-size-12 mb-1">DSR Updates Done</h6>
                                     <h3 class="text-premium-dark mb-2">{{ $metrics['dsr'] }}</h3>
-                                    <span class="badge badge-soft-success px-3 py-1 font-size-11">Target: {{ $targets['dsr_updates'] }}</span>
+                                    <span class="badge badge-soft-success px-3 py-1 font-size-11">Client DSR</span>
                                 </div>
                             </div>
                         </div>
@@ -229,7 +223,7 @@
                                     <i class="mdi mdi-message-text-outline text-info font-size-28 mb-2 d-block"></i>
                                     <h6 class="text-muted font-size-11 mb-1">Client Communications Logged</h6>
                                     <h3 class="text-premium-dark mb-2">{{ $metrics['communications'] }}</h3>
-                                    <span class="badge badge-soft-info px-3 py-1 font-size-10">Target: {{ $targets['communications'] }}</span>
+                                    <span class="badge badge-soft-info px-3 py-1 font-size-10">Interactions</span>
                                 </div>
                             </div>
                         </div>
@@ -276,7 +270,7 @@
                                     <i class="mdi mdi-clock-outline text-purple font-size-26 mb-2 d-block"></i>
                                     <h6 class="text-muted font-size-10 mb-1">Task Work Time</h6>
                                     <h4 class="text-premium-dark font-size-14 mb-2">{{ $tFormatted }}</h4>
-                                    <span class="badge badge-soft-purple px-2.5 py-0.5 font-size-9">Target: {{ $targets['hours_logged'] }}h</span>
+                                    <span class="badge badge-soft-purple px-2.5 py-0.5 font-size-9">Logged Tasks</span>
                                 </div>
                             </div>
                         </div>
@@ -286,7 +280,7 @@
                                     <i class="mdi mdi-checkbox-marked-circle-outline text-success font-size-26 mb-2 d-block"></i>
                                     <h6 class="text-muted font-size-10 mb-1">Tasks Completed</h6>
                                     <h4 class="text-premium-dark font-size-14 mb-2">{{ $metrics['tasks'] }}</h4>
-                                    <span class="badge badge-soft-success px-2.5 py-0.5 font-size-9">Target: {{ $targets['tasks_completed'] }}</span>
+                                    <span class="badge badge-soft-success px-2.5 py-0.5 font-size-9">Completed</span>
                                 </div>
                             </div>
                         </div>
@@ -349,15 +343,8 @@
 
                         <div class="form-group mb-4">
                             <label id="remarksLabel" class="font-weight-600 mb-2">Executive Daily Remarks / Summary:</label>
-                            <textarea name="remarks" id="remarksTextarea" class="form-control border" rows="4" style="border-radius: 10px;" placeholder="Summarize your work done today, and explain if targets were not met..." required></textarea>
-                        </div>
-
-                        <div id="targetWarningAlert" style="display: {{ $targetStatus === 'Not Met' ? 'block' : 'none' }};">
-                            @if($targetStatus === 'Not Met')
-                            <div class="alert alert-soft-warning font-size-12 mb-4 p-3 border" style="border-radius: 8px;">
-                                <i class="mdi mdi-alert-circle mr-1"></i> <strong>Note:</strong> Your target is not met today. Please justify the reason in your remarks block above for quick approval.
-                            </div>
-                            @endif
+                            <textarea name="remarks" id="remarksTextarea" class="form-control border" rows="4" style="border-radius: 10px;" placeholder="Summarize your work done today (10 to 80 words)..." required></textarea>
+                            <small class="text-muted font-size-11 mt-1 d-block"><i class="mdi mdi-information-outline mr-0.5"></i> Please write between 10 and 80 words.</small>
                         </div>
 
                         <div class="text-right">
@@ -455,9 +442,15 @@
                                         @if($item->status === 'Pending')
                                         <span class="badge badge-soft-warning px-2 py-0.5" style="font-size: 10px;">Pending</span>
                                         @elseif($item->status === 'Approved')
-                                        <span class="badge badge-soft-success px-2 py-0.5" style="font-size: 10px;">Approved</span>
+                                        <span class="badge badge-soft-success px-2 py-0.5" style="font-size: 10px;"><i class="mdi mdi-check mr-0.5"></i> Approved</span>
+                                        @if($item->approver)
+                                        <small class="text-muted d-block font-size-10 mt-0.5"><i class="mdi mdi-account-check text-success mr-0.5"></i> by {{ $item->approver->name }}</small>
+                                        @endif
                                         @else
-                                        <span class="badge badge-soft-danger px-2 py-0.5" style="font-size: 10px;">Rejected</span>
+                                        <span class="badge badge-soft-danger px-2 py-0.5" style="font-size: 10px;"><i class="mdi mdi-close mr-0.5"></i> Rejected</span>
+                                        @if($item->approver)
+                                        <small class="text-muted d-block font-size-10 mt-0.5"><i class="mdi mdi-account-cancel text-danger mr-0.5"></i> by {{ $item->approver->name }}</small>
+                                        @endif
                                         @endif
                                     </td>
                                 </tr>
@@ -492,21 +485,12 @@
             }
         } else {
             remarksLabel.textContent = 'Executive Daily Remarks / Summary:';
-            remarksTextarea.placeholder = 'Summarize your work done today, and explain if targets were not met...';
+            remarksTextarea.placeholder = 'Summarize your work done today (10 to 80 words)...';
             remarksTextarea.required = true;
 
-            var targetStatus = "{{ $targetStatus }}";
-            if (warningAlert && targetStatus === 'Not Met') {
-                warningAlert.style.display = 'block';
-            }
             if (statusBadge) {
-                if (targetStatus === 'Met') {
-                    statusBadge.className = 'badge badge-soft-success status-badge-lg';
-                    statusBadge.innerHTML = '<i class="mdi mdi-check-decagram mr-1"></i> Target Met';
-                } else {
-                    statusBadge.className = 'badge badge-soft-warning status-badge-lg';
-                    statusBadge.innerHTML = '<i class="mdi mdi-alert-circle-outline mr-1"></i> Target Not Met';
-                }
+                statusBadge.className = 'badge badge-soft-primary status-badge-lg';
+                statusBadge.innerHTML = '<i class="mdi mdi-clock-check mr-1"></i> Today\'s Summary';
             }
         }
     }
@@ -540,8 +524,8 @@
                 });
                 var count = words.length;
 
-                if (count < 3 || count > 50) {
-                    alertify.alert('Validation Error', 'Executive Remarks must be between 3 and 50 words. Current count: ' + count + ' words.');
+                if (count < 10 || count > 80) {
+                    alertify.alert('Validation Error', 'Executive Remarks must be between 10 and 80 words. Current count: ' + count + ' words.');
                     e.preventDefault();
                     return false;
                 }

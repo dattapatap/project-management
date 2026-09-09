@@ -68,6 +68,7 @@ class BranchScopeService
 
         if ($departmentId !== null) {
             $ids = User::whereIn('id', $ids)
+                ->where('status', 'Active')
                 ->whereHas('departments', fn ($q) => $q->where('department', $departmentId))
                 ->pluck('id')
                 ->toArray();
@@ -75,6 +76,11 @@ class BranchScopeService
             if (empty($ids)) {
                 $ids = $this->fallbackDepartmentUserIds($branchId, $departmentId);
             }
+        } else {
+            $ids = User::whereIn('id', $ids)
+                ->where('status', 'Active')
+                ->pluck('id')
+                ->toArray();
         }
 
         return empty($ids) ? [$user->id] : array_values(array_unique($ids));
@@ -115,6 +121,7 @@ class BranchScopeService
         }
 
         return User::whereIn('id', $branchUserIds)
+            ->where('status', 'Active')
             ->whereHas('roles', fn ($q) => $q->whereIn('name', $roles))
             ->pluck('id')
             ->toArray();

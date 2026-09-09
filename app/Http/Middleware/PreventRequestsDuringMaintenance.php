@@ -12,6 +12,11 @@ class PreventRequestsDuringMaintenance extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        'up',
+        'down',
+        'down-service',
+        'up-service',
+        'migrate',
+        'cache-clear',
     ];
 }

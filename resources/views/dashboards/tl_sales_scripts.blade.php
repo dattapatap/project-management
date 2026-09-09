@@ -1,7 +1,7 @@
 {{-- Sales Team Leader Oversight Scripts --}}
 <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js')}}"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    function initSalesTlChart() {
         // 1. Year Filter Integration
         const yearFilter = document.getElementById('sales_tl_dashboard_year_filter');
         if (yearFilter) {
@@ -61,116 +61,122 @@
             const chart = new ApexCharts(document.querySelector("#sales-team-distribution-donut"), donutOptions);
             chart.render();
         }
+    }
 
-        // 3. Lead Allocation Trigger (AJAX Assignment)
-        $(document).on('click', '.allocate-lead-btn', function() {
-            const btn = $(this);
-            const leadId = btn.data('lead-id');
-            const selectEl = $(`.select-allocation-executive[data-lead-id="${leadId}"]`);
-            const execId = selectEl.val();
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initSalesTlChart);
+    } else {
+        initSalesTlChart();
+    }
 
-            if (!execId) {
-                toastr.warning("Please choose a Sales Executive first.");
-                return;
+    // 3. Lead Allocation Trigger (AJAX Assignment)
+    $(document).on('click', '.allocate-lead-btn', function() {
+        const btn = $(this);
+        const leadId = btn.data('lead-id');
+        const selectEl = $(`.select-allocation-executive[data-lead-id="${leadId}"]`);
+        const execId = selectEl.val();
+
+        if (!execId) {
+            toastr.warning("Please choose a Sales Executive first.");
+            return;
+        }
+
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin"></i>');
+
+        $.ajax({
+            url: "{{ route('assignUsersToexecutive') }}",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                clientid: leadId,
+                executive: execId
+            },
+            success: function(response) {
+                if (response.status) {
+                    toastr.success(response.message || "Lead allocated successfully!");
+                    // Fade row out gracefully
+                    $(`#alloc-row-${leadId}`).fadeOut(450, function() {
+                        $(this).remove();
+                        // Check if table is empty to show a beautiful placeholder
+                        if ($('[id^="alloc-row-"]').length === 0) {
+                            $('#alloc-row-container').html('<tr><td colspan="3" class="text-center py-4 text-muted">All fresh leads allocated. Beautiful job! 🌟</td></tr>');
+                        }
+                    });
+                } else {
+                    toastr.error(response.message || "Failed to allocate lead.");
+                }
+            },
+            error: function(xhr) {
+                toastr.error("An error occurred during lead allocation.");
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalHtml);
             }
-
-            const originalHtml = btn.html();
-            btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin"></i>');
-
-            $.ajax({
-                url: "{{ route('assignUsersToexecutive') }}",
-                type: "POST",
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    clientid: leadId,
-                    executive: execId
-                },
-                success: function(response) {
-                    if (response.status) {
-                        toastr.success(response.message || "Lead allocated successfully!");
-                        // Fade row out gracefully
-                        $(`#alloc-row-${leadId}`).fadeOut(450, function() {
-                            $(this).remove();
-                            // Check if table is empty to show a beautiful placeholder
-                            if ($('[id^="alloc-row-"]').length === 0) {
-                                $('#alloc-row-container').html('<tr><td colspan="3" class="text-center py-4 text-muted">All fresh leads allocated. Beautiful job! 🌟</td></tr>');
-                            }
-                        });
-                    } else {
-                        toastr.error(response.message || "Failed to allocate lead.");
-                    }
-                },
-                error: function(xhr) {
-                    toastr.error("An error occurred during lead allocation.");
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html(originalHtml);
-                }
-            });
         });
+    });
 
-        // 4. Global Executive Nudge
-        $(document).on('click', '.nudge-executive-btn', function() {
-            const btn = $(this);
-            const execId = btn.data('exec-id');
-            const execName = btn.data('exec-name');
-            const originalHtml = btn.html();
+    // 4. Global Executive Nudge
+    $(document).on('click', '.nudge-executive-btn', function() {
+        const btn = $(this);
+        const execId = btn.data('exec-id');
+        const execName = btn.data('exec-name');
+        const originalHtml = btn.html();
 
-            btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin mr-1"></i> Nudging...');
+        btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin mr-1"></i> Nudging...');
 
-            $.ajax({
-                url: "{{ url('/clients/nudge-exec') }}",
-                type: "POST",
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    executive_id: execId
-                },
-                success: function(response) {
-                    if (response.status) {
-                        toastr.success(response.message);
-                    } else {
-                        toastr.error(response.message || "Could not nudge executive.");
-                    }
-                },
-                error: function(xhr) {
-                    toastr.error(xhr.responseJSON?.message || "Failed to nudge executive. They might have no active/overdue leads currently.");
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html(originalHtml);
+        $.ajax({
+            url: "{{ url('/clients/nudge-exec') }}",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                executive_id: execId
+            },
+            success: function(response) {
+                if (response.status) {
+                    toastr.success(response.message);
+                } else {
+                    toastr.error(response.message || "Could not nudge executive.");
                 }
-            });
+            },
+            error: function(xhr) {
+                toastr.error(xhr.responseJSON?.message || "Failed to nudge executive. They might have no active/overdue leads currently.");
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalHtml);
+            }
         });
+    });
 
-        // 5. Specific Lead Callback Nudge
-        $(document).on('click', '.nudge-lead-specific-btn', function() {
-            const btn = $(this);
-            const leadId = btn.data('lead-id');
-            const leadName = btn.data('lead-name');
-            const execName = btn.data('exec-name');
-            const originalHtml = btn.html();
+    // 5. Specific Lead Callback Nudge
+    $(document).on('click', '.nudge-lead-specific-btn', function() {
+        const btn = $(this);
+        const leadId = btn.data('lead-id');
+        const leadName = btn.data('lead-name');
+        const execName = btn.data('exec-name');
+        const originalHtml = btn.html();
 
-            btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin"></i>');
+        btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin"></i>');
 
-            $.ajax({
-                url: "{{ url('/client') }}/" + leadId + "/nudge",
-                type: "POST",
-                data: {
-                    _token: "{{ csrf_token() }}"
-                },
-                success: function(response) {
-                    if (response.status) {
-                        toastr.success(response.message);
-                    } else {
-                        toastr.error(response.message || "Could not nudge executive.");
-                    }
-                },
-                error: function(xhr) {
-                    toastr.error(xhr.responseJSON?.message || "Failed to nudge executive.");
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html(originalHtml);
+        $.ajax({
+            url: "{{ url('/client') }}/" + leadId + "/nudge",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+                if (response.status) {
+                    toastr.success(response.message);
+                } else {
+                    toastr.error(response.message || "Could not nudge executive.");
                 }
-            });
+            },
+            error: function(xhr) {
+                toastr.error(xhr.responseJSON?.message || "Failed to nudge executive.");
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalHtml);
+            }
         });
     });
 </script>

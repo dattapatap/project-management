@@ -51,5 +51,13 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('user', Auth::user());
             }
         });
+
+        View::composer('home', function ($view) {
+            $user = Auth::user();
+            if ($user && $user->hasRole(['Admin', 'Branch-Manager', 'Team-Leader'])) {
+                $statusService = app(\App\Services\EmployeeStatusDashboardService::class);
+                $view->with('employeeTodayStatus', $statusService->getEmployeeTodayStatus($user));
+            }
+        });
     }
 }

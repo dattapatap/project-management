@@ -299,7 +299,7 @@
                 </td>
                 <td class="kpi-card" style="width: 33%;">
                     <p class="kpi-title">Avg Daily Input</p>
-                    <p class="kpi-value">{{ $stats['avg_daily_hours'] }} hrs</p>
+                    <p class="kpi-value">{{ format_timing_hours($stats['avg_daily_hours']) }} hrs</p>
                     <p class="kpi-sub">Average logged time per day</p>
                 </td>
                 <td class="kpi-card" style="width: 33%;">
@@ -317,7 +317,7 @@
             <tr>
                 <td class="kpi-card" style="width: 25%; padding: 10px;">
                     <p class="kpi-title">Taken Time</p>
-                    <p class="kpi-value" style="font-size: 16px;">{{ $stats['total_hours'] }} Hrs</p>
+                    <p class="kpi-value" style="font-size: 16px;">{{ format_timing_hours($stats['total_hours']) }} Hrs</p>
                 </td>
                 <td class="kpi-card" style="width: 25%; padding: 10px;">
                     <p class="kpi-title">Pending Tasks</p>
@@ -384,24 +384,19 @@
     <div style="page-break-after: always;"></div>
 
     <!-- Daily Breakdown -->
-    <h2 class="section-title">Daily Performance Breakdown</h2>
-    <table class="data-table">
+    <h2 class="section-title">Timeline Performance Breakdown</h2>
+    <table class="data-table" cellpadding="0" cellspacing="0">
         <thead>
             <tr>
                 <th style="width: 20%;">Date</th>
-                <th class="text-center" style="width: 15%;">@if($isSales) Matured Convs @elseif($isCsd) Tickets Resolved @else Completed Tasks @endif</th>
-                <th class="text-center" style="width: 15%;">@if($isSales) Callbacks Logged @elseif($isCsd) Communications @else Log Entries @endif</th>
-                <th class="text-right" style="width: 15%;">@if($isSales || $isCsd) Estimated Effort @else Total Hours @endif</th>
-                <th style="width: 35%;">@if($isSales || $isCsd) Client Activities @else Tasks Worked @endif</th>
+                <th class="text-center" style="width: 15%;">Completed</th>
+                <th class="text-center" style="width: 15%;">Logs</th>
+                <th class="text-right" style="width: 20%;">Score / Time</th>
+                <th style="width: 30%;">Deliverables Activity</th>
             </tr>
         </thead>
         <tbody>
             @forelse($odDailyBreakdown as $day)
-                @php
-                    if (\Carbon\Carbon::parse($day->date)->isSunday()) {
-                        continue;
-                    }
-                @endphp
                 <tr>
                     <td style="font-weight: bold;">{{ $day->label }}</td>
                     <td class="text-center">{{ $day->completed_tasks }}</td>
@@ -410,7 +405,7 @@
                         @if($isSales || $isCsd)
                             {{ $day->total_hours }} pts
                         @else
-                            {{ $day->total_hours }} hrs
+                            {{ format_timing_hours($day->total_hours) }} hrs
                         @endif
                     </td>
                     <td>
@@ -421,7 +416,7 @@
                                 <span class="badge badge-soft-secondary" style="margin-right: 2px; margin-bottom: 2px;">
                                     {{ Str::limit($t->task_title, 20) }}
                                     @if($isOd)
-                                        · {{ $t->hours }}h
+                                        · {{ format_timing_hours($t->hours) }}h
                                     @endif
                                 </span>
                             @endforeach
@@ -449,7 +444,7 @@
                 {{ $date }} 
                 <span style="float: right; font-weight: normal; font-size: 10px; color: #64748b;">
                     @if($isOd)
-                        {{ round($dayLogs->sum('time_spend'), 2) }} Working Hours
+                        {{ format_timing_hours($dayLogs->sum('time_spend')) }} Working Hours
                     @elseif($isSales)
                         {{ $dayLogs->count() }} Callbacks logged
                     @elseif($isCsd)
@@ -466,7 +461,7 @@
                         @if($isOd)
                             <p class="timeline-title">
                                 {{ $log->task->title ?? 'Untitled Task' }}
-                                <span class="badge badge-soft-info" style="float: right;">{{ $log->time_spend }} hrs</span>
+                                <span class="badge badge-soft-info" style="float: right;">{{ format_timing_hours($log->time_spend) }} hrs</span>
                             </p>
                             <p class="timeline-desc">{{ $log->log_description }}</p>
                             <p style="font-size: 9px; color: #94a3b8; margin: 2px 0 0 0;">

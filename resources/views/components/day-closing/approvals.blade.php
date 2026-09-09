@@ -55,6 +55,19 @@
         background-color: rgba(159, 122, 234, 0.15);
         color: #805ad5;
     }
+
+    .col-remarks {
+        width: 30% !important;
+        max-width: 300px !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+
+    .col-actions {
+        width: 180px !important;
+        white-space: nowrap !important;
+        text-align: right !important;
+    }
 </style>
 @endsection
 
@@ -108,56 +121,65 @@
                 </div>
             </div>
             <form method="GET" action="{{ route('day-closing.approvals') }}" class="form-inline">
-                <div class="input-group">
-                    <input type="date" name="date" class="form-control form-control-sm border" value="{{ $selectedDate }}" max="{{ date('Y-m-d') }}" style="width: 160px; height: 36px; border-radius: 8px 0 0 8px;" onchange="this.form.submit()">
-                    <div class="input-group-append">
-                        <button type="submit" class="btn btn-primary btn-sm px-3" style="border-radius: 0 8px 8px 0;">
-                            <i class="mdi mdi-magnify mr-1"></i> Filter
-                        </button>
+                <div>
+                    <div class="input-group">
+                        <input type="date" name="date" class="form-control form-control-sm border" value="{{ $selectedDate }}" @if(!empty($minDate)) min="{{ $minDate }}" @endif max="{{ date('Y-m-d') }}" style="width: 160px; height: 36px; border-radius: 8px 0 0 8px;" onchange="this.form.submit()">
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary btn-sm px-3" style="border-radius: 0 8px 8px 0;">
+                                <i class="mdi mdi-magnify mr-1"></i> Filter
+                            </button>
+                        </div>
                     </div>
+                    @if(!empty($isTeamLeaderOnly))
+                    <small class="text-muted d-block mt-1 font-size-11"><i class="mdi mdi-shield-account mr-0.5 text-primary"></i> TL limit: up to 2 days back</small>
+                    @endif
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Daily Closing Completion Checklist -->
+    <!-- 1. Daily Closing Completion Checklist (Submitted Only) -->
     <div class="card border shadow-sm mb-4">
         <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title text-premium-dark mb-0 font-size-14">
-                <i class="mdi mdi-playlist-check text-success mr-1"></i> Daily Audit Checklist (Date: {{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }})
+                <i class="mdi mdi-playlist-check text-success mr-1"></i> Daily Audit Checklist (Submitted Closings) - {{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }}
             </h5>
-            <span class="badge badge-soft-primary px-3 py-1 font-size-11">
-                Total Subordinates: {{ $auditList->count() }}
+            <span class="badge badge-soft-success px-3 py-1 font-size-11 font-weight-bold">
+                Submitted: {{ $submittedList->count() }} of {{ $subordinates->count() }}
             </span>
         </div>
         <div class="card-body p-0">
-            @if($auditList->isEmpty())
+            @if($submittedList->isEmpty())
             <div class="text-center py-5 text-muted">
-                <p class="font-size-12 mb-0">No subordinate employees registered in your team or branch.</p>
+                <i class="mdi mdi-clipboard-text-outline display-4 text-muted d-block mb-2" style="opacity: 0.4;"></i>
+                <h6 class="font-weight-bold text-dark">No Submissions Recorded</h6>
+                <p class="font-size-12 mb-0">No subordinate employees have submitted day closing for {{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }} yet.</p>
             </div>
             @else
             <div class="table-responsive">
-                <table class="table table-premium table-centered table-striped custom-table mb-0">
-                    <thead>
+                <table class="table table-premium table-centered table-striped table-hover mb-0">
+                    <thead class="thead-custom-teal">
                         <tr>
                             <th style="padding-left: 24px;">Subordinate</th>
                             <th>Department / Role</th>
                             <th>Target Parameters</th>
                             <th>Submission Status</th>
                             <th>Target Progress</th>
-                            <th class="text-right" style="padding-right: 24px;">Action</th>
+                            <th class="col-remarks">Executive Remarks</th>
+                            <th class="col-actions" style="padding-right: 24px;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($auditList as $audit)
+                        @foreach($submittedList as $audit)
                         <tr>
                             <td style="padding-left: 24px;">
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center font-weight-bold text-uppercase border mr-3" style="width: 28px; height: 28px; font-size: 11px;">
+                                    <div class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center font-weight-bold text-uppercase border mr-3" style="width: 32px; height: 32px;">
                                         {{ substr($audit->name, 0, 2) }}
                                     </div>
                                     <div>
                                         <h6 class="mb-0 font-weight-bold font-size-13">{{ $audit->name }}</h6>
+                                        <small class="text-muted">{{ $audit->email }}</small>
                                     </div>
                                 </div>
                             </td>
@@ -168,60 +190,94 @@
                                 <small class="text-muted d-block mt-0.5">{{ $audit->getRoleNames()->first() ?? '-' }}</small>
                             </td>
                             <td>
-                                @if($audit->submission)
                                 @if($audit->submission->department === 'NSD')
-                                <span class="text-muted d-block font-size-12">STS: <strong>{{ $audit->submission->achieved_metrics['sts'] ?? 0 }}</strong></span>
-                                <span class="text-muted d-block font-size-12">DSR: <strong>{{ $audit->submission->achieved_metrics['dsr'] ?? 0 }}</strong></span>
-                                @elseif($audit->submission->department === 'CSD')
-                                <span class="text-muted d-block font-size-12">Comms: <strong>{{ $audit->submission->achieved_metrics['communications'] ?? 0 }}</strong></span>
+                                <span class="text-dark d-block font-size-12">STS Logged: <strong>{{ $audit->submission->achieved_metrics['sts'] ?? 0 }}</strong></span>
+                                <span class="text-dark d-block font-size-12">DSR Logged: <strong>{{ $audit->submission->achieved_metrics['dsr'] ?? 0 }}</strong></span>
                                 @else
-                                <span class="text-muted d-block font-size-12">Hours: <strong>{{ $audit->submission->achieved_metrics['hours'] ?? 0 }}</strong></span>
-                                <span class="text-muted d-block font-size-12">Tasks: <strong>{{ $audit->submission->achieved_metrics['tasks'] ?? 0 }}</strong></span>
+                                @php
+                                // Global hours formatting
+                                $ghVal = $audit->submission->achieved_metrics['global_hours'] ?? 0;
+                                $ghMin = round($ghVal * 60);
+                                $ghH = floor($ghMin / 60);
+                                $ghM = $ghMin % 60;
+                                $ghFormatted = $ghH > 0 ? sprintf('%02d:%02d Hrs', $ghH, $ghM) : sprintf('%02d:%02d min', $ghH, $ghM);
+
+                                // Break hours formatting
+                                $bhVal = $audit->submission->achieved_metrics['break_hours'] ?? 0;
+                                $bhMin = round($bhVal * 60);
+                                $bhH = floor($bhMin / 60);
+                                $bhM = $bhMin % 60;
+                                $bhFormatted = $bhH > 0 ? sprintf('%02d:%02d Hrs', $bhH, $bhM) : sprintf('%02d:%02d min', $bhH, $bhM);
+
+                                // Task hours formatting
+                                $thVal = $audit->submission->achieved_metrics['hours'] ?? 0;
+                                $thMin = round($thVal * 60);
+                                $thH = floor($thMin / 60);
+                                $thM = $thMin % 60;
+                                $thFormatted = $thH > 0 ? sprintf('%02d:%02d Hrs', $thH, $thM) : sprintf('%02d:%02d min', $thH, $thM);
+                                @endphp
+
+                                @if(isset($audit->submission->achieved_metrics['global_hours']))
+                                <span class="text-dark d-block font-size-12">Global Shift: <strong>{{ $ghFormatted }}</strong></span>
+                                <span class="text-dark d-block font-size-12">Break Time: <strong>{{ $bhFormatted }}</strong></span>
+                                @endif
+
+                                @if($audit->submission->department === 'CSD')
+                                @if(isset($audit->submission->achieved_metrics['communications']))
+                                <span class="text-dark d-block font-size-12">Comms: <strong>{{ $audit->submission->achieved_metrics['communications'] ?? 0 }}</strong></span>
                                 @endif
                                 @else
-                                <span class="text-muted font-italic font-size-12">No metrics recorded</span>
+                                @if(isset($audit->submission->achieved_metrics['hours']))
+                                <span class="text-dark d-block font-size-12">Task Work: <strong>{{ $thFormatted }}</strong></span>
+                                <span class="text-dark d-block font-size-12">Tasks Done: <strong>{{ $audit->submission->achieved_metrics['tasks'] ?? 0 }}</strong></span>
+                                @endif
+                                @endif
                                 @endif
                             </td>
                             <td>
-                                @if($audit->submission)
                                 @if($audit->submission->status === 'Pending')
-                                <span class="badge badge-soft-warning font-size-11 px-2.5 py-0.5">Pending Approval</span>
+                                <span class="badge badge-soft-warning font-size-11 px-2.5 py-0.5 font-weight-bold">Pending Approval</span>
                                 @elseif($audit->submission->status === 'Approved')
-                                <span class="badge badge-soft-success font-size-11 px-2.5 py-0.5">Submitted & Approved</span>
-                                @else
-                                <span class="badge badge-soft-danger font-size-11 px-2.5 py-0.5">Submitted & Rejected</span>
+                                <span class="badge badge-soft-success font-size-11 px-2.5 py-0.5 font-weight-bold"><i class="mdi mdi-check mr-0.5"></i> Approved</span>
+                                @if($audit->submission->approver)
+                                <small class="text-muted d-block mt-0.5 font-size-11"><i class="mdi mdi-account-check mr-0.5 text-success"></i> by {{ $audit->submission->approver->name }}</small>
                                 @endif
                                 @else
-                                <span class="badge badge-soft-secondary font-size-11 px-2.5 py-0.5">Not Submitted</span>
+                                <span class="badge badge-soft-danger font-size-11 px-2.5 py-0.5 font-weight-bold"><i class="mdi mdi-close mr-0.5"></i> Rejected</span>
+                                @if($audit->submission->approver)
+                                <small class="text-muted d-block mt-0.5 font-size-11"><i class="mdi mdi-account-cancel mr-0.5 text-danger"></i> by {{ $audit->submission->approver->name }}</small>
+                                @endif
                                 @endif
                             </td>
                             <td>
-                                @if($audit->submission)
                                 @if($audit->submission->target_status === 'Met')
-                                <span class="badge badge-soft-success font-size-11 px-2.5 py-0.5">Target Met</span>
+                                <span class="badge badge-soft-success font-size-11 px-2.5 py-0.5 font-weight-bold">Target Met</span>
                                 @elseif($audit->submission->target_status === 'On Leave')
-                                <span class="badge badge-soft-danger font-size-11 px-2.5 py-0.5">On Leave</span>
+                                <span class="badge badge-soft-danger font-size-11 px-2.5 py-0.5 font-weight-bold">On Leave</span>
                                 @else
-                                <span class="badge badge-soft-warning font-size-11 px-2.5 py-0.5">Target Not Met</span>
-                                @endif
-                                @else
-                                <span class="text-muted">-</span>
+                                <span class="badge badge-soft-warning font-size-11 px-2.5 py-0.5 font-weight-bold">Target Not Met</span>
                                 @endif
                             </td>
-                            <td class="text-right" style="padding-right: 24px;">
-                                @if($audit->submission && $audit->submission->status === 'Pending')
-                                <button class="btn btn-success btn-sm mr-1 shadow-sm px-3" onclick="openApprovalModal('approve', {{ $audit->submission->id }}, '{{ $audit->name }}')">
+                            <td class="col-remarks">
+                                <span class="text-muted font-italic font-size-12">"{{ $audit->submission->executive_remarks ?? '-' }}"</span>
+                            </td>
+                            <td class="col-actions" style="padding-right: 24px;">
+                                @if($audit->submission->status === 'Pending')
+                                <button class="btn btn-success btn-sm mr-1 shadow-sm px-2.5" onclick="openApprovalModal('approve', {{ $audit->submission->id }}, '{{ $audit->name }}')">
                                     <i class="mdi mdi-check mr-1"></i> Approve
                                 </button>
-                                <button class="btn btn-danger btn-sm shadow-sm px-3" onclick="openApprovalModal('reject', {{ $audit->submission->id }}, '{{ $audit->name }}')">
+                                <button class="btn btn-danger btn-sm shadow-sm px-2.5" onclick="openApprovalModal('reject', {{ $audit->submission->id }}, '{{ $audit->name }}')">
                                     <i class="mdi mdi-close mr-1"></i> Reject
                                 </button>
-                                @elseif(!$audit->submission)
-                                <button class="btn btn-soft-danger btn-sm px-3" onclick="openLeaveModalForUser({{ $audit->id }}, '{{ $selectedDate }}')">
-                                    <i class="mdi mdi-airplane-takeoff mr-1"></i> Record Leave
-                                </button>
                                 @else
-                                <span class="text-muted font-size-12"><i class="mdi mdi-check-all mr-1 text-success"></i> Audited</span>
+                                <div>
+                                    <span class="text-muted font-size-12 font-weight-semibold">
+                                        <i class="mdi mdi-check-all mr-1 text-success font-size-14"></i> Audited
+                                    </span>
+                                    @if($audit->submission->approver)
+                                    <small class="text-muted d-block font-size-11">by {{ $audit->submission->approver->name }}</small>
+                                    @endif
+                                </div>
                                 @endif
                             </td>
                         </tr>
@@ -233,115 +289,91 @@
         </div>
     </div>
 
-    <!-- Pending Approvals Board -->
+    <!-- 2. Pending Submissions (Active Employees NOT Submitted) -->
     <div class="card border shadow-sm mb-4">
-        <div class="card-header bg-white border-bottom py-3">
-            <h5 class="card-title text-premium-dark mb-0 font-size-14"><i class="mdi mdi-clock-alert text-warning mr-1"></i> Pending Submissions</h5>
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title text-premium-dark mb-0 font-size-14">
+                <i class="mdi mdi-clock-alert text-warning mr-1"></i> Pending Submissions (Not Submitted Yet)
+            </h5>
+            <span class="badge badge-soft-danger px-3 py-1 font-size-11 font-weight-bold">
+                Not Submitted: {{ $notSubmittedList->count() }}
+            </span>
         </div>
         <div class="card-body p-0">
-            @if($pending->isEmpty())
+            @if($notSubmittedList->isEmpty())
             <div class="text-center py-5 text-muted">
                 <i class="mdi mdi-check-circle-outline display-4 text-success d-block mb-2"></i>
-                <h6 class="font-weight-bold">All caught up!</h6>
-                <p class="font-size-12 mb-0">No pending day closing submissions to review.</p>
+                <h6 class="font-weight-bold text-dark">All Caught Up!</h6>
+                <p class="font-size-12 mb-0">All active team members have submitted their day closing for {{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }}.</p>
             </div>
             @else
             <div class="table-responsive">
-                <table class="table custom-table mb-0">
-                    <thead>
+                <table class="table table-premium table-centered table-striped table-hover mb-0">
+                    <thead class="thead-custom-teal">
                         <tr>
                             <th style="padding-left: 24px;">Executive</th>
                             <th>Date</th>
-                            <th>Department</th>
-                            <th>Metrics</th>
-                            <th>Target Status</th>
-                            <th>Executive Remarks</th>
-                            <th class="text-right" style="padding-right: 24px;">Actions</th>
+                            <th>Department & Role</th>
+                            <th>Current Activity Logged</th>
+                            <th>Submission Status</th>
+                            <th class="col-actions" style="padding-right: 24px;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($pending as $item)
+                        @foreach($notSubmittedList as $emp)
                         <tr>
                             <td style="padding-left: 24px;">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-xs rounded-circle bg-light d-flex align-items-center justify-content-center font-weight-bold text-uppercase border mr-3" style="width: 32px; height: 32px;">
-                                        {{ substr($item->user->name, 0, 2) }}
+                                        {{ substr($emp->name, 0, 2) }}
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 font-weight-bold">{{ $item->user->name }}</h6>
-                                        <small class="text-muted">{{ $item->user->email }}</small>
+                                        <h6 class="mb-0 font-weight-bold font-size-13">{{ $emp->name }}</h6>
+                                        <small class="text-muted">{{ $emp->email }}</small>
                                     </div>
                                 </div>
                             </td>
-                            <td><strong>{{ $item->closing_date->format('d-M-Y') }}</strong></td>
+                            <td><strong>{{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }}</strong></td>
                             <td>
-                                <span class="badge badge-dept text-uppercase badge-{{ strtolower($item->department) }}">
-                                    {{ $item->department }}
+                                <span class="badge badge-dept text-uppercase badge-{{ strtolower($emp->dept_type ?? '') }}">
+                                    {{ $emp->dept_type ?? '-' }}
                                 </span>
+                                <small class="text-muted d-block mt-0.5">{{ $emp->getRoleNames()->first() ?? '-' }}</small>
                             </td>
                             <td>
-                                @if($item->department === 'NSD')
-                                <span class="text-dark d-block">STS Logged: <strong>{{ $item->achieved_metrics['sts'] ?? 0 }}</strong></span>
-                                <span class="text-dark d-block">DSR Logged: <strong>{{ $item->achieved_metrics['dsr'] ?? 0 }}</strong></span>
+                                @if($emp->dept_type === 'nsd')
+                                <span class="text-dark d-block font-size-12">STS Today: <strong>{{ $emp->currentMetrics['sts'] ?? 0 }}</strong></span>
+                                <span class="text-dark d-block font-size-12">DSR Today: <strong>{{ $emp->currentMetrics['dsr'] ?? 0 }}</strong></span>
                                 @else
                                 @php
-                                // Global hours formatting
-                                $ghVal = $item->achieved_metrics['global_hours'] ?? 0;
+                                $ghVal = $emp->currentMetrics['global_hours'] ?? 0;
                                 $ghMin = round($ghVal * 60);
                                 $ghH = floor($ghMin / 60);
                                 $ghM = $ghMin % 60;
                                 $ghFormatted = $ghH > 0 ? sprintf('%02d:%02d Hrs', $ghH, $ghM) : sprintf('%02d:%02d min', $ghH, $ghM);
-
-                                // Break hours formatting
-                                $bhVal = $item->achieved_metrics['break_hours'] ?? 0;
-                                $bhMin = round($bhVal * 60);
-                                $bhH = floor($bhMin / 60);
-                                $bhM = $bhMin % 60;
-                                $bhFormatted = $bhH > 0 ? sprintf('%02d:%02d Hrs', $bhH, $bhM) : sprintf('%02d:%02d min', $bhH, $bhM);
-
-                                // Task hours formatting
-                                $thVal = $item->achieved_metrics['hours'] ?? 0;
+                                @endphp
+                                <span class="text-dark d-block font-size-12">Shift Time: <strong>{{ $ghFormatted }}</strong></span>
+                                @if($emp->dept_type === 'csd')
+                                <span class="text-dark d-block font-size-12">Comms Today: <strong>{{ $emp->currentMetrics['communications'] ?? 0 }}</strong></span>
+                                @else
+                                @php
+                                $thVal = $emp->currentMetrics['hours'] ?? 0;
                                 $thMin = round($thVal * 60);
                                 $thH = floor($thMin / 60);
                                 $thM = $thMin % 60;
                                 $thFormatted = $thH > 0 ? sprintf('%02d:%02d Hrs', $thH, $thM) : sprintf('%02d:%02d min', $thH, $thM);
                                 @endphp
-
-                                @if(isset($item->achieved_metrics['global_hours']))
-                                <span class="text-dark d-block">Global Shift Time: <strong>{{ $ghFormatted }}</strong></span>
-                                <span class="text-dark d-block">Break Time Spent: <strong>{{ $bhFormatted }}</strong></span>
-                                @endif
-
-                                @if($item->department === 'CSD')
-                                @if(isset($item->achieved_metrics['communications']))
-                                <span class="text-dark d-block">Comms: <strong>{{ $item->achieved_metrics['communications'] ?? 0 }}</strong></span>
-                                @endif
-                                @else
-                                @if(isset($item->achieved_metrics['hours']))
-                                <span class="text-dark d-block">Task Work Time: <strong>{{ $thFormatted }}</strong></span>
-                                <span class="text-dark d-block">Tasks Completed: <strong>{{ $item->achieved_metrics['tasks'] ?? 0 }}</strong></span>
-                                @endif
+                                <span class="text-dark d-block font-size-12">Task Work: <strong>{{ $thFormatted }}</strong></span>
+                                <span class="text-dark d-block font-size-12">Tasks Done: <strong>{{ $emp->currentMetrics['tasks'] ?? 0 }}</strong></span>
                                 @endif
                                 @endif
                             </td>
                             <td>
-                                @if($item->target_status === 'Met')
-                                <span class="badge badge-soft-success font-size-11 px-2.5 py-0.5">Target Met</span>
-                                @elseif($item->target_status === 'On Leave')
-                                <span class="badge badge-soft-danger font-size-11 px-2.5 py-0.5">On Leave</span>
-                                @else
-                                <span class="badge badge-soft-warning font-size-11 px-2.5 py-0.5">Not Met</span>
-                                @endif
+                                <span class="badge badge-soft-danger font-size-11 px-2.5 py-0.5 font-weight-bold">Not Submitted</span>
                             </td>
-                            <td>
-                                <span class="text-muted font-italic">"{{ $item->executive_remarks ?? '-' }}"</span>
-                            </td>
-                            <td class="text-right" style="padding-right: 24px;">
-                                <button class="btn btn-success btn-sm mr-1 shadow-sm" onclick="openApprovalModal('approve', {{ $item->id }}, '{{ $item->user->name }}')">
-                                    <i class="mdi mdi-check mr-1"></i>Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm shadow-sm" onclick="openApprovalModal('reject', {{ $item->id }}, '{{ $item->user->name }}')">
-                                    <i class="mdi mdi-close mr-1"></i>Reject
+                            <td class="col-actions" style="padding-right: 24px;">
+                                <button class="btn btn-soft-danger btn-sm px-3 shadow-sm font-weight-semibold" onclick="openLeaveModalForUser({{ $emp->id }}, '{{ $selectedDate }}')">
+                                    <i class="mdi mdi-airplane-takeoff mr-1"></i> Record Leave
                                 </button>
                             </td>
                         </tr>

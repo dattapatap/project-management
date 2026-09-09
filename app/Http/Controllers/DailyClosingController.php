@@ -100,8 +100,8 @@ class DailyClosingController extends Controller
             $words = array_filter(preg_split('/\s+/', $remarks));
             $count = count($words);
 
-            if ($count < 3 || $count > 50) {
-                return redirect()->route('day-closing.index')->with('error', 'Executive Remarks must be between 3 and 50 words. Current count: ' . $count . ' words.');
+            if ($count < 10 || $count > 80) {
+                return redirect()->route('day-closing.index')->with('error', 'Executive Remarks must be between 10 and 80 words. Current count: ' . $count . ' words.');
             }
         }
 
@@ -120,10 +120,21 @@ class DailyClosingController extends Controller
     {
         $user = Auth::user();
 
+        $isTeamLeaderOnly = $user->hasRole('Team-Leader') && !$user->hasRole(['Admin', 'Branch-Manager']);
+        $minDate = null;
+        if ($isTeamLeaderOnly) {
+            // Team Leaders can only go up to 2 days back (Today, Yesterday, and Day Before Yesterday)
+            $minDate = Carbon::today()->subDays(2)->format('Y-m-d');
+        }
+
         // Retrieve filtered date, default to today, and avoid future dates
         $selectedDate = $request->input('date', Carbon::today()->format('Y-m-d'));
         if (Carbon::parse($selectedDate)->gt(Carbon::today())) {
             $selectedDate = Carbon::today()->format('Y-m-d');
+        }
+
+        if ($isTeamLeaderOnly && $minDate && $selectedDate < $minDate) {
+            $selectedDate = $minDate;
         }
 
         // Resolve which users this acting user can approve
@@ -161,38 +172,51 @@ class DailyClosingController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        $performanceService = new UserPerformanceService();
+
         // Fetch all active subordinates in scope (except current user)
         $subordinates = User::whereIn('id', $subordinateIds)
             ->where('status', 'Active')
             ->where('id', '!=', $user->id)
+            ->with(['roles', 'departments'])
             ->orderBy('name', 'asc')
             ->get();
+
+        foreach ($subordinates as $sub) {
+            $sub->dept_type = $performanceService->departmentType($sub);
+            $sub->userTargets = $this->closingService->getDailyTargets($sub);
+        }
 
         // Fetch day closing submissions for the selected date
         $submissionsOnDate = DayClosing::whereIn('user_id', $subordinateIds)
             ->where('closing_date', $selectedDate)
+            ->with(['user', 'approver'])
             ->get()
             ->keyBy('user_id');
 
-        // Build a list of all subordinates with their submission status on the selected date
-        $auditList = $subordinates->map(function ($sub) use ($submissionsOnDate) {
+        // 1. Submitted List: ONLY employees who have submitted day closing on this date
+        $submittedList = $subordinates->filter(function ($sub) use ($submissionsOnDate) {
+            return $submissionsOnDate->has($sub->id);
+        })->map(function ($sub) use ($submissionsOnDate) {
             $sub->submission = $submissionsOnDate->get($sub->id);
             return $sub;
-        });
+        })->values();
 
-        // Fetch pending day closing submissions for the selected date only
-        $pending = DayClosing::whereIn('user_id', $subordinateIds)
-            ->where('status', 'Pending')
-            ->where('closing_date', $selectedDate)
-            ->with('user')
-            ->orderBy('closing_date', 'asc')
-            ->get();
+        // 2. Pending Submissions List: Active employees who have NOT submitted day closing on this date
+        $notSubmittedList = $subordinates->filter(function ($sub) use ($submissionsOnDate) {
+            return !$submissionsOnDate->has($sub->id);
+        })->map(function ($sub) use ($selectedDate) {
+            $sub->currentMetrics = $this->closingService->getTodayMetrics($sub, $selectedDate);
+            return $sub;
+        })->values();
 
         return view('components.day-closing.approvals', compact(
-            'pending',
+            'submittedList',
+            'notSubmittedList',
             'subordinates',
             'selectedDate',
-            'auditList'
+            'minDate',
+            'isTeamLeaderOnly'
         ));
     }
 
@@ -209,6 +233,14 @@ class DailyClosingController extends Controller
             $isMember = DB::table('team_members')->whereIn('team', $teams)->where('status', true)->where('user', $submission->user_id)->exists();
             if (!$isMember) {
                 return redirect()->route('day-closing.approvals')->with('error', 'Unauthorized. You can only approve day closings for members of your own team.');
+            }
+
+            // Restrict Team Leader to 2 days back only
+            $closingDateStr = $submission->closing_date instanceof Carbon ? $submission->closing_date->format('Y-m-d') : Carbon::parse($submission->closing_date)->format('Y-m-d');
+            $twoDaysBack = Carbon::today()->subDays(2)->format('Y-m-d');
+            if ($closingDateStr < $twoDaysBack) {
+                return redirect()->route('day-closing.approvals', ['date' => $request->input('date')])
+                    ->with('error', 'Unauthorized. Team Leaders are only permitted to approve day closings up to 2 days back (Yesterday and Day Before Yesterday).');
             }
         }
 
@@ -242,6 +274,14 @@ class DailyClosingController extends Controller
             $isMember = DB::table('team_members')->whereIn('team', $teams)->where('status', true)->where('user', $submission->user_id)->exists();
             if (!$isMember) {
                 return redirect()->route('day-closing.approvals')->with('error', 'Unauthorized. You can only reject day closings for members of your own team.');
+            }
+
+            // Restrict Team Leader to 2 days back only
+            $closingDateStr = $submission->closing_date instanceof Carbon ? $submission->closing_date->format('Y-m-d') : Carbon::parse($submission->closing_date)->format('Y-m-d');
+            $twoDaysBack = Carbon::today()->subDays(2)->format('Y-m-d');
+            if ($closingDateStr < $twoDaysBack) {
+                return redirect()->route('day-closing.approvals', ['date' => $request->input('date')])
+                    ->with('error', 'Unauthorized. Team Leaders are only permitted to reject day closings up to 2 days back (Yesterday and Day Before Yesterday).');
             }
         }
 

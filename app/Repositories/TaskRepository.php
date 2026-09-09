@@ -177,4 +177,113 @@ class TaskRepository extends BaseRepository
             ->where('status', '!=', 'Completed')
             ->count();
     }
+
+    /**
+     * Build base query for task listing with standard relations.
+     */
+    public function buildTaskListingQuery(User $user, array $filters = []): Builder
+    {
+        $query = $this->query()
+            ->with([
+                'user',
+                'project.clients',
+                'project.projectCategory',
+                'project.project_team.team',
+                'logs',
+            ]);
+
+        // Branch scope for Branch Manager
+        if ($user->hasRole('Branch-Manager') && !$user->isGlobalAdmin()) {
+            $branchUserIds = app(\App\Services\BranchScopeService::class)->getBranchUserIds($user);
+            $query->whereIn('assigned_to', $branchUserIds);
+        }
+
+        // Search filter
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('project', function ($pq) use ($search) {
+                        $pq->where('project_name', 'like', "%{$search}%")
+                            ->orWhereHas('clients', fn($cq) => $cq->where('name', 'like', "%{$search}%"));
+                    })
+                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        // Team filter
+        if (!empty($filters['team_id'])) {
+            $teamId = $filters['team_id'];
+            $teamMemberIds = \App\Models\TeamMembers::where('team', $teamId)->where('status', true)->pluck('user')->toArray();
+            $query->where(function ($q) use ($teamId, $teamMemberIds) {
+                $q->whereHas('project.project_team', fn($pq) => $pq->where('teamid', $teamId));
+                if (!empty($teamMemberIds)) {
+                    $q->orWhereIn('assigned_to', $teamMemberIds);
+                }
+            });
+        }
+
+        // Assignee / User filter
+        if (!empty($filters['assigned_to'])) {
+            $query->where('assigned_to', $filters['assigned_to']);
+        }
+
+        // Priority filter
+        if (!empty($filters['priority'])) {
+            $query->where('priority', $filters['priority']);
+        }
+
+        // Date range filters (checks overlap with task lifecycle)
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            $query->where(function($q) use ($filters) {
+                $q->whereBetween('startdate', [$filters['start_date'], $filters['end_date']])
+                  ->orWhereBetween('enddate', [$filters['start_date'], $filters['end_date']])
+                  ->orWhere(function($sq) use ($filters) {
+                      $sq->where('startdate', '<=', $filters['start_date'])
+                         ->where('enddate', '>=', $filters['end_date']);
+                  });
+            });
+        } elseif (!empty($filters['start_date'])) {
+            $query->whereDate('startdate', '>=', $filters['start_date']);
+        } elseif (!empty($filters['end_date'])) {
+            $query->whereDate('enddate', '<=', $filters['end_date']);
+        }
+
+        // Status filter
+        if (!empty($filters['status'])) {
+            if ($filters['status'] === 'Active') {
+                $query->whereIn('status', ['ToDo', 'InProgress']);
+            } elseif ($filters['status'] === 'Completed') {
+                $query->where('status', 'Completed');
+            } elseif (in_array($filters['status'], ['ToDo', 'InProgress'])) {
+                $query->where('status', $filters['status']);
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * Compute statistics for task listing based on active filters.
+     */
+    public function computeTaskListingStats(Builder $baseQuery): array
+    {
+        $statsQuery = clone $baseQuery;
+        $taskIds = (clone $statsQuery)->pluck('id')->toArray();
+        
+        $totalHours = 0.0;
+        if (!empty($taskIds)) {
+            $totalHours = (float) round(TaskLog::whereIn('taskid', $taskIds)->whereNotNull('time_spend')->sum('time_spend'), 1);
+        }
+
+        return [
+            'total'       => (clone $statsQuery)->count(),
+            'active'      => (clone $statsQuery)->whereIn('status', ['ToDo', 'InProgress'])->count(),
+            'in_progress' => (clone $statsQuery)->where('status', 'InProgress')->count(),
+            'todo'        => (clone $statsQuery)->where('status', 'ToDo')->count(),
+            'completed'   => (clone $statsQuery)->where('status', 'Completed')->count(),
+            'total_hours' => $totalHours,
+        ];
+    }
 }

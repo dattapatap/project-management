@@ -16,6 +16,9 @@ class GlobalTimerService
      */
     public function startGlobalTimer(User $user): array
     {
+        // First clean up any unclosed orphan logs from previous days
+        $this->cleanupPriorDaysOrphanLogs($user);
+
         $activeLog = $user->activeGlobalTimer();
         if ($activeLog) {
             return ['success' => false, 'message' => 'Global timer is already running.'];
@@ -137,11 +140,25 @@ class GlobalTimerService
     }
 
     /**
-     * Helper to auto-resume the last worked task for a user.
+     * Helper to auto-resume any InProgress task for a user when shift starts.
      */
     private function autoResumeLastTask(User $user): void
     {
-        // Find the last paused task log for this user
+        // 1. Check if user has an InProgress task assigned to them
+        $inProgressTask = Task::where('assigned_to', $user->id)
+            ->where('status', 'InProgress')
+            ->orderBy('updated_at', 'desc')
+            ->first();
+
+        if ($inProgressTask) {
+            $activeTimer = $inProgressTask->activeTimerForUser($user->id);
+            if (!$activeTimer) {
+                app(TaskService::class)->startTimer($inProgressTask, $user);
+            }
+            return;
+        }
+
+        // 2. Otherwise fallback to the last worked task if InProgress
         $lastLog = TaskLog::where('userid', $user->id)
             ->whereNotNull('endtime')
             ->orderBy('id', 'desc')
@@ -156,13 +173,13 @@ class GlobalTimerService
     }
 
     /**
-     * Finalize the global attendance log (capping at 9:00 PM).
+     * Finalize the global attendance log (capping at 11:00 PM).
      */
     private function finalizeGlobalLog(GlobalAttendanceLog $log, string $status = 'paused'): void
     {
         $now = Carbon::now();
         $startedAt = Carbon::parse($log->log_date . ' ' . $log->starttime);
-        $capTime = Carbon::parse($log->log_date . ' 21:00:00');
+        $capTime = Carbon::parse($log->log_date . ' 23:00:00');
 
         if ($now->gt($capTime)) {
             $endTime = $capTime;
@@ -187,7 +204,7 @@ class GlobalTimerService
     }
 
     /**
-     * Calculate total break hours for a user on a given date.
+     * Get total break hours for a user on a given date.
      */
     public function getBreakHoursForDate(User $user, string $date): float
     {
@@ -223,7 +240,7 @@ class GlobalTimerService
         if ($isCurrentlyPaused && $date === Carbon::today()->format('Y-m-d')) {
             $lastEnd = Carbon::parse($date . ' ' . $lastLog->endtime);
             $now = Carbon::now();
-            $capTime = Carbon::parse($date . ' 21:00:00');
+            $capTime = Carbon::parse($date . ' 23:00:00');
             
             if ($now->gt($capTime)) {
                 $now = $capTime;
@@ -235,5 +252,39 @@ class GlobalTimerService
         }
 
         return round($breakSeconds / 3600, 2);
+    }
+
+    /**
+     * Cleanly close any orphan unclosed logs from prior days without logging artificial hours.
+     */
+    public function cleanupPriorDaysOrphanLogs(User $user): void
+    {
+        $todayStr = Carbon::today()->format('Y-m-d');
+
+        // 1. Close unfinalized GlobalAttendanceLogs from prior days (0 hours on unclosed segment)
+        $orphanGlobalLogs = GlobalAttendanceLog::where('userid', $user->id)
+            ->where('log_date', '<', $todayStr)
+            ->whereNull('endtime')
+            ->get();
+
+        foreach ($orphanGlobalLogs as $gLog) {
+            $gLog->endtime = $gLog->starttime;
+            $gLog->time_spend = 0.0;
+            $gLog->status = 'unclosed_missed';
+            $gLog->save();
+        }
+
+        // 2. Close unfinalized TaskLogs from prior days (0 hours on unclosed timer)
+        $orphanTaskLogs = TaskLog::where('userid', $user->id)
+            ->where('log_date', '<', $todayStr)
+            ->whereNull('endtime')
+            ->get();
+
+        foreach ($orphanTaskLogs as $tLog) {
+            $tLog->endtime = $tLog->starttime;
+            $tLog->time_spend = 0.0;
+            $tLog->log_description = $tLog->log_description ?: 'Unclosed task timer - zeroed because shift was not closed';
+            $tLog->save();
+        }
     }
 }

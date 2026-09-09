@@ -12,6 +12,8 @@ Route::prefix('projects')->middleware(['auth', 'restrict.wms'])->group(function(
     Route::get('/timeline', [ProjectController::class, 'timeline'])->name('projects.timeline');
     Route::get('/resources', [\App\Http\Controllers\Od\ResourceController::class, 'index'])->name('projects.resources');
     Route::get('/active-list', [ProjectController::class, 'activeProjectsList'])->name('projects.active-list');
+    Route::get('/tasks-list', [TaskController::class, 'listAllTasks'])->name('tasks.index');
+    Route::get('/tasks', [TaskController::class, 'listAllTasks']);
 
     Route::get('/taskboard/{project}', [TaskController::class, 'index']);
     Route::get('/taskboard/{task}/edit', [TaskController::class, 'edit']);

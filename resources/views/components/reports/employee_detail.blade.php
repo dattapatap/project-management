@@ -1,642 +1,602 @@
 @extends('layouts.app')
 
+@php
+$user = Auth::user();
+$isOwnProfile = Auth::id() == $employee->id;
+$deptName = $employee->departments->dept->name ?? 'Operations';
+$roleName = $employee->roles[0]->name ?? 'Specialist';
+@endphp
+
 @section('styles')
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<style>
+    .emp-dossier-wrapper {
+        font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .live-status-banner {
+        border-radius: 16px;
+        padding: 20px 24px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .live-status-banner.is-active {
+        border-left: 5px solid #10b981;
+        background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    }
+
+    .live-status-banner.is-offline {
+        border-left: 5px solid #94a3b8;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .live-pulse-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #10b981;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-green 1.8s infinite;
+    }
+
+    .live-offline-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #94a3b8;
+        display: inline-block;
+    }
+
+    @keyframes pulse-green {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+        }
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
+    }
+
+    .stat-card-premium {
+        border-radius: 16px;
+        padding: 20px 22px;
+        background: #ffffff;
+        border: 1px solid #edf2f7;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 100%;
+    }
+
+    .stat-card-premium:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-icon-circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .table-modern thead th {
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        color: #475569;
+        font-weight: 700;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        padding: 12px 16px;
+    }
+
+    .table-modern tbody td {
+        padding: 13px 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 13px;
+    }
+
+    .max-time-task-row {
+        background-color: #fff5f5 !important;
+        border-left: 4px solid #ef4444 !important;
+    }
+
+    .max-time-task-row:hover {
+        background-color: #fee2e2 !important;
+    }
+
+    .badge-max-time {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .progress-bar-thin {
+        height: 6px;
+        border-radius: 10px;
+        background-color: #e2e8f0;
+        overflow: hidden;
+    }
+</style>
 @endsection
 
 @section('content')
-<div class="container-fluid py-4" style="background: #f1f5f9; min-height: 100vh;">
-    <!-- 🚀 Premium Employee Dossier Header -->
-    <div class="row mb-5 align-items-center">
-        <div class="col-lg-4">
-            <h1 class="header-glow mb-2">{{ Auth::id() == $employee->id ? 'My Insights' : 'Employee Report' }}</h1>
-            <p class="text-muted font-size-15 font-weight-medium">{{ Auth::id() == $employee->id ? 'Track your professional growth and performance metrics.' : 'Deep-dive intelligence for ' . $employee->name . '.' }}</p>
-        </div>
-        <div class="col-lg-2 text-center">
-            <form action="{{ url()->current() }}" method="GET" id="filterForm" class="d-flex flex-wrap justify-content-center align-items-center gap-2">
-                <input type="hidden" name="preset" id="presetInput" value="{{ $range['preset'] }}">
-                <input type="hidden" name="date_from" id="dateFromInput" value="{{ request('date_from', $range['from']->toDateString()) }}">
-                <input type="hidden" name="date_to" id="dateToInput" value="{{ request('date_to', $range['to']->toDateString()) }}">
-                <div id="customRangeFields" class="d-flex align-items-center">
-                    <input type="text" id="dateRangePickerInput" class="form-control form-control-sm" style="width: 210px; height: 36px; border-radius: 8px; cursor: pointer; text-align: center; background: white;" readonly>
-                </div>
-            </form>
-            <small class="text-muted d-block mt-2">{{ $range['label'] }}</small>
-        </div>
-        <div class="col-lg-6 text-right">
-            @if(Auth::id() != $employee->id)
-            @if(!Auth::user()->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
-            <a href="{{ route('reports.employee.pdf', array_merge(['id' => base64_encode($employee->id)], request()->all())) }}" class="btn btn-primary btn-rounded px-4 mr-2 font-weight-bold">
-                <i class="mdi mdi-download mr-1"></i> Download PDF
-            </a>
-            @endif
-            <a href="{{ route('reports.employees') }}" class="btn btn-outline-primary btn-rounded px-4 font-weight-bold">
-                <i class="mdi mdi-arrow-left mr-1"></i> Back
-            </a>
-            @else
-            <div class="d-flex justify-content-end align-items-center">
-                @if(!Auth::user()->hasRole(['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
-                <a href="{{ route('reports.employee.pdf', array_merge(['id' => base64_encode($employee->id)], request()->all())) }}" class="btn btn-primary btn-rounded px-4 mr-3 font-weight-bold">
-                    <i class="mdi mdi-download mr-1"></i> Download PDF
+<div class="container-fluid emp-dossier-wrapper pb-5">
+
+    {{-- Top Header & Navigation --}}
+    <div class="row align-items-center mb-4 mt-2">
+        <div class="col-lg-6">
+            <div class="d-flex align-items-center">
+                <a href="{{ route('reports.employees') }}" class="btn btn-light border btn-sm px-3 mr-3 shadow-sm font-weight-medium">
+                    <i class="mdi mdi-arrow-left mr-1"></i> Back to Reports
                 </a>
-                @endif
-                <a href="{{ url('/') }}" class="btn btn-outline-primary btn-rounded px-4 mr-3 font-weight-bold">
-                    <i class="mdi mdi-arrow-left mr-1"></i> Back
+                <div>
+                    <h4 class="mb-1 text-dark font-weight-bold">
+                        {{ $isOwnProfile ? 'My Performance Insights' : 'Executive Employee Dossier' }}
+                    </h4>
+                    <span class="text-muted font-size-13">
+                        Detailed productivity tracking, task time logs & daily closing audits for <strong class="text-dark">{{ $employee->name }}</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 text-lg-right mt-3 mt-lg-0">
+            <div class="d-inline-flex align-items-center flex-wrap" style="gap: 8px;">
+                {{-- Date Range Picker Input --}}
+                <div class="input-group input-group-sm shadow-sm" style="width: 240px;">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-white border-right-0"><i class="mdi mdi-calendar text-primary"></i></span>
+                    </div>
+                    <input type="text" id="report_date_range_picker" class="form-control font-weight-medium border-left-0 font-size-12" style="background: white; cursor: pointer;" readonly>
+                    <input type="hidden" id="filter_start_date" value="{{ $startDateStr }}">
+                    <input type="hidden" id="filter_end_date" value="{{ $endDateStr }}">
+                </div>
+
+                {{-- Filter Action Buttons --}}
+                <button type="button" id="btnApplyDetailFilter" class="btn btn-primary btn-sm px-3 shadow-sm font-weight-semibold">
+                    <i class="mdi mdi-filter mr-1"></i> Apply
+                </button>
+                <button type="button" id="btnResetDetailFilter" class="btn btn-light border btn-sm px-2.5 font-weight-medium" title="Reset to Current Month">
+                    <i class="mdi mdi-refresh"></i> Reset
+                </button>
+
+                {{-- Download PDF Action --}}
+                <a href="{{ route('reports.employee.pdf', array_merge(['id' => base64_encode($employee->id)], request()->all())) }}" class="btn btn-outline-secondary btn-sm px-3 shadow-sm font-weight-semibold">
+                    <i class="mdi mdi-file-pdf-box mr-1"></i> Export PDF
                 </a>
             </div>
-            @endif
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xl-4">
-            <!-- 📂 Current Active Deliverables / Leads -->
-            <div class="modern-card p-4 mb-4 bg-white shadow-sm border border-light" style="border-radius: 24px;">
-                <h6 class="font-weight-bold text-dark mb-3">
-                    <i class="mdi mdi-folder-clock-outline text-primary mr-2"></i>
-                    @if($isSales) Active Working Leads @elseif($isCsd) Active Care Assignments @else Current Active Projects @endif
-                </h6>
-                <div class="active-deliverables-list" style="max-height: 250px; overflow-y: auto;">
-                    @forelse($currentProjects as $p)
-                    <div class="d-flex align-items-center mb-3 p-3 bg-light rounded-lg border border-light">
-                        <div class="flex-grow-1">
-                            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">{{ $p->name }}</span>
-                            <small class="text-muted">{{ $p->status }}</small>
-                        </div>
-                        <span class="badge badge-soft-info px-2 py-1 rounded-pill" style="font-size: 10px;">Active</span>
-                    </div>
-                    @empty
-                    <p class="text-muted text-center py-4 small">No active items in progress.</p>
-                    @endforelse
+    {{-- 1. Real-time Live Activity & Identity Banner --}}
+    <div class="live-status-banner mb-4 {{ $liveStatus['is_working'] ? 'is-active' : 'is-offline' }}">
+        <div class="row align-items-center">
+            <div class="col-md-7 d-flex align-items-center">
+                <div class="avatar-md mr-3" style="width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);">
+                    {{ strtoupper(substr($employee->name, 0, 1)) }}
                 </div>
-            </div>
-        </div>
-
-        <!-- ⚡ Comprehensive Performance Metrics -->
-        <!-- ⚡ Comprehensive Performance Metrics -->
-        <div class="col-xl-8">
-            <!-- Summary Row 1 -->
-            <div class="row">
-                @if($isSales)
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 mesh-gradient-primary">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Assigned Leads</h6>
-                        <h2 class="font-weight-bold text-primary mb-0">{{ $stats['total_leads'] }}</h2>
-                        <div class="mt-2 small text-muted"><i class="mdi mdi-account-plus"></i> Lead pipeline size</div>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                        <h4 class="mb-0 font-weight-bold text-dark">{{ $employee->name }}</h4>
+                        <span class="badge badge-soft-primary px-2 py-0.5 rounded-pill font-size-11 font-weight-bold">UID: #EMP-{{ $employee->id + 1000 }}</span>
+                        <span class="badge badge-soft-info px-2 py-0.5 rounded-pill font-size-11 font-weight-bold">{{ $deptName }} · {{ $roleName }}</span>
                     </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white shadow-sm border border-light">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Active Followups</h6>
-                        <h2 class="font-weight-bold text-warning mb-0">{{ $stats['active_followups'] }}</h2>
-                        <div class="mt-2 small text-muted"><i class="mdi mdi-phone-in-talk"></i> Active negotiations</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 mesh-gradient-success">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Matured Clients</h6>
-                        <h2 class="font-weight-bold text-success mb-0">{{ $stats['matured'] }}</h2>
-                        <div class="mt-2 small font-weight-bold text-success-50"><i class="mdi mdi-shield-check"></i> Sales conversions</div>
-                    </div>
-                </div>
-                @elseif($isCsd)
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 mesh-gradient-primary">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Active Clients</h6>
-                        <h2 class="font-weight-bold text-primary mb-0">{{ $stats['active_clients'] }}</h2>
-                        <div class="mt-2 small text-muted"><i class="mdi mdi-account-heart"></i> Under your care</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white shadow-sm border border-light">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Communications</h6>
-                        <h2 class="font-weight-bold text-info mb-0">{{ $stats['communications'] }}</h2>
-                        <div class="mt-2 small text-muted"><i class="mdi mdi-message-text"></i> Client touchpoints</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 mesh-gradient-success">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Opportunities Won</h6>
-                        <h2 class="font-weight-bold text-success mb-0">{{ $stats['opportunities_won'] }}</h2>
-                        <div class="mt-2 small font-weight-bold text-success-50"><i class="mdi mdi-trending-up"></i> Upsell / cross-sell</div>
-                    </div>
-                </div>
-                @else
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 mesh-gradient-primary">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Resolved Tasks</h6>
-                        <h2 class="font-weight-bold text-dark mb-0">{{ $stats['completed_tasks'] }}</h2>
-                        <div class="mt-2 small text-muted-50"><i class="mdi mdi-check-all"></i> Total Deliveries</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Avg Daily Input</h6>
-                        <h2 class="font-weight-bold text-primary mb-0">{{ $stats['avg_daily_hours'] }} <small>Hrs</small></h2>
-                        <div class="mt-2 small text-muted"><i class="mdi mdi-timer-outline mr-1"></i> Working Rhythm</div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white shadow-sm">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 10px; letter-spacing: 1.5px;">Productivity Index</h6>
-                        <h2 class="font-weight-bold text-dark mb-0">{{ $stats['completed_projects'] }} <small>Projects</small></h2>
-                        <div class="mt-2 small text-warning font-weight-bold"><i class="mdi mdi-rocket-launch"></i> Output Velocity</div>
-                    </div>
-                </div>
-                @endif
-            </div>
-
-            @if($isOd)
-            <!-- Summary Row 2 (OD) -->
-            <div class="row">
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Resolved Tasks</h6>
-                        <h4 class="font-weight-bold text-primary mb-0">{{ $stats['completed_tasks'] }}</h4>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Taken Time</h6>
-                        <h4 class="font-weight-bold text-dark mb-0">{{ $stats['total_hours'] }} <small>Hrs</small></h4>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Pending Tasks</h6>
-                        <h4 class="font-weight-bold text-danger mb-0">{{ $stats['pending_tasks'] }}</h4>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Compl. Projects</h6>
-                        <h4 class="font-weight-bold text-success mb-0">{{ $stats['completed_projects'] }}</h4>
-                    </div>
-                </div>
-            </div>
-            @elseif($isCsd)
-            <div class="row">
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Tickets Resolved</h6>
-                        <h4 class="font-weight-bold text-success mb-0">{{ $stats['tickets_resolved'] }}</h4>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">Collections Paid</h6>
-                        <h4 class="font-weight-bold text-primary mb-0">{{ $stats['collections_paid'] }}</h4>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">CR Completed</h6>
-                        <h4 class="font-weight-bold text-dark mb-0">{{ $stats['change_requests_completed'] }}</h4>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="modern-card p-4 h-100 bg-white border border-light text-center">
-                        <h6 class="text-muted font-weight-bold text-uppercase mb-2" style="font-size: 9px; letter-spacing: 1px;">At-Risk Clients</h6>
-                        <h4 class="font-weight-bold text-danger mb-0">{{ $stats['at_risk_clients'] }}</h4>
-                    </div>
-                </div>
-            </div>
-            @endif
-        </div>
-    </div>
-
-    @if($isOd)
-    <!-- 📋 Operations Work Detail -->
-    <div class="row mt-4">
-        <div class="col-lg-5 mb-4">
-            <div class="modern-card p-4 h-100">
-                <h5 class="font-weight-bold text-dark mb-3">Period Summary</h5>
-                <div class="row text-center">
-                    <div class="col-6 mb-3">
-                        <div class="p-3 bg-light rounded">
-                            <small class="text-muted d-block text-uppercase">Tasks Completed</small>
-                            <h3 class="font-weight-bold text-success mb-0">{{ $odSummary['completed_tasks'] ?? 0 }}</h3>
-                        </div>
-                    </div>
-                    <div class="col-6 mb-3">
-                        <div class="p-3 bg-light rounded">
-                            <small class="text-muted d-block text-uppercase">Total Hours</small>
-                            <h3 class="font-weight-bold text-primary mb-0">{{ $odSummary['total_hours'] ?? 0 }}</h3>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded">
-                            <small class="text-muted d-block text-uppercase">Days Worked</small>
-                            <h3 class="font-weight-bold text-dark mb-0">{{ $odSummary['days_worked'] ?? 0 }}</h3>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded">
-                            <small class="text-muted d-block text-uppercase">Avg Hrs / Day</small>
-                            <h3 class="font-weight-bold text-warning mb-0">{{ $odSummary['avg_hours_per_day'] ?? 0 }}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-7 mb-4">
-            <div class="modern-card p-4 h-100">
-                <h5 class="font-weight-bold text-dark mb-3">Hours per Task</h5>
-                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                    <table class="table table-sm modern-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Task</th>
-                                <th>Project</th>
-                                <th>Status</th>
-                                <th class="text-right">Hours</th>
-                                <th class="text-right">Logs</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($odTaskBreakdown as $taskRow)
-                            <tr>
-                                <td class="font-weight-bold">{{ Str::limit($taskRow->task_title, 35) }}</td>
-                                <td><small class="text-muted">{{ Str::limit($taskRow->project_name, 25) }}</small></td>
-                                <td><span class="badge badge-soft-secondary">{{ $taskRow->status }}</span></td>
-                                <td class="text-right font-weight-bold text-primary">{{ $taskRow->total_hours }} hrs</td>
-                                <td class="text-right">{{ $taskRow->log_count }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">No task logs in this period.</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @endif
-
-
-
-    <!-- ☀️ Morning to Evening Activity (Daily Work Rhythm) -->
-    <div class="row mt-4">
-        <div class="col-12 text-left">
-            <div class="modern-card p-5">
-                <div class="d-flex align-items-center justify-content-between mb-5">
-                    <div>
-                        <h4 class="font-weight-bold text-dark mb-1">Daily Work Rhythm</h4>
-                        <p class="text-muted small mb-0">{{ $range['label'] }}</p>
-                    </div>
-                    <div class="text-right">
-                        @if($isOd)
-                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $odSummary['avg_hours_per_day'] ?? 0 }} Hrs / Day</span>
-                        @elseif($isSales)
-                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_callbacks_per_day'] ?? 0 }} Callbacks / Day</span>
-                        @elseif($isCsd)
-                        <span class="badge badge-soft-primary px-3 py-1 rounded-pill">Avg. {{ $stats['avg_comms_per_day'] ?? 0 }} Comms / Day</span>
+                    <p class="text-muted font-size-12 mb-0 mt-1">
+                        <i class="mdi mdi-email-outline mr-1"></i> {{ $employee->email }} 
+                        @if(!empty($employee->emp?->phone) || !empty($employee->emp?->contact_no))
+                            | <i class="mdi mdi-phone-outline mr-1"></i> {{ $employee->emp->phone ?? $employee->emp->contact_no }}
                         @endif
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-5 text-md-right mt-3 mt-md-0">
+                <div class="d-inline-flex flex-column align-items-md-end">
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="{{ $liveStatus['is_working'] ? 'live-pulse-dot' : 'live-offline-dot' }} mr-2"></span>
+                        <strong class="font-size-13 {{ $liveStatus['is_working'] ? 'text-success' : 'text-muted' }}">
+                            {{ $liveStatus['status_label'] }}
+                        </strong>
+                    </div>
+                    <small class="text-muted font-size-12 text-md-right d-block" style="max-width: 320px;">
+                        {{ $liveStatus['detail'] }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- 2. Enterprise Performance & Hours KPI Cards --}}
+    <div class="row mb-4">
+        {{-- Card 1: Task Productivity Index --}}
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="stat-card-premium" style="border-left: 4px solid #4f46e5;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="font-size-11 font-weight-bold text-uppercase text-muted letter-spacing-1">Task Productivity Index</span>
+                    <div class="stat-icon-circle" style="background: rgba(79, 70, 229, 0.12); color: #4f46e5;">
+                        <i class="mdi mdi-speedometer"></i>
                     </div>
                 </div>
+                <h2 class="font-weight-bold text-dark mb-1">{{ $taskPerformanceScore }}%</h2>
+                <div class="progress-bar-thin mb-2">
+                    <div class="progress-bar" style="width: {{ $taskPerformanceScore }}%; background: {{ $taskPerformanceScore >= 75 ? '#10b981' : ($taskPerformanceScore >= 50 ? '#3b82f6' : '#ef4444') }};"></div>
+                </div>
+                <small class="font-size-11 {{ $taskPerformanceScore >= 75 ? 'text-success' : ($taskPerformanceScore >= 50 ? 'text-primary' : 'text-danger') }} font-weight-semibold">
+                    <i class="mdi mdi-information-outline mr-0.5"></i> Based on daily task work vs 6.5h target
+                </small>
+            </div>
+        </div>
 
-                <div class="daily-rhythm-timeline-wrapper" style="max-height: 550px; overflow-y: auto; padding-right: 15px; border-radius: 12px;">
-                    <div class="daily-rhythm-timeline">
-                        @forelse($dailyLogs as $date => $dayLogs)
-                        <div class="day-group mb-5 rhythm-day-item">
-                            <div class="d-flex align-items-center mb-4">
-                                <h5 class="font-weight-bold text-primary mb-0 mr-3">{{ $date }}</h5>
-                                <hr class="flex-grow-1 border-light">
-                                <span class="ml-3 badge badge-soft-secondary">
-                                    @if($isOd)
-                                    {{ round($dayLogs->sum('time_spend'), 2) }} Working Hours
-                                    @elseif($isSales)
-                                    {{ $dayLogs->count() }} Callbacks logged
-                                    @elseif($isCsd)
-                                    {{ $dayLogs->count() }} Actions logged
+        {{-- Card 2: Average Task Hours Spent / Day --}}
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="stat-card-premium" style="border-left: 4px solid #2563eb;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="font-size-11 font-weight-bold text-uppercase text-muted letter-spacing-1">Avg Daily Task Spend</span>
+                    <div class="stat-icon-circle" style="background: rgba(37, 99, 235, 0.12); color: #2563eb;">
+                        <i class="mdi mdi-clock-check-outline"></i>
+                    </div>
+                </div>
+                <h2 class="font-weight-bold text-dark mb-1">{{ $avgDailyTaskHoursFormatted }} <small class="font-size-13 text-muted font-weight-normal">Hrs / Day</small></h2>
+                <p class="text-muted font-size-11 mb-0">
+                    Total Task Time: <strong class="text-dark">{{ $totalTaskHoursFormatted }} hrs</strong> in {{ $totalWorkingDaysCount }} working days
+                </p>
+            </div>
+        </div>
+
+        {{-- Card 3: Average Shift Hours Logged --}}
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="stat-card-premium" style="border-left: 4px solid #059669;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="font-size-11 font-weight-bold text-uppercase text-muted letter-spacing-1">Avg Shift Duration</span>
+                    <div class="stat-icon-circle" style="background: rgba(5, 150, 105, 0.12); color: #059669;">
+                        <i class="mdi mdi-timer-outline"></i>
+                    </div>
+                </div>
+                <h2 class="font-weight-bold text-dark mb-1">{{ $avgDailyShiftHoursFormatted }} <small class="font-size-13 text-muted font-weight-normal">Hrs / Day</small></h2>
+                <p class="text-muted font-size-11 mb-0">
+                    Total Shift Logged: <strong class="text-dark">{{ $totalShiftHoursFormatted }} hrs</strong>
+                </p>
+            </div>
+        </div>
+
+        {{-- Card 4: Day Closing Compliance (Excluding Sundays) --}}
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card-premium" style="border-left: 4px solid {{ $unsubmittedClosingDaysCount > 0 ? '#ef4444' : '#10b981' }};">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="font-size-11 font-weight-bold text-uppercase text-muted letter-spacing-1">Unsubmitted Day Closings</span>
+                    <div class="stat-icon-circle" style="background: {{ $unsubmittedClosingDaysCount > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)' }}; color: {{ $unsubmittedClosingDaysCount > 0 ? '#ef4444' : '#10b981' }};">
+                        <i class="mdi mdi-alert-circle-outline"></i>
+                    </div>
+                </div>
+                <h2 class="font-weight-bold {{ $unsubmittedClosingDaysCount > 0 ? 'text-danger' : 'text-success' }} mb-1">
+                    {{ $unsubmittedClosingDaysCount }} <small class="font-size-13 text-muted font-weight-normal">Missing Days</small>
+                </h2>
+                <p class="font-size-11 mb-0 text-muted">
+                    Submitted: <strong class="text-success">{{ $submittedClosingDaysCount }} of {{ $totalWorkingDaysCount }}</strong> <small>(Sundays skipped)</small>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {{-- 3. Hours per Task Table (With Maximum Time Took Task Highlighted in Red) --}}
+    {{-- 3. Hours per Task Table (With Time Frame comparison & Max Time Highlight) --}}
+    @if($isOd && $odTaskBreakdown->count() > 0)
+    <div class="card border shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap">
+            <div>
+                <h5 class="card-title text-dark mb-0 font-size-14 font-weight-bold">
+                    <i class="mdi mdi-format-list-checks text-primary mr-1"></i> Task Time Allocation & Consumption Audit
+                </h5>
+                <small class="text-muted">Task schedule time frames, allocated office shift hours (10:00 AM – 6:30 PM, Sundays excluded), actual hours spent, and overtime variances.</small>
+            </div>
+            <div class="d-flex align-items-center" style="gap: 8px;">
+                @if($maxTaskHours > 0)
+                <span class="badge badge-danger px-3 py-1 font-size-11 font-weight-bold rounded-pill">
+                    <i class="mdi mdi-fire mr-1"></i> Max Single Task: {{ $maxTaskHours }} hrs
+                </span>
+                @endif
+                <span class="badge badge-soft-primary px-3 py-1 rounded-pill font-size-11 font-weight-bold">
+                    {{ $odTaskBreakdown->count() }} Tasks
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="task-allocation-table" class="table table-modern table-hover align-middle mb-0 w-100">
+                    <thead>
+                        <tr>
+                            <th style="padding-left: 24px; width: 28%;">Task Title</th>
+                            <th style="width: 18%;">Project / Client</th>
+                            <th style="width: 22%;">Scheduled Time Frame</th>
+                            <th style="width: 10%;">Status</th>
+                            <th style="width: 14%; text-align: right;">Actual vs Allotted</th>
+                            <th style="padding-right: 24px; width: 8%; text-align: right;">Logs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($odTaskBreakdown as $taskRow)
+                        @php
+                            $isMaxTask = ($taskRow->total_hours == $maxTaskHours && $maxTaskHours > 0);
+                            $isOverdue = $taskRow->is_overdue ?? false;
+                        @endphp
+                        <tr class="{{ $isMaxTask ? 'max-time-task-row' : '' }}">
+                            <td style="padding-left: 24px;">
+                                <div class="d-flex align-items-center">
+                                    @if($isMaxTask)
+                                    <span class="badge-max-time mr-2" title="Highest Time Consumed Task in Period">
+                                        <i class="mdi mdi-fire"></i> MAX TIME
+                                    </span>
                                     @endif
-                                </span>
-                            </div>
-
-                            <div class="timeline-items ml-4 border-left border-light pl-4">
-                                @foreach($dayLogs->sortBy('created_at') as $log)
-                                <div class="timeline-item position-relative mb-4">
-                                    <div class="timeline-dot position-absolute" style="left: -29px; top: 5px; width: 10px; height: 10px; background: #6366f1; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 2px #e2e8f0;"></div>
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <span class="font-size-13 text-muted font-weight-bold">{{ Carbon\Carbon::parse($log->created_at)->format('h:i A') }}</span>
-                                            @if($isOd)
-                                            <h6 class="font-weight-bold text-dark mt-1 mb-1">{{ $log->task->title ?? 'Untitled Task' }}</h6>
-                                            <p class="text-muted small mb-0">{{ $log->log_description }}</p>
-                                            @elseif($isSales)
-                                            <h6 class="font-weight-bold text-dark mt-1 mb-1">Callback Status: <span class="badge badge-soft-info">{{ $log->status }}</span></h6>
-                                            <p class="text-muted small mb-0">{{ $log->remarks }}</p>
-                                            @elseif($isCsd)
-                                            <h6 class="font-weight-bold text-dark mt-1 mb-1">Comm Channel: <span class="badge badge-soft-info">{{ ucfirst($log->type ?? 'Note') }}</span></h6>
-                                            <p class="text-muted small mb-0">{{ $log->subject ?? $log->remarks }}</p>
-                                            @endif
-                                        </div>
-                                        <div class="text-right">
-                                            @if($isOd)
-                                            <span class="badge badge-soft-info rounded-pill px-3">{{ $log->time_spend }} hrs</span>
-                                            <div class="small text-muted mt-1">{{ $log->task->project->clients->name ?? ($log->task->project->project_name ?? 'Internal') }}</div>
-                                            @elseif($isSales)
-                                            <span class="badge badge-soft-success rounded-pill px-3">Sales Action</span>
-                                            <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
-                                            @elseif($isCsd)
-                                            <span class="badge badge-soft-success rounded-pill px-3">CSD Log</span>
-                                            <div class="small text-muted mt-1">{{ $log->client->name ?? 'Client' }}</div>
-                                            @endif
-                                        </div>
+                                    <div>
+                                        <span class="font-weight-bold {{ $isMaxTask ? 'text-danger' : 'text-dark' }} d-block font-size-13">
+                                            {{ $taskRow->task_title }}
+                                        </span>
+                                        <small class="text-muted font-size-11">Task #{{ $taskRow->task_id }}</small>
                                     </div>
                                 </div>
-                                @endforeach
-                            </div>
-                        </div>
-                        @empty
-                        <p class="text-muted text-center py-4">No activity entries in this period.</p>
-                        @endforelse
-                    </div>
-                </div>
-                @if($dailyLogs->count() > 0)
-                <div id="rhythm-pagination-container" class="mt-4 d-flex justify-content-end">
-                    <!-- Pagination will be dynamically generated by JS -->
-                </div>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    @if(!$isOd)
-    <div class="row mt-4">
-        <!-- 📜 Recent Activity/Followup Logs -->
-        <div class="col-xl-8">
-            <div class="modern-card p-5 h-100">
-                @if($isSales)
-                <h5 class="font-weight-bold text-dark mb-5">Recent Followup & Callback Logs</h5>
-                <div class="table-responsive px-1" style="max-height: 480px; overflow-y: auto;">
-                    <table class="table modern-table mb-0" style="border: none !important;">
-                        <thead>
-                            <tr style="background: transparent !important; border: none !important; position: sticky; top: 0; background-color: #ffffff; z-index: 10;">
-                                <th style="text-align: left; padding-top: 0;">Timestamp</th>
-                                <th style="text-align: left; padding-top: 0;">Client Name</th>
-                                <th style="text-align: left; padding-top: 0;">Status / Remarks</th>
-                                <th style="padding-top: 0;">Next Followup</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($salesLogs as $sLog)
-                            <tr>
-                                <td class="text-left"><span class="badge badge-soft-secondary">{{ Carbon\Carbon::parse($sLog->created_at)->format('d M, H:i') }}</span></td>
-                                <td class="text-left">
-                                    <span class="font-weight-bold text-dark d-block">{{ $sLog->client()->first()->name ?? 'N/A' }}</span>
-                                    <small class="text-muted">STS Callback History</small>
-                                </td>
-                                <td class="text-left">
-                                    <span class="badge {{ $sLog->status == 'Matured' ? 'badge-success' : ($sLog->status == 'Followup' ? 'badge-info' : 'badge-warning') }} mb-1">{{ $sLog->status }}</span>
-                                    <p class="text-muted small mb-0">{{ Str::limit($sLog->remarks, 75) }}</p>
-                                </td>
-                                <td>
-                                    @if($sLog->tbro)
-                                    <span class="text-primary font-weight-bold">{{ Carbon\Carbon::parse($sLog->tbro)->format('d M, Y') }}</span>
+                            </td>
+                            <td>
+                                <span class="font-weight-medium text-dark font-size-12 d-block">{{ $taskRow->project_name }}</span>
+                            </td>
+                            <td>
+                                <div>
+                                    <span class="font-weight-semibold text-dark font-size-12 d-block">
+                                        <i class="mdi mdi-calendar-range text-primary mr-1"></i>{{ $taskRow->time_frame_label }}
+                                    </span>
+                                    <small class="text-muted font-size-11">Allotted Shift: <strong>{{ $taskRow->allocated_hours_formatted ?? \App\Services\Reports\OdWorkReportService::formatToTimingHours($taskRow->allocated_hours) }} hrs</strong></small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-soft-{{ $taskRow->status === 'Completed' ? 'success' : ($taskRow->status === 'InProgress' ? 'primary' : 'secondary') }} px-2 py-0.5 rounded-pill font-size-11">
+                                    {{ $taskRow->status }}
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <div>
+                                    <span class="font-weight-bold font-size-13 {{ $isMaxTask || $isOverdue ? 'text-danger' : 'text-dark' }} d-block">
+                                        {{ $taskRow->total_hours_formatted ?? \App\Services\Reports\OdWorkReportService::formatToTimingHours($taskRow->total_hours) }} hrs
+                                    </span>
+                                    @if($isOverdue)
+                                    <span class="badge badge-soft-danger px-1.5 py-0.5 rounded font-size-10 font-weight-bold">
+                                        <i class="mdi mdi-alert-circle mr-0.5"></i> +{{ $taskRow->variance_hours_formatted ?? \App\Services\Reports\OdWorkReportService::formatToTimingHours($taskRow->variance_hours) }}h Exceeded
+                                    </span>
                                     @else
-                                    <span class="text-muted">-</span>
+                                    <span class="badge badge-soft-success px-1.5 py-0.5 rounded font-size-10 font-weight-medium">
+                                        <i class="mdi mdi-check mr-0.5"></i> Within Budget
+                                    </span>
                                     @endif
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="text-center py-5">
-                                    <img src="https://illustrations.popsy.co/gray/fogg-searching.png" style="width: 120px;" class="mb-3 opacity-50">
-                                    <p class="text-muted mb-0">No followups logged for the selected period.</p>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                @elseif($isCsd)
-                <h5 class="font-weight-bold text-dark mb-5">Recent Client Communications</h5>
-                <div class="table-responsive px-1" style="max-height: 480px; overflow-y: auto;">
-                    <table class="table modern-table mb-0" style="border: none !important;">
-                        <thead>
-                            <tr style="background: transparent !important; border: none !important; position: sticky; top: 0; background-color: #ffffff; z-index: 10;">
-                                <th style="text-align: left; padding-top: 0;">Timestamp</th>
-                                <th style="text-align: left; padding-top: 0;">Client</th>
-                                <th style="text-align: left; padding-top: 0;">Channel / Subject</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentCsdComms as $comm)
-                            <tr>
-                                <td class="text-left"><span class="badge badge-soft-secondary">{{ $comm->created_at->format('d M, H:i') }}</span></td>
-                                <td class="text-left"><span class="font-weight-bold text-dark">{{ $comm->client->name ?? 'N/A' }}</span></td>
-                                <td class="text-left">
-                                    <span class="badge badge-soft-info mb-1">{{ ucfirst($comm->type ?? 'note') }}</span>
-                                    <p class="text-muted small mb-0">{{ Str::limit($comm->subject ?? $comm->remarks, 75) }}</p>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="3" class="text-center py-5">
-                                    <p class="text-muted mb-0">No communications logged for the selected period.</p>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                @else
-                <h5 class="font-weight-bold text-dark mb-5">Recent Activity Logs</h5>
-                <div class="table-responsive">
-                    <table class="table modern-table mb-0" style="border: none !important;">
-                        <thead>
-                            <tr style="background: transparent !important; border: none !important;">
-                                <th style="text-align: left;">Timestamp</th>
-                                <th style="text-align: left;">Activity</th>
-                                <th>Yield</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($logs as $log)
-                            <tr>
-                                <td class="text-left"><span class="badge badge-soft-secondary">{{ Carbon\Carbon::parse($log->created_at)->format('d M, H:i') }}</span></td>
-                                <td class="text-left">
-                                    <span class="font-weight-bold text-dark d-block">{{ $log->task->title ?? 'Activity' }}</span>
-                                    <small class="text-muted">{{ Str::limit($log->log_description, 45) }}</small>
-                                </td>
-                                <td><span class="creator-identity">{{ $log->time_spend }} hrs</span></td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="3" class="text-center py-5">
-                                    <img src="https://illustrations.popsy.co/gray/fogg-searching.png" style="width: 120px;" class="mb-3 opacity-50">
-                                    <p class="text-muted mb-0">No activity logs found for the selected period.</p>
-                                    <small class="text-muted-50">Try selecting a different year or month from the filters above.</small>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- 🎯 Role-Specific Recent Achievements/Assignments -->
-        <div class="col-xl-4">
-            <div class="modern-card p-4 h-100 bg-white shadow-sm border border-light">
-                @if($isSales)
-                <h6 class="font-weight-bold text-dark mb-4"><i class="mdi mdi-crown text-warning mr-2"></i> Recent Matured Clients</h6>
-                <div class="recent-list">
-                    @forelse($recentMatured as $client)
-                    <div class="d-flex align-items-center mb-3 p-3 bg-light rounded-lg border border-light">
-                        <div class="avatar-xs mr-3">
-                            <span class="avatar-title rounded-circle bg-soft-success text-success font-weight-bold">{{ substr($client->name, 0, 1) }}</span>
-                        </div>
-                        <div class="flex-grow-1">
-                            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">{{ $client->name }}</span>
-                            <small class="text-muted">{{ Carbon\Carbon::parse($client->created_at)->format('d M, Y') }}</small>
-                        </div>
-                        <span class="badge badge-success">Matured</span>
-                    </div>
-                    @empty
-                    <p class="text-muted text-center py-4">No recent matured clients found.</p>
-                    @endforelse
-                </div>
-                @elseif($isCsd)
-                <h6 class="font-weight-bold text-dark mb-4"><i class="mdi mdi-trending-up text-success mr-2"></i> Won Opportunities</h6>
-                <div class="recent-list">
-                    @forelse($recentWonOpps as $opp)
-                    <div class="d-flex align-items-center mb-3 p-3 bg-light rounded-lg border border-light">
-                        <div class="flex-grow-1">
-                            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">{{ Str::limit($opp->title, 30) }}</span>
-                            <small class="text-muted">{{ $opp->clients?->name ?? 'Client' }} · {{ $opp->updated_at->format('d M, Y') }}</small>
-                        </div>
-                        <span class="badge badge-success">Won</span>
-                    </div>
-                    @empty
-                    <p class="text-muted text-center py-4">No won opportunities yet.</p>
-                    @endforelse
-                </div>
-                @else
-                <h6 class="font-weight-bold text-dark mb-4"><i class="mdi mdi-clipboard-text-clock text-primary mr-2"></i> Recent Task Assignments</h6>
-                <div class="recent-list">
-                    @forelse($tasks as $task)
-                    <div class="d-flex align-items-center mb-3 p-3 bg-light rounded-lg border border-light transition-hover">
-                        <div class="flex-grow-1 mr-2">
-                            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">{{ Str::limit($task->title, 25) }}</span>
-                            <small class="text-primary font-weight-bold">{{ $task->project->clients->name ?? ($task->project->project_name ?? 'Internal') }}</small>
-                        </div>
-                        <span class="badge {{ $task->status == 'Completed' ? 'badge-soft-success' : 'badge-soft-warning' }} px-3 rounded-pill">
-                            {{ $task->status }}
-                        </span>
-                    </div>
-                    @empty
-                    <p class="text-muted text-center py-4">No recent tasks assigned.</p>
-                    @endforelse
-                </div>
-                @endif
+                                </div>
+                            </td>
+                            <td class="text-right" style="padding-right: 24px;">
+                                <span class="badge badge-light border px-2 py-0.5 font-size-11">{{ $taskRow->log_count }}</span>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No task logs recorded in this period.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
     @endif
 
-
-    <!-- 📅 EOD Target History -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="modern-card p-4 bg-white shadow-sm border border-light" style="border-radius: 24px;">
-                <h5 class="font-weight-bold text-dark mb-3">
-                    <i class="mdi mdi-history text-primary mr-2"></i> Recent Day Closing History (Past 30 Submissions)
+    {{-- 4. Daily Work Rhythm & Every Day Task Spend Table --}}
+    <div class="card border shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap">
+            <div>
+                <h5 class="card-title text-dark mb-0 font-size-14 font-weight-bold">
+                    <i class="mdi mdi-calendar-clock text-primary mr-1"></i> Daily Work Rhythm & Task Log Audit
                 </h5>
-                <div class="table-responsive">
-                    <table class="table custom-table mb-0 align-middle">
-                        <thead>
-                            <tr class="text-uppercase font-size-11 letter-spacing-1 text-muted">
-                                <th style="padding-left: 20px;">Date</th>
-                                <th>Department</th>
-                                <th>Recorded Metrics</th>
-                                <th>Target Status</th>
-                                <th>Review Status</th>
-                                <th>Remarks & Feedback</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($pastClosings as $closing)
-                            <tr>
-                                <td style="padding-left: 20px;" class="font-weight-bold">
-                                    {{ \Carbon\Carbon::parse($closing->closing_date)->format('d M, Y (D)') }}
-                                </td>
-                                <td>
-                                    <span class="badge badge-soft-primary">{{ $closing->department }}</span>
-                                </td>
-                                <td>
-                                    @if($closing->department === 'NSD')
-                                    <span class="text-muted d-block small">STS: <strong>{{ $closing->achieved_metrics['sts'] ?? 0 }}</strong></span>
-                                    <span class="text-muted d-block small">DSR: <strong>{{ $closing->achieved_metrics['dsr'] ?? 0 }}</strong></span>
-                                    @elseif($closing->department === 'CSD')
-                                    <span class="text-muted d-block small">Daily Work Hours: <strong>{{ $closing->achieved_metrics['global_hours'] ?? 0 }}h</strong></span>
-                                    <span class="text-muted d-block small">Communications: <strong>{{ $closing->achieved_metrics['communications'] ?? 0 }}</strong></span>
-                                    @else
-                                    <span class="text-muted d-block small">Daily Work Hours: <strong>{{ $closing->achieved_metrics['global_hours'] ?? 0 }}h</strong></span>
-                                    <span class="text-muted d-block small">Task Hours: <strong>{{ $closing->achieved_metrics['hours'] ?? 0 }}h</strong></span>
-                                    <span class="text-muted d-block small">Tasks: <strong>{{ $closing->achieved_metrics['tasks'] ?? 0 }}</strong></span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($closing->target_status === 'Met')
-                                    <span class="badge badge-soft-success px-2.5 py-0.5">Target Met</span>
-                                    @elseif($closing->target_status === 'On Leave')
-                                    <span class="badge badge-soft-danger px-2.5 py-0.5">On Leave</span>
-                                    @else
-                                    <span class="badge badge-soft-warning px-2.5 py-0.5">Target Not Met</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($closing->status === 'Pending')
-                                    <span class="badge badge-soft-warning px-2.5 py-0.5">Pending Review</span>
-                                    @elseif($closing->status === 'Approved')
-                                    <span class="badge badge-soft-success px-2.5 py-0.5">Approved</span>
-                                    @else
-                                    <span class="badge badge-soft-danger px-2.5 py-0.5">Rejected</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($closing->tl_remarks)
-                                    <span class="text-dark font-size-12 d-block"><strong>Feedback:</strong> {{ $closing->tl_remarks }}</span>
-                                    @endif
-                                    @if($closing->executive_remarks)
-                                    <span class="text-muted font-size-11 d-block"><strong>My Notes:</strong> {{ $closing->executive_remarks }}</span>
-                                    @endif
-                                    @if(!$closing->tl_remarks && !$closing->executive_remarks)
-                                    <span class="text-muted font-italic font-size-12">—</span>
-                                    @endif
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">No day closing history logged.</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                <small class="text-muted">Click any row to inspect task breakdown, client name, and time spent on that day</small>
+            </div>
+            <span class="badge badge-soft-primary px-3 py-1 rounded-pill font-size-11 font-weight-bold">
+                {{ $dailyWorkDays->count() }} Working Days
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="daily-work-rhythm-table" class="table table-modern table-hover align-middle mb-0 w-100">
+                    <thead>
+                        <tr>
+                            <th style="padding-left: 24px; width: 17%;">Date & Day</th>
+                            <th style="width: 13%;">Shift Hours</th>
+                            <th style="width: 15%;">Task Time Spent</th>
+                            <th style="width: 12%;">Tasks Count</th>
+                            <th style="width: 16%;">Day Closing Status</th>
+                            <th style="width: 14%;">Target Status</th>
+                            <th style="padding-right: 24px; width: 13%; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($dailyWorkDays->reverse() as $day)
+                        <tr class="daily-rhythm-row" style="{{ $day->is_today ? 'background-color: #f0fdf4;' : '' }} cursor: pointer;" data-date="{{ $day->date }}" title="Click to view task details for this day">
+                            <td style="padding-left: 24px;">
+                                <span class="font-weight-bold text-dark d-block font-size-13">{{ $day->label }}</span>
+                                <small class="text-muted font-size-11 font-weight-semibold">{{ $day->day_name }} {{ $day->is_today ? '(Today)' : '' }}</small>
+                            </td>
+                            <td>
+                                @if($day->shift_hours > 0)
+                                <span class="font-weight-semibold text-dark font-size-12"><i class="mdi mdi-clock-outline text-primary mr-1"></i>{{ \App\Services\Reports\OdWorkReportService::formatToTimingHours($day->shift_hours) }} hrs</span>
+                                @else
+                                <span class="text-muted font-size-11">—</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($day->task_hours > 0)
+                                <span class="font-weight-bold font-size-13 {{ $day->task_hours >= 6 ? 'text-success' : 'text-primary' }}">
+                                    <i class="mdi mdi-checkbox-marked-circle-outline mr-1"></i>{{ \App\Services\Reports\OdWorkReportService::formatToTimingHours($day->task_hours) }} hrs
+                                </span>
+                                @else
+                                <span class="text-muted font-size-11">0.00 hrs</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($day->task_count > 0)
+                                <span class="badge badge-soft-info px-2 py-0.5 rounded-pill font-size-11 font-weight-bold">{{ $day->task_count }} Tasks</span>
+                                @else
+                                <span class="text-muted font-size-11">0</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($day->closing_status === 'Approved' || $day->closing_status === 'Submitted')
+                                <span class="badge badge-soft-success px-2.5 py-1 rounded-pill font-size-11 font-weight-bold">
+                                    <i class="mdi mdi-check-all mr-0.5"></i> {{ $day->closing_status }}
+                                </span>
+                                @elseif($day->closing_status === 'Not Submitted')
+                                <span class="badge badge-soft-danger px-2.5 py-1 rounded-pill font-size-11 font-weight-bold">
+                                    <i class="mdi mdi-close-circle mr-0.5"></i> Not Submitted
+                                </span>
+                                @else
+                                <span class="badge badge-soft-light text-muted px-2.5 py-1 rounded-pill font-size-11">{{ $day->closing_status }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($day->target_status === 'Met')
+                                <span class="badge badge-soft-success px-2 py-0.5 rounded-pill font-size-11 font-weight-bold"><i class="mdi mdi-check"></i> Target Met</span>
+                                @elseif($day->target_status === 'On Leave')
+                                <span class="badge badge-soft-warning px-2 py-0.5 rounded-pill font-size-11 font-weight-bold">On Leave</span>
+                                @else
+                                <span class="badge badge-soft-danger px-2 py-0.5 rounded-pill font-size-11 font-weight-bold"><i class="mdi mdi-alert"></i> Under Target</span>
+                                @endif
+                            </td>
+                            <td class="text-right" style="padding-right: 24px;">
+                                @if($day->tasks && count($day->tasks) > 0)
+                                <button type="button" class="btn btn-outline-primary btn-sm px-2.5 py-1 font-size-11 font-weight-semibold shadow-sm btn-open-day-tasks" data-date="{{ $day->date }}" style="border-radius: 8px;">
+                                    <i class="mdi mdi-clipboard-text-clock mr-0.5"></i> Tasks ({{ count($day->tasks) }})
+                                </button>
+                                @else
+                                <span class="text-muted font-size-11">No Logs</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No working day logs found for this date range.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Day Task Details --}}
+    <div class="modal fade" id="dayTaskDetailsModal" tabindex="-1" role="dialog" aria-labelledby="dayTaskDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;">
+                <div class="modal-header bg-light py-3 px-4 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="mr-2.5 d-flex align-items-center justify-content-center text-primary" style="background: #eef2ff; border-radius: 8px; width: 36px; height: 36px; font-size: 20px;">
+                            <i class="mdi mdi-calendar-clock"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title font-size-15 font-weight-bold text-dark mb-0" id="dayTaskDetailsModalLabel">
+                                Daily Task Logs & Activity Audit
+                            </h5>
+                            <small class="text-muted" id="modal-day-subtitle">Date: —</small>
+                        </div>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    {{-- Day Summary Bar --}}
+                    <div class="p-3 mb-3 bg-light rounded-lg border d-flex align-items-center justify-content-between flex-wrap" style="gap: 12px;">
+                        <div>
+                            <small class="text-muted font-size-11 text-uppercase font-weight-bold d-block">Employee</small>
+                            <strong class="text-dark font-size-13">{{ $employee->name }}</strong>
+                        </div>
+                        <div>
+                            <small class="text-muted font-size-11 text-uppercase font-weight-bold d-block">Task Time Spent</small>
+                            <span class="badge badge-soft-primary px-2.5 py-1 rounded font-weight-bold font-size-12" id="modal-day-task-hours">0.00 hrs</span>
+                        </div>
+                        <div>
+                            <small class="text-muted font-size-11 text-uppercase font-weight-bold d-block">Shift Duration</small>
+                            <span class="badge badge-soft-info px-2.5 py-1 rounded font-weight-bold font-size-12" id="modal-day-shift-hours">0.00 hrs</span>
+                        </div>
+                        <div>
+                            <small class="text-muted font-size-11 text-uppercase font-weight-bold d-block">Closing Status</small>
+                            <span id="modal-day-closing-status" class="badge badge-soft-secondary px-2.5 py-1 rounded font-weight-bold font-size-12">—</span>
+                        </div>
+                    </div>
+
+                    {{-- Tasks List Header --}}
+                    <h6 class="font-weight-bold text-dark mb-3 font-size-13">
+                        <i class="mdi mdi-format-list-checks text-primary mr-1"></i> Tasks Worked On That Day (<span id="modal-day-tasks-count">0</span>):
+                    </h6>
+
+                    {{-- Tasks Container --}}
+                    <div id="modal-day-tasks-list" class="d-flex flex-column" style="gap: 12px;"></div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 border-top">
+                    <button type="button" class="btn btn-secondary btn-sm px-3 font-weight-medium" data-dismiss="modal" data-bs-dismiss="modal" style="border-radius: 8px;">Close</button>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- 5. Active Projects / Assignments --}}
+    @if($currentProjects->count() > 0)
+    <div class="card border shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+            <h5 class="card-title text-dark mb-0 font-size-14 font-weight-bold">
+                <i class="mdi mdi-folder-outline text-primary mr-1"></i> Current Active Projects & Deliverables
+            </h5>
+        </div>
+        <div class="card-body p-3">
+            <div class="row">
+                @foreach($currentProjects as $p)
+                <div class="col-md-4 mb-3">
+                    <div class="p-3 bg-light rounded-lg border border-light d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="font-weight-bold text-dark d-block font-size-13">{{ $p->name }}</span>
+                            <small class="text-muted font-size-11">{{ $p->status }}</small>
+                        </div>
+                        <span class="badge badge-soft-primary px-2 py-1 rounded-pill font-size-10 font-weight-bold">Active</span>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
 
 </div>
 @endsection
 
 @section('scripts')
-<script type="text/javascript" src="{{ asset('assets/js/moment.min.js') }}"></script>
-<script type="text/javascript" src="{{ asset('assets/js/datepicket.min.js') }}"></script>
-
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <script>
     $(document).ready(function() {
-        // Date Range Picker Initialization
-        $('#dateRangePickerInput').daterangepicker({
-            startDate: moment("{{ $range['from']->toDateString() }}"),
-            endDate: moment("{{ $range['to']->toDateString() }}"),
+        var selectedStart = "{{ $startDateStr }}";
+        var selectedEnd = "{{ $endDateStr }}";
+
+        $('#report_date_range_picker').daterangepicker({
+            startDate: moment(selectedStart),
+            endDate: moment(selectedEnd),
             locale: {
                 format: 'YYYY-MM-DD'
             },
@@ -644,134 +604,186 @@
                 'Today': [moment(), moment()],
                 'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
                 'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
                 'This Month': [moment().startOf('month'), moment().endOf('month')],
-                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                'This Quarter': [moment().startOf('quarter'), moment().endOf('quarter')],
+                'This Year': [moment().startOf('year'), moment().endOf('year')]
             }
         }, function(start, end) {
-            $('#dateFromInput').val(start.format('YYYY-MM-DD'));
-            $('#dateToInput').val(end.format('YYYY-MM-DD'));
-            $('#presetInput').val('custom');
-            $('#filterForm').submit();
+            selectedStart = start.format('YYYY-MM-DD');
+            selectedEnd = end.format('YYYY-MM-DD');
+            $('#filter_start_date').val(selectedStart);
+            $('#filter_end_date').val(selectedEnd);
+            $('#report_date_range_picker').val(selectedStart + ' - ' + selectedEnd);
         });
 
-        // Set initial display text
-        $('#dateRangePickerInput').val(moment("{{ $range['from']->toDateString() }}").format('YYYY-MM-DD') + ' - ' + moment("{{ $range['to']->toDateString() }}").format('YYYY-MM-DD'));
+        $('#report_date_range_picker').val(moment(selectedStart).format('YYYY-MM-DD') + ' - ' + moment(selectedEnd).format('YYYY-MM-DD'));
 
-        // 🔄 Filter Change Handlers
-        $('#yearSelect').on('change', function() {
-            $('#monthSelect').val('All');
-            $('#filterForm').submit();
+        // Apply Filter Action
+        $('#btnApplyDetailFilter').on('click', function() {
+            var startVal = $('#filter_start_date').val() || selectedStart;
+            var endVal = $('#filter_end_date').val() || selectedEnd;
+
+            var url = new URL(window.location.href);
+            url.searchParams.set('date_from', startVal);
+            url.searchParams.set('date_to', endVal);
+            url.searchParams.set('start_date', startVal);
+            url.searchParams.set('end_date', endVal);
+            window.location.href = url.toString();
         });
 
-        $('#monthSelect').on('change', function() {
-            $('#filterForm').submit();
+        // Reset Filter Action
+        $('#btnResetDetailFilter').on('click', function() {
+            var defaultStart = moment().startOf('month').format('YYYY-MM-DD');
+            var defaultEnd = moment().format('YYYY-MM-DD');
+
+            var url = new URL(window.location.href);
+            url.searchParams.set('date_from', defaultStart);
+            url.searchParams.set('date_to', defaultEnd);
+            url.searchParams.set('start_date', defaultStart);
+            url.searchParams.set('end_date', defaultEnd);
+            window.location.href = url.toString();
         });
 
-        $('#applyCustomRange').on('click', function(e) {
-            e.preventDefault();
-            $('#presetInput').val('custom');
-            $('#filterForm').submit();
-        });
-
-        $('#dateFromInput, #dateToInput').on('change', function() {
-            if ($('#presetInput').val() === 'custom') {
-                $('#filterForm').submit();
-            }
-        });
-
-        // Daily Work Rhythm Custom Day-wise Pagination
-        const itemsPerPage = 3;
-        const $rhythmItems = $('.rhythm-day-item');
-        const numItems = $rhythmItems.length;
-
-        if (numItems > itemsPerPage) {
-            const numPages = Math.ceil(numItems / itemsPerPage);
-            const $paginationContainer = $('#rhythm-pagination-container');
-
-            let paginationHtml = '<ul class="pagination pagination-rounded mb-0">';
-            paginationHtml += '<li class="page-item disabled" id="rhythm-prev"><a class="page-link" href="javascript:void(0);"><i class="mdi mdi-chevron-left"></i></a></li>';
-            for (let i = 1; i <= numPages; i++) {
-                paginationHtml += `<li class="page-item ${i === 1 ? 'active' : ''} rhythm-page-link" data-page="${i}"><a class="page-link" href="javascript:void(0);">${i}</a></li>`;
-            }
-            paginationHtml += `<li class="page-item" id="rhythm-next"><a class="page-link" href="javascript:void(0);"><i class="mdi mdi-chevron-right"></i></a></li>`;
-            paginationHtml += '</ul>';
-            $paginationContainer.html(paginationHtml);
-
-            let currentPage = 1;
-
-            function showPage(page) {
-                currentPage = page;
-                $rhythmItems.hide();
-                $rhythmItems.slice((page - 1) * itemsPerPage, page * itemsPerPage).fadeIn(200);
-
-                $('.daily-rhythm-timeline-wrapper').animate({
-                    scrollTop: 0
-                }, 100);
-                $('.rhythm-page-link').removeClass('active');
-                $(`.rhythm-page-link[data-page="${page}"]`).addClass('active');
-
-                if (page === 1) {
-                    $('#rhythm-prev').addClass('disabled');
-                } else {
-                    $('#rhythm-prev').removeClass('disabled');
-                }
-
-                if (page === numPages) {
-                    $('#rhythm-next').addClass('disabled');
-                } else {
-                    $('#rhythm-next').removeClass('disabled');
-                }
-            }
-
-            showPage(1);
-
-            $(document).on('click', '.rhythm-page-link', function() {
-                const page = parseInt($(this).data('page'));
-                showPage(page);
-            });
-
-            $(document).on('click', '#rhythm-prev', function() {
-                if (currentPage > 1) {
-                    showPage(currentPage - 1);
-                }
-            });
-
-            $(document).on('click', '#rhythm-next', function() {
-                if (currentPage < numPages) {
-                    showPage(currentPage + 1);
+        if ($('#task-allocation-table').length) {
+            $('#task-allocation-table').DataTable({
+                pageLength: 10,
+                lengthMenu: [10, 25, 50],
+                ordering: false,
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    }
+                },
+                dom: '<"d-flex justify-content-between align-items-center p-3"<"font-size-12"l><"font-size-12"f>>rt<"d-flex justify-content-between align-items-center p-3"<"font-size-12"i><"font-size-12"p>>',
+                drawCallback: function() {
+                    $('.dataTables_paginate > .pagination').addClass('pagination-rounded');
                 }
             });
         }
+
+        if ($('#daily-work-rhythm-table').length) {
+            $('#daily-work-rhythm-table').DataTable({
+                pageLength: 15,
+                lengthMenu: [15, 25, 50, 100],
+                ordering: false,
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    }
+                },
+                dom: '<"d-flex justify-content-between align-items-center p-3"<"font-size-12"l><"font-size-12"f>>rt<"d-flex justify-content-between align-items-center p-3"<"font-size-12"i><"font-size-12"p>>',
+                drawCallback: function() {
+                    $('.dataTables_paginate > .pagination').addClass('pagination-rounded');
+                }
+            });
+        }
+
+        // Open Day Task Modal Handler
+        function openDayTaskModal(dayData) {
+            if (!dayData) return;
+
+            $('#modal-day-subtitle').text(dayData.label + ' (' + dayData.day_name + ')');
+            
+            // Format hours using timing format helper in JS
+            function formatDecimalToTime(decimalVal) {
+                var val = parseFloat(decimalVal) || 0;
+                if (val <= 0) return '0.00';
+                var hrs = Math.floor(val);
+                var mins = Math.round((val - hrs) * 60);
+                if (mins >= 60) { hrs += 1; mins = 0; }
+                return hrs + '.' + (mins < 10 ? '0' + mins : mins);
+            }
+
+            var taskHoursFormatted = formatDecimalToTime(dayData.task_hours) + ' hrs';
+            var shiftHoursFormatted = formatDecimalToTime(dayData.shift_hours) + ' hrs';
+
+            $('#modal-day-task-hours').text(taskHoursFormatted);
+            $('#modal-day-shift-hours').text(shiftHoursFormatted);
+            $('#modal-day-closing-status').text(dayData.closing_status || 'Not Submitted');
+
+            var tasks = dayData.tasks || [];
+            $('#modal-day-tasks-count').text(tasks.length);
+
+            if (tasks.length === 0) {
+                $('#modal-day-tasks-list').html(`
+                    <div class="p-4 text-center text-muted bg-light rounded border">
+                        <i class="mdi mdi-information-outline font-size-24 text-muted d-block mb-1"></i>
+                        No individual task log descriptions were recorded on this day.
+                    </div>
+                `);
+            } else {
+                var html = '';
+                tasks.forEach(function(t, idx) {
+                    var taskName = t.task_name || t.task_title || ('Task #' + (t.task_id || (idx + 1)));
+                    var projName = t.project_name || 'Internal Project';
+                    var clName = t.client_name || 'Internal Client';
+                    var timeWindow = (t.starttime && t.endtime) ? `<span class="badge badge-light border px-2 py-1 font-size-11 mr-2"><i class="mdi mdi-clock-outline mr-0.5"></i> ${t.starttime} - ${t.endtime}</span>` : '';
+                    var clientBadge = `<span class="badge badge-soft-primary px-2.5 py-1.5 rounded font-size-12 font-weight-bold mr-2"><i class="mdi mdi-domain mr-1"></i> Client: ${clName}</span>`;
+                    var projectBadge = `<span class="badge badge-soft-info px-2.5 py-1.5 rounded font-size-12 font-weight-bold mr-2"><i class="mdi mdi-folder-outline mr-1"></i> Project: ${projName}</span>`;
+                    var hoursFormatted = t.hours_formatted || (formatDecimalToTime(t.hours) + ' hrs');
+
+                    html += `
+                        <div class="p-3 bg-white rounded-lg border shadow-sm" style="border-left: 4px solid #4f46e5 !important;">
+                            <div class="d-flex align-items-start justify-content-between flex-wrap mb-2">
+                                <div class="mr-2">
+                                    <div class="d-flex align-items-center flex-wrap">
+                                        <span class="badge badge-secondary px-2 py-0.5 font-size-11 mr-2">Task #${t.task_id || (idx + 1)}</span>
+                                        <span class="font-weight-bold text-dark font-size-14">${taskName}</span>
+                                    </div>
+                                </div>
+                                <span class="badge badge-soft-success px-2.5 py-1.5 rounded-pill font-weight-bold font-size-12 mt-1 mt-sm-0">
+                                    <i class="mdi mdi-timer-outline mr-0.5"></i> ${hoursFormatted} spent
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center flex-wrap my-2">
+                                ${projectBadge}
+                                ${clientBadge}
+                                ${timeWindow}
+                            </div>
+
+                            <div class="p-2.5 bg-light rounded text-dark font-size-12 mt-2" style="border-left: 3px solid #cbd5e1; white-space: pre-wrap; line-height: 1.5;">
+                                <span class="text-muted font-weight-bold font-size-11 d-block mb-0.5"><i class="mdi mdi-note-text-outline mr-0.5"></i> Work Log Description:</span>
+                                ${t.description || 'No detailed note provided.'}
+                            </div>
+                        </div>
+                    `;
+                });
+                $('#modal-day-tasks-list').html(html);
+            }
+
+            $('#dayTaskDetailsModal').modal('show');
+        }
+
+        var dailyWorkData = @json($dailyWorkDays->keyBy('date'));
+
+        $(document).on('click', '.btn-open-day-tasks', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var dateKey = $(this).data('date');
+            var dayData = dailyWorkData ? dailyWorkData[dateKey] : null;
+            if (dayData) {
+                openDayTaskModal(dayData);
+            }
+        });
+
+        $(document).on('click', '.daily-rhythm-row', function(e) {
+            if ($(e.target).closest('button, a').length) return;
+            var dateKey = $(this).data('date');
+            var dayData = dailyWorkData ? dailyWorkData[dateKey] : null;
+            if (dayData) {
+                openDayTaskModal(dayData);
+            }
+        });
+
+        // Explicit modal close click handler
+        $(document).on('click', '#dayTaskDetailsModal [data-dismiss="modal"], #dayTaskDetailsModal [data-bs-dismiss="modal"], #dayTaskDetailsModal .close', function(e) {
+            e.preventDefault();
+            $('#dayTaskDetailsModal').modal('hide');
+        });
     });
 </script>
-
-<style>
-    .badge-dot {
-        height: 10px;
-        width: 10px;
-        border-radius: 50%;
-        display: inline-block;
-    }
-
-    /* Sleek custom scrollbar */
-    .table-responsive::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-
-    .table-responsive::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 4px;
-    }
-
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
-    }
-
-    .table-responsive::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
-</style>
 @endsection

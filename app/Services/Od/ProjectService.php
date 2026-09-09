@@ -255,23 +255,48 @@ class ProjectService
 
         if ($user->hasRole('Team-Leader')) {
             if ($interTeam) {
-                // Show all active Team Leaders in the TL's own department
+                // When delegating: show other Team Leaders along with employees of other teams in the department
                 $userDeptId = $user->departments?->department ?? $user->teamMember?->department ?? 2;
-                $otherTls = User::role('Team-Leader')
-                    ->where('status', 'Active')
+
+                $otherEmployees = User::where('status', 'Active')
                     ->where('id', '!=', $user->id)
-                    ->whereHas('departments', function($q) use ($userDeptId) {
-                        $q->where('department', $userDeptId);
+                    ->where(function ($q) use ($userDeptId) {
+                        $q->whereHas('departments', function ($sq) use ($userDeptId) {
+                            $sq->where('department', $userDeptId);
+                        })->orWhereHas('teamMember', function ($sq) use ($userDeptId) {
+                            $sq->where('department', $userDeptId)
+                               ->orWhereHas('team', function ($ssq) use ($userDeptId) {
+                                   $ssq->where('department', $userDeptId);
+                               });
+                        });
                     })
-                    ->with(['teamMember.team'])
+                    ->whereDoesntHave('roles', function ($q) {
+                        $q->whereIn('name', ['Admin', 'Branch-Manager']);
+                    })
+                    ->with(['roles', 'teamMember.team'])
                     ->get();
 
+                // Sort: Team Name asc, Team Leaders first within team, then Employee Name asc
+                $sorted = $otherEmployees->sortBy([
+                    fn($a, $b) => strcmp($a->teamMember?->team?->name ?? 'Other', $b->teamMember?->team?->name ?? 'Other'),
+                    fn($a, $b) => ($b->hasRole('Team-Leader') ? 1 : 0) <=> ($a->hasRole('Team-Leader') ? 1 : 0),
+                    fn($a, $b) => strcmp($a->name, $b->name),
+                ]);
+
                 $data = [];
-                foreach ($otherTls as $tl) {
-                    $teamName = $tl->teamMember?->team?->name ?? 'No Team';
+                foreach ($sorted as $emp) {
+                    $teamName = $emp->teamMember?->team?->name ?? '';
+                    $isTl = $emp->hasRole('Team-Leader');
+
+                    if ($isTl) {
+                        $label = $teamName ? "{$emp->name} (TL - {$teamName})" : "{$emp->name} (TL)";
+                    } else {
+                        $label = $teamName ? "{$emp->name} ({$teamName})" : $emp->name;
+                    }
+
                     $data[] = [
-                        'id' => $tl->id,
-                        'name' => "{$tl->name} (TL - {$teamName})"
+                        'id' => $emp->id,
+                        'name' => $label
                     ];
                 }
                 return $data;

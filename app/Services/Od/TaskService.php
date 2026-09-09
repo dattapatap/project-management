@@ -6,6 +6,8 @@ use App\Http\Controllers\DepartmentProjectHistoryController;
 use App\Models\DepartmentProjects;
 use App\Models\Task;
 use App\Models\TaskLog;
+use App\Models\Teams;
+use App\Models\TeamMembers;
 use App\Models\User;
 use App\Models\UserActivity;
 use App\Repositories\TaskRepository;
@@ -135,6 +137,14 @@ class TaskService
                         'message' => 'The project is still in ToDo state. Please move the project from ToDo to In Progress.'
                     ];
                 }
+            }
+
+            // Rule 6: Daily Shift must be started before moving task to In Progress
+            if (!$user->activeGlobalTimer()) {
+                return [
+                    'success' => false,
+                    'message' => 'You cannot move tasks to In Progress before starting your Daily Shift. Please start your Shift Timer first.'
+                ];
             }
         }
 
@@ -360,10 +370,15 @@ class TaskService
             return ['success' => false, 'message' => 'Timer is already running for this task.'];
         }
 
-        return DB::transaction(function () use ($task, $user) {
-            // Ensure the Global Timer is running
-            app(GlobalTimerService::class)->ensureGlobalTimerIsRunning($user);
+        // Daily Shift must be active to start a task timer
+        if (!$user->activeGlobalTimer()) {
+            return [
+                'success' => false,
+                'message' => 'Cannot start task timer. You must start your Daily Shift first.'
+            ];
+        }
 
+        return DB::transaction(function () use ($task, $user) {
             // Auto-pause any other active timer for the same user across all tasks
             $otherActiveTimer = TaskLog::where('userid', $user->id)
                 ->whereNull('endtime')
@@ -421,8 +436,8 @@ class TaskService
         $now = Carbon::now();
         $startedAt = Carbon::parse($activeTimer->log_date . ' ' . $activeTimer->starttime);
 
-        // 9:00 PM cap on the starting day
-        $capTime = Carbon::parse($activeTimer->log_date . ' 21:00:00');
+        // 11:00 PM cap on the starting day
+        $capTime = Carbon::parse($activeTimer->log_date . ' 23:00:00');
 
         if ($now->gt($capTime)) {
             $endTime = $capTime;
@@ -430,7 +445,7 @@ class TaskService
             $endTime = $now;
         }
 
-        // If the task was started after 9:00 PM, cap the end time to the start time (0 hours spend)
+        // If the task was started after 11:00 PM, cap the end time to the start time (0 hours spend)
         if ($startedAt->gt($endTime)) {
             $endTime = $startedAt;
         }
@@ -542,5 +557,144 @@ class TaskService
                 'user_id'           => $user->id,
             ]);
         }
+    }
+
+    /**
+     * Fetch all task listing data with role scoping, tabs, metrics, filters, and pagination.
+     */
+    public function getTaskListingData(User $user, \Illuminate\Http\Request $request): array
+    {
+        $isGlobalAdmin = $user->isGlobalAdmin();
+        $isBm = $user->isBranchManager();
+        $isPm = $user->hasRole('Project-Manager');
+        $isTl = $user->hasRole('Team-Leader');
+        $isAuthority = $isGlobalAdmin || $isBm || $isPm;
+
+        $filters = [
+            'search'      => $request->query('search'),
+            'team_id'     => $request->query('team_id'),
+            'assigned_to' => $request->query('assigned_to'),
+            'priority'    => $request->query('priority'),
+            'start_date'  => $request->query('start_date'),
+            'end_date'    => $request->query('end_date'),
+            'status'      => $request->query('status'),
+        ];
+
+        $tab = $request->query('tab');
+        if (!$tab) {
+            $tab = ($isTl && !$isAuthority) ? 'my_tasks' : 'active';
+        }
+
+        // Teams & Members list for dropdowns
+        $teams = collect();
+        $members = collect();
+
+        $tlTeamIds = [];
+        $tlMemberIds = [];
+
+        if ($isTl && !$isAuthority) {
+            $tlTeamIds = DB::table('team_members')->where('user', $user->id)->where('status', true)->pluck('team')->toArray();
+            $tlMemberIds = DB::table('team_members')->whereIn('team', $tlTeamIds)->where('status', true)->pluck('user')->unique()->toArray();
+
+            $teams = collect();
+            $members = User::whereIn('id', $tlMemberIds)->orderBy('name')->get();
+        } else {
+            $teams = Teams::where('department', 2)->where('status', true)->get();
+            $members = User::whereHas('departments', fn($q) => $q->where('department', 2))
+                ->orWhereHas('roles', fn($q) => $q->whereIn('name', ['Developer', 'Designer', 'Seo-Developer', 'Accountant', 'Team-Leader']))
+                ->orderBy('name')
+                ->get();
+        }
+
+        // Base Query
+        $baseQuery = $this->taskRepo->buildTaskListingQuery($user, $filters);
+
+        // Role-based scoping
+        $myStats = [];
+        $teamStats = [];
+        $adminStats = [];
+
+        if ($isTl && !$isAuthority) {
+            // My Tasks scope
+            $myTasksBase = (clone $baseQuery)->where('assigned_to', $user->id);
+            $myStats = $this->taskRepo->computeTaskListingStats(
+                $this->taskRepo->buildTaskListingQuery($user, array_merge($filters, ['status' => null]))->where('assigned_to', $user->id)
+            );
+
+            // Team Members Tasks scope
+            $teamTasksBase = (clone $baseQuery)->whereIn('assigned_to', $tlMemberIds);
+            if (!empty($tlMemberIds)) {
+                $teamTasksBase->where('assigned_to', '!=', $user->id);
+            }
+            $teamStats = $this->taskRepo->computeTaskListingStats(
+                $this->taskRepo->buildTaskListingQuery($user, array_merge($filters, ['status' => null]))
+                    ->whereIn('assigned_to', $tlMemberIds)
+                    ->where('assigned_to', '!=', $user->id)
+            );
+
+            // If a specific status filter is active, update total hours for that subset on active tab
+            if (!empty($filters['status'])) {
+                $tabQuery = ($tab === 'team_tasks') ? $teamTasksBase : $myTasksBase;
+                $matchingIds = (clone $tabQuery)->pluck('id')->toArray();
+                $tabHours = !empty($matchingIds) 
+                    ? (float) round(\App\Models\TaskLog::whereIn('taskid', $matchingIds)->whereNotNull('time_spend')->sum('time_spend'), 1) 
+                    : 0.0;
+                if ($tab === 'team_tasks') {
+                    $teamStats['total_hours'] = $tabHours;
+                } else {
+                    $myStats['total_hours'] = $tabHours;
+                }
+            }
+
+            if ($tab === 'team_tasks') {
+                $query = $teamTasksBase;
+            } else {
+                $query = $myTasksBase;
+                $tab = 'my_tasks';
+            }
+        } else {
+            // Admin / Manager / PM
+            $adminStats = $this->taskRepo->computeTaskListingStats(
+                $this->taskRepo->buildTaskListingQuery($user, array_merge($filters, ['status' => null]))
+            );
+
+            // Apply tab status filter if not explicitly overridden by status dropdown
+            if (empty($filters['status'])) {
+                if ($tab === 'active') {
+                    $baseQuery->whereIn('status', ['ToDo', 'InProgress']);
+                } elseif ($tab === 'completed') {
+                    $baseQuery->where('status', 'Completed');
+                }
+            }
+
+            // Compute total logged hours for the matching filtered query
+            $matchingTaskIds = (clone $baseQuery)->pluck('id')->toArray();
+            $adminStats['total_hours'] = !empty($matchingTaskIds) 
+                ? (float) round(\App\Models\TaskLog::whereIn('taskid', $matchingTaskIds)->whereNotNull('time_spend')->sum('time_spend'), 1) 
+                : 0.0;
+
+            $query = $baseQuery;
+        }
+
+        $perPage = (int) $request->query('per_page', 50);
+        if ($perPage <= 0 || $perPage > 200) {
+            $perPage = 50;
+        }
+
+        $tasks = $query->orderBy('id', 'desc')->paginate($perPage)->withQueryString();
+
+        return [
+            'tasks'         => $tasks,
+            'tab'           => $tab,
+            'filters'       => $filters,
+            'perPage'       => $perPage,
+            'teams'         => $teams,
+            'members'       => $members,
+            'myStats'       => $myStats,
+            'teamStats'     => $teamStats,
+            'adminStats'    => $adminStats,
+            'isTl'          => $isTl,
+            'isAuthority'   => $isAuthority,
+        ];
     }
 }
