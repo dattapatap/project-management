@@ -182,7 +182,7 @@ class HomeController extends Controller
             }
 
             // ── 1. Top 5 KPI Metrics ──────────────────────────────────────────────
-            $totalStaff = User::where('status', 'Active')
+            $totalStaff = User::whereIn('status', User::WORKING_STATUSES)
                 ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
                 ->count();
             $adminData['employees_count'] = $totalStaff;
@@ -241,7 +241,7 @@ class HomeController extends Controller
                 $submittedUserIds = DayClosing::whereBetween('closing_date', [$startDate->toDateString(), $endDate->toDateString()])->pluck('user_id')->toArray();
             }
             $adminData['pending_closing_users_count'] = User::whereNotIn('id', $submittedUserIds)
-                ->where('status', 'Active')
+                ->whereIn('status', User::WORKING_STATUSES)
                 ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
                 ->whereNull('deleted_at')
                 ->count();
@@ -345,7 +345,7 @@ class HomeController extends Controller
                 ->get()
                 ->keyBy('userid');
 
-            $recentAttendanceUsers = User::where('status', 'Active')
+            $recentAttendanceUsers = User::whereIn('status', User::WORKING_STATUSES)
                 ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
                 ->with(['departments.dept'])
                 ->take(8)
@@ -426,7 +426,7 @@ class HomeController extends Controller
             $adminData['employee_status_list'] = $recentAttendanceUsers;
 
             // ── 8. Top Performers (NSD, OD, CSD) ──────────────────────────────────
-            $adminData['top_nsd_performers'] = User::where('status', 'Active')
+            $adminData['top_nsd_performers'] = User::whereIn('status', User::WORKING_STATUSES)
                 ->whereHas('departments', fn($q) => $q->where('department', 1))
                 ->with(['roles'])
                 ->withCount([
@@ -441,7 +441,7 @@ class HomeController extends Controller
                     return $u;
                 });
 
-            $adminData['top_od_performers'] = User::where('status', 'Active')
+            $adminData['top_od_performers'] = User::whereIn('status', User::WORKING_STATUSES)
                 ->whereHas('departments', fn($q) => $q->where('department', 2))
                 ->with(['roles'])
                 ->withCount([
@@ -459,7 +459,7 @@ class HomeController extends Controller
                     return $u;
                 });
 
-            $adminData['top_csd_performers'] = User::where('status', 'Active')
+            $adminData['top_csd_performers'] = User::whereIn('status', User::WORKING_STATUSES)
                 ->whereHas('departments', fn($q) => $q->where('department', 3))
                 ->with(['roles'])
                 ->withCount(['csdAssignments as retentions_count' => fn($q) => $q->where('status', 'active')])

@@ -20,7 +20,8 @@ class TaskRepository extends BaseRepository
     {
         $query = $this->query()
             ->with(['user', 'logs.user', 'histories.user'])
-            ->where('projectid', $projectId);
+            ->where('projectid', $projectId)
+            ->orderBy('id', 'desc');
 
         if ($userId) {
             $query->where('assigned_to', $userId);
@@ -37,9 +38,9 @@ class TaskRepository extends BaseRepository
         $query = $this->forProject($projectId, $userId);
 
         return [
-            'todo'       => (clone $query)->where('status', 'ToDo')->get(),
-            'inprogress' => (clone $query)->where('status', 'InProgress')->get(),
-            'completed'  => (clone $query)->where('status', 'Completed')->get(),
+            'todo'       => (clone $query)->where('status', 'ToDo')->orderBy('id', 'desc')->get(),
+            'inprogress' => (clone $query)->where('status', 'InProgress')->orderBy('id', 'desc')->get(),
+            'completed'  => (clone $query)->where('status', 'Completed')->orderBy('id', 'desc')->get(),
         ];
     }
 

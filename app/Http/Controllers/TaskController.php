@@ -25,7 +25,7 @@ class TaskController extends Controller
     public function index(Request $request)
     {
         $project_id = base64_decode($request->project);
-        $project    = DepartmentProjects::with(['clients', 'projectCategory', 'tasks.user', 'tasks.logs.user'])->findOrFail($project_id);
+        $project    = DepartmentProjects::with(['clients', 'projectCategory', 'tasks.user.roles', 'tasks.logs.user.roles'])->findOrFail($project_id);
         $user       = Auth::user();
 
         // Scope tasks to user if they are a regular employee

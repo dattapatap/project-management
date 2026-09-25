@@ -16,6 +16,10 @@ class GlobalTimerService
      */
     public function startGlobalTimer(User $user): array
     {
+        if (!$user->isWorking()) {
+            return ['success' => false, 'message' => "Cannot start shift timer for {$user->status} account."];
+        }
+
         // First clean up any unclosed orphan logs from previous days
         $this->cleanupPriorDaysOrphanLogs($user);
 

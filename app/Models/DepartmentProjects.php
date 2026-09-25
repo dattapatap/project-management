@@ -115,7 +115,7 @@ class DepartmentProjects extends Model
                 }
             }
         } else {
-            $tasks = $this->tasks()->with(['user', 'logs.user'])->get();
+            $tasks = $this->tasks()->with(['user.roles', 'logs.user.roles'])->get();
             foreach ($tasks as $task) {
                 if ($task->user) {
                     $devs->push($task->user);
@@ -127,7 +127,9 @@ class DepartmentProjects extends Model
                 }
             }
         }
-        return $devs->unique('id')->values();
+        $uniqueDevs = new \Illuminate\Database\Eloquent\Collection($devs->unique('id')->values());
+        $uniqueDevs->loadMissing('roles');
+        return $uniqueDevs;
     }
 
     public function getDeveloperStatsAttribute()

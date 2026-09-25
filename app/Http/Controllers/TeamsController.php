@@ -110,7 +110,7 @@ class TeamsController extends Controller
 
         // get All users under department excluding assigned and non-team roles
         $arrUsr = $deptMems->pluck('user')->toArray();
-        $unsignedUsers = User::with('roles:name')->where('status', 'Active')
+        $unsignedUsers = User::with('roles:name')->whereIn('status', User::WORKING_STATUSES)
                                 ->whereHas('departments', function($query) use($department){
                                     $query->where('department', $department);
                                 })

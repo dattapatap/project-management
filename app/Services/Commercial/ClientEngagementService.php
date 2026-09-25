@@ -265,7 +265,7 @@ class ClientEngagementService
             );
 
             $productManagers = User::whereHas('roles', fn($q) => $q->where('name', 'Project-Manager'))
-                ->where('status', 'Active')->get();
+                ->whereIn('status', User::WORKING_STATUSES)->get();
             $client = Clients::find($engagement->client_id);
             foreach ($productManagers as $pm) {
                 $pm->notify((new ClientMatured($client, $project, $projectSub->name))->delay(now()->addSeconds(5)));
@@ -278,7 +278,7 @@ class ClientEngagementService
                 $branchId = app(BranchScopeService::class)->resolveBranchId($refUser);
             }
             $branchManagersQuery = User::whereHas('roles', fn($q) => $q->where('name', 'Branch-Manager'))
-                ->where('status', 'Active');
+                ->whereIn('status', User::WORKING_STATUSES);
             if ($branchId) {
                 $branchManagersQuery->whereIn('id', function ($query) use ($branchId) {
                     $query->select('user')

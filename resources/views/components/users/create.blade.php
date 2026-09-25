@@ -471,12 +471,28 @@
                                     @enderror
                                 </div>
 
+                                <!-- Field: Status -->
+                                <div class="form-group form-group-premium">
+                                    <label for="status">
+                                        <i class="mdi mdi-checkbox-marked-circle-outline"></i>Initial Status <span class="text_required">*</span>
+                                    </label>
+                                    <select class="form-control select-premium" name="status" id="status" required>
+                                        <option value="Active" @if(old('status', 'Active') == 'Active') selected @endif>🟢 Active (Regular Employee)</option>
+                                        <option value="Probation" @if(old('status') == 'Probation') selected @endif>🔵 Probation (New Hire on Probation)</option>
+                                    </select>
+                                    @error('status')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                    @enderror
+                                </div>
+
                                 <!-- Field: Joining Date -->
                                 <div class="form-group form-group-premium">
                                     <label for="joining_date">
                                         <i class="mdi mdi-calendar-text"></i>Joining Date <span class="text_required">*</span>
                                     </label>
-                                    <input type="date" name="joining_date" id="joining_date" value="{{ old('joining_date') }}"
+                                    <input type="date" name="joining_date" id="joining_date" value="{{ old('joining_date', date('Y-m-d')) }}"
                                         class="form-control input-premium @error('joining_date') parsley-error @enderror"
                                         max="<?= date('Y-m-d'); ?>" required>
                                     @error('joining_date')

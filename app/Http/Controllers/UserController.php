@@ -24,18 +24,49 @@ use App\Mail\WelcomeUserMail;
 class UserController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $query = User::with(['emp', 'departments.dept', 'roles'])
+        $statusFilter = $request->query('status', 'all');
+
+        $baseQuery = User::with(['emp', 'departments.dept', 'roles'])
             ->where('deleted_at', null)
-            ->where('id', '!=', '1')
-            ->orderBy('id', 'desc');
+            ->where('id', '!=', '1');
 
-        $users = app(\App\Services\BranchScopeService::class)
-            ->applyBranchUserScope($query, Auth::user())
-            ->paginate(25);
+        $baseQuery = app(\App\Services\BranchScopeService::class)
+            ->applyBranchUserScope($baseQuery, Auth::user());
 
-        return view('components.users.index', compact('users'));
+        // Count metrics for quick filter tabs
+        $statusCounts = [
+            'all'       => (clone $baseQuery)->count(),
+            'working'   => (clone $baseQuery)->whereIn('status', User::WORKING_STATUSES)->count(),
+            'active'    => (clone $baseQuery)->where('status', User::STATUS_ACTIVE)->count(),
+            'probation' => (clone $baseQuery)->where('status', User::STATUS_PROBATION)->count(),
+            'notice'    => (clone $baseQuery)->where('status', User::STATUS_NOTICE_PERIOD)->count(),
+            'suspended' => (clone $baseQuery)->where('status', User::STATUS_SUSPENDED)->count(),
+            'separated' => (clone $baseQuery)->whereIn('status', User::SEPARATED_STATUSES)->count(),
+        ];
+
+        $query = clone $baseQuery;
+
+        if ($statusFilter === 'working') {
+            $query->whereIn('status', User::WORKING_STATUSES);
+        } elseif ($statusFilter === 'active') {
+            $query->where('status', User::STATUS_ACTIVE);
+        } elseif ($statusFilter === 'probation') {
+            $query->where('status', User::STATUS_PROBATION);
+        } elseif ($statusFilter === 'notice') {
+            $query->where('status', User::STATUS_NOTICE_PERIOD);
+        } elseif ($statusFilter === 'suspended') {
+            $query->where('status', User::STATUS_SUSPENDED);
+        } elseif ($statusFilter === 'separated') {
+            $query->whereIn('status', User::SEPARATED_STATUSES);
+        } elseif (in_array($statusFilter, User::ALL_STATUSES, true)) {
+            $query->where('status', $statusFilter);
+        }
+
+        $users = $query->orderBy('id', 'desc')->paginate(25);
+
+        return view('components.users.index', compact('users', 'statusFilter', 'statusCounts'));
     }
 
 
@@ -71,7 +102,8 @@ class UserController extends Controller
             $user->email        = $request->post('email');
             $user->mobile       = $request->post('mobile');
             $user->password     = Hash::make($request->post('password'));
-            $user->status       = "Active";
+            $initialStatus      = $request->post('status') ?? User::STATUS_ACTIVE;
+            $user->status       = $initialStatus;
 
             $user->code  = strtoupper($request->post('code'));
             $user->designation = ucfirst($request->post('designation'));
@@ -92,7 +124,7 @@ class UserController extends Controller
             $emp->joining_dt = $request->post('joining_date');
             $emp->mem_code  = strtoupper($request->post('code'));
             $emp->designation = ucfirst($request->post('designation'));
-            $emp->status    = 'Active';
+            $emp->status    = $initialStatus;
             $emp->created_by = Auth::user()->id;
 
             $emp->save();
@@ -174,8 +206,8 @@ class UserController extends Controller
             $user->mobile  = $request->post('mobile');
             $user->code  = strtoupper($request->post('code'));
             $user->designation = ucfirst($request->post('designation'));
-            $user->status = $request->post('status') ?? 'Active';
-
+            $newStatus = $request->post('status') ?? User::STATUS_ACTIVE;
+            $user->status = $newStatus;
             $user->save();
 
             $role = \Spatie\Permission\Models\Role::findById((int) $request->post('role'));
@@ -183,17 +215,35 @@ class UserController extends Controller
             $user->syncRoles($role);
 
             $emp            = Employees::where('user', $user->id)->first();
-            $emp->user      = $user->id;
-            $emp->name      = ucfirst($request->post('name'));
-            $emp->dob       = $request->post('dob');
-            $emp->joining_dt = $request->post('joining_date');
-            $emp->mem_code  = strtoupper($request->post('code'));
+            if (!$emp) {
+                $emp = new Employees();
+                $emp->user = $user->id;
+            }
+            $emp->name        = ucfirst($request->post('name'));
+            $emp->dob         = $request->post('dob');
+            $emp->joining_dt  = $request->post('joining_date');
+            $emp->mem_code    = strtoupper($request->post('code'));
             $emp->designation = ucfirst($request->post('designation'));
-            $emp->status    = $request->post('status') ?? 'Active';
+            $emp->status      = $newStatus;
+
+            if ($request->filled('end_dt')) {
+                $emp->end_dt = $request->post('end_dt');
+            } elseif (in_array($newStatus, [User::STATUS_ACTIVE, User::STATUS_PROBATION], true)) {
+                $emp->end_dt = null;
+            }
 
             $emp->updated_by = Auth::user()->id;
-
             $emp->save();
+
+            // If moved to a separated/non-working status, automatically close active timers
+            if (in_array($newStatus, User::SEPARATED_STATUSES, true)) {
+                \App\Models\GlobalAttendanceLog::where('userid', $user->id)
+                    ->whereNull('endtime')
+                    ->update(['endtime' => now(), 'status' => 'closed_admin']);
+                \App\Models\TaskLog::where('userid', $user->id)
+                    ->whereNull('endtime')
+                    ->update(['endtime' => now()]);
+            }
 
             $isBranchManager = $role && $role->name === 'Branch-Manager';
 
@@ -232,11 +282,10 @@ class UserController extends Controller
             $userBranch->save();
 
             DB::commit();
-            return redirect()->route('users.index')->with('success', 'Member updated successfully');
+            return redirect()->route('users.index')->with('success', "Member {$user->name} updated successfully (Status: {$newStatus})");
         } catch (Exception $ex) {
             DB::rollBack();
             return redirect()->back()->with('error', $ex->getMessage())->withInput();
-            dd($ex->getMessage());
         }
     }
 
@@ -248,28 +297,96 @@ class UserController extends Controller
     {
         $this->assertCanManageUser($user);
 
-        $user->status = "Inactive";
+        $user->status = User::STATUS_RESIGNED;
         $user->save();
+
+        $emp = Employees::where('user', $user->id)->first();
+        if ($emp) {
+            $emp->status = User::STATUS_RESIGNED;
+            $emp->end_dt = $emp->end_dt ?: now()->toDateString();
+            $emp->save();
+        }
+
+        \App\Models\GlobalAttendanceLog::where('userid', $user->id)
+            ->whereNull('endtime')
+            ->update(['endtime' => now(), 'status' => 'closed_admin']);
+        \App\Models\TaskLog::where('userid', $user->id)
+            ->whereNull('endtime')
+            ->update(['endtime' => now()]);
+
         $user->delete();
-        return redirect()->route('users.index')->with('success', 'User has been deleted');
+        return redirect()->route('users.index')->with('success', 'User has been marked as Resigned and deleted');
     }
 
     public function changestatus(Request $request, $user_id)
     {
         $user = User::where('id', $user_id)->first();
-        if ($user) {
-            $this->assertCanManageUser($user);
-            if ($user->status == 'Active') {
-                $user->status = 'Inactive';
-                $user->save();
-            } else {
-                $user->status = 'Active';
-                $user->save();
+        if (!$user) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'User not found.'], 404);
             }
-            return redirect()->route('users.index');
-        } else {
-            return redirect()->route('users.index');
+            return redirect()->route('users.index')->with('error', 'User not found.');
         }
+
+        $this->assertCanManageUser($user);
+
+        // Determine target status
+        if ($request->filled('status')) {
+            $newStatus = $request->input('status');
+        } else {
+            // Legacy toggle fallback
+            $newStatus = $user->status === User::STATUS_ACTIVE ? User::STATUS_SUSPENDED : User::STATUS_ACTIVE;
+        }
+
+        if (!in_array($newStatus, User::ALL_STATUSES, true)) {
+            $newStatus = User::STATUS_ACTIVE;
+        }
+
+        $oldStatus = $user->status;
+        $user->status = $newStatus;
+        $user->save();
+
+        $emp = Employees::where('user', $user->id)->first();
+        if ($emp) {
+            $emp->status = $newStatus;
+            if ($request->filled('end_dt')) {
+                $emp->end_dt = $request->input('end_dt');
+            } elseif (in_array($newStatus, [User::STATUS_ACTIVE, User::STATUS_PROBATION], true)) {
+                $emp->end_dt = null;
+            }
+            $emp->updated_by = Auth::id();
+            $emp->save();
+        }
+
+        // If moved to a separated or suspended status, automatically close open timers
+        if (in_array($newStatus, User::SEPARATED_STATUSES, true)) {
+            \App\Models\GlobalAttendanceLog::where('userid', $user->id)
+                ->whereNull('endtime')
+                ->update(['endtime' => now(), 'status' => 'closed_admin']);
+            \App\Models\TaskLog::where('userid', $user->id)
+                ->whereNull('endtime')
+                ->update(['endtime' => now()]);
+        }
+
+        $remarks = $request->input('remarks');
+        \App\Models\UserActivity::log(
+            'User Status Changed',
+            "Changed status of {$user->name} from '{$oldStatus}' to '{$newStatus}'" . ($remarks ? " (Remarks: {$remarks})" : "")
+        );
+
+        $message = "Status of {$user->name} updated to {$newStatus}.";
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'status'  => $newStatus,
+                'badge'   => $user->status_badge,
+                'end_dt'  => $emp?->end_dt?->format('Y-m-d'),
+            ]);
+        }
+
+        return redirect()->route('users.index')->with('success', $message);
     }
 
 
@@ -292,7 +409,7 @@ class UserController extends Controller
 
             array_push($allmem, $loggedUser->id);
 
-            $users = User::select('id', 'name')->where('status', 'Active')
+            $users = User::select('id', 'name')->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $client->ref_user)
                 ->whereHas('roles', function ($q) {
                     $q->whereIn('name', ['Sales-Executive', 'Team-Leader']);
@@ -302,14 +419,14 @@ class UserController extends Controller
             $branchScope = app(\App\Services\BranchScopeService::class);
             $salesIds = $branchScope->getBranchSalesUserIds($loggedUser);
 
-            $users = User::select('id', 'name')->where('status', 'Active')
+            $users = User::select('id', 'name')->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $client->ref_user)
                 ->whereHas('roles', function ($q) {
                     $q->whereIn('name', ['Sales-Executive', 'Team-Leader', 'Branch-Manager']);
                 })
                 ->whereIn('id', $salesIds)->get()->toArray();
         } else {
-            $users = User::select('id', 'name')->where('status', 'Active')
+            $users = User::select('id', 'name')->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $client->ref_user)
                 ->whereHas('roles', function ($q) {
                     $q->whereIn('name', ['Sales-Executive', 'Team-Leader', 'Admin']);

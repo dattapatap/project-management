@@ -34,7 +34,13 @@
                         </select>
                     </div>
                 </div>
-                <div class="text-right">
+                <div class="text-right d-flex align-items-center" style="gap: 6px;">
+                    <button type="button" class="btn btn-sm btn-soft-primary px-3 shadow-sm font-weight-bold" data-toggle="modal" data-target="#staffDirectoryModal" style="border-radius: 8px;">
+                        <i class="mdi mdi-account-group-outline mr-1"></i> Staffs
+                    </button>
+                    <a href="{{ route('hrms.holidays.index') }}" class="btn btn-sm btn-soft-secondary px-3 shadow-sm font-weight-bold" style="border-radius: 8px;">
+                        <i class="mdi mdi-beach mr-1"></i> Holidays
+                    </a>
                     <span class="badge badge-primary p-2 shadow-sm" style="background: linear-gradient(135deg, #7F00FF 0%, #E100FF 100%); border-radius: 8px;">
                         <i class="mdi mdi-security mr-1"></i> TL Sales Command
                     </span>

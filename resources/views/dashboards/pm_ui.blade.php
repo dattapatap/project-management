@@ -1,8 +1,14 @@
 {{-- Project Manager UI --}}
-<div class="row erp-dash-header">
-    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+<div class="row erp-dash-header mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
         <h4 class="header-title erp-dash-title mb-0">Project Command Center</h4>
-        <div class="d-flex gap-2">
+        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+            <button type="button" class="btn btn-sm btn-soft-primary action-btn-trendy font-weight-bold" data-toggle="modal" data-target="#staffDirectoryModal">
+                <i class="mdi mdi-account-group-outline mr-1"></i> Staffs
+            </button>
+            <a href="{{ route('hrms.holidays.index') }}" class="btn btn-sm btn-soft-secondary action-btn-trendy font-weight-bold">
+                <i class="mdi mdi-beach mr-1"></i> Holidays
+            </a>
             <a href="{{ url('projects') }}" class="btn btn-sm btn-primary action-btn-trendy"><i class="mdi mdi-plus mr-1"></i> New Project</a>
             <a href="{{ client_list_url('Matured') }}" class="btn btn-sm btn-soft-info action-btn-trendy"><i class="mdi mdi-account-multiple mr-1"></i> Clients</a>
         </div>

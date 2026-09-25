@@ -1,5 +1,17 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Block access to hidden files (.env, .git, etc)
+    RewriteRule (^|/)\.(?!well-known) - [F]
+
+    # Block access to sensitive system files
+    <FilesMatch "^(\.env|composer\.(json|lock)|package\.(json|lock)|artisan|\.gitignore)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
+    # Rewrite all public traffic to the public/ directory
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ public/$1 [L,QSA]
 </IfModule>
+

@@ -57,6 +57,7 @@
         <i class="mdi mdi-account-group-outline"></i><span>HRMS</span>
     </a>
     <ul class="sub-menu" aria-expanded="{{ request()->is('hrms*') ? 'true' : 'false' }}">
+        <li class="{{ request()->is('hrms/holidays*') ? 'mm-active' : '' }}"><a href="{{ route('hrms.holidays.index') }}">Holiday Calendar</a></li>
         <li class="{{ request()->is('hrms/my-leaves*') ? 'mm-active' : '' }}"><a href="{{ route('hrms.my-leaves.index') }}">My Leaves</a></li>
     </ul>
 </li>

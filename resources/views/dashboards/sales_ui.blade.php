@@ -14,6 +14,10 @@
                     <p class="text-muted font-size-13 mb-0">Your specialized Sales Co-Pilot workspace is operational, analyzing lead touchpoints and highlighting deal maturities.</p>
                 </div>
                 <div class="col-md-5 text-md-right mt-3 mt-md-0 d-flex align-items-center justify-content-md-end style-gap-12" style="gap: 12px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-white border bg-white shadow-sm d-inline-flex align-items-center font-weight-bold" data-toggle="modal" data-target="#staffDirectoryModal" style="border-radius: 12px; height: 44px; padding: 0 16px; font-size: 13px;">
+                        <i class="mdi mdi-account-group text-primary mr-1"></i> Staffs
+                    </button>
+
                     <a href="{{ url('clients/create') }}" class="btn btn-primary d-inline-flex align-items-center font-weight-bold" style="border-radius: 12px; height: 44px; padding: 0 16px; background: linear-gradient(135deg, #7F00FF 0%, #E100FF 100%); border: none; box-shadow: 0 4px 15px rgba(127,0,255,0.25); font-size: 13px;">
                         <i class="mdi mdi-plus-circle font-size-16 mr-1"></i> Add New Company
                     </a>

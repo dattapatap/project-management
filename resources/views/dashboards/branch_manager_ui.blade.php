@@ -13,6 +13,9 @@ $overview = $adminData['department_overview'] ?? [];
         <p class="text-muted mb-0 font-size-13">NSD · CSD · OD — department-wise performance &amp; pipeline</p>
     </div>
     <div class="col-lg-6 text-lg-right mt-2 mt-lg-0 d-flex align-items-center justify-content-lg-end flex-wrap" style="gap: 8px;">
+        <button type="button" class="btn btn-outline-primary btn-sm shadow-sm" data-toggle="modal" data-target="#staffDirectoryModal" style="border-radius: 8px; font-weight: 600; padding: 6px 12px;">
+            <i class="mdi mdi-account-group mr-1"></i> Staffs
+        </button>
         <a href="{{ route('daily-targets.index') }}" class="btn btn-outline-primary btn-sm shadow-sm" style="border-radius: 8px; font-weight: 600; padding: 6px 12px;">
             <i class="mdi mdi-target mr-1"></i> Set Daily Target
         </a>
@@ -104,12 +107,13 @@ $overview = $adminData['department_overview'] ?? [];
 </div>
 
 
-<div class="col-12">
+<div class="row">
+    <div class="col-12">
 
-    <ul class="nav nav-tabs dashboard-tabs mt-4" role="tablist">
-        <li class="nav-item">
-            <a class="nav-link active" data-toggle="tab" href="#bm-nsd" role="tab"><i class="mdi mdi-chart-line"></i> NSD (Sales)</a>
-        </li>
+        <ul class="nav nav-tabs dashboard-tabs mt-4" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#bm-nsd" role="tab"><i class="mdi mdi-chart-line"></i> NSD (Sales)</a>
+            </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#bm-csd" role="tab"><i class="mdi mdi-account-heart-outline"></i> CSD</a>
         </li>
@@ -455,4 +459,5 @@ $overview = $adminData['department_overview'] ?? [];
         </div>
     </div>
 
+    </div>
 </div>

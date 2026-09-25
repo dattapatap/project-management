@@ -169,7 +169,7 @@ class ClientsController extends Controller
 
     public function create()
     {
-        $users = User::where('deleted_at', null)->where('status', 'Active')
+        $users = User::where('deleted_at', null)->whereIn('status', User::WORKING_STATUSES)
             ->whereHas('roles', function ($q) {
                 $q->whereIn('name', ['Sales-Executive', 'Team-Leader']);
             })->get();
@@ -254,7 +254,7 @@ class ClientsController extends Controller
                 $existingClient->updated_by = $userid;
 
                 // Set ref_user to Admin
-                $admin = User::role('Admin')->where('status', 'Active')->first();
+                $admin = User::role('Admin')->whereIn('status', User::WORKING_STATUSES)->first();
                 $existingClient->ref_user = $admin ? $admin->id : $userid;
 
                 $existingClient->save();
@@ -288,7 +288,7 @@ class ClientsController extends Controller
             $client->updated_by = $userid;
 
             // Set ref_user to Admin
-            $admin = User::role('Admin')->where('status', 'Active')->first();
+            $admin = User::role('Admin')->whereIn('status', User::WORKING_STATUSES)->first();
             $client->ref_user = $admin ? $admin->id : $userid;
 
             $client->lead_source = 'Manual';
@@ -335,7 +335,7 @@ class ClientsController extends Controller
 
         $users = [];
         if ($requiresAssign) {
-            $users = User::where('deleted_at', null)->where('status', 'Active')
+            $users = User::where('deleted_at', null)->whereIn('status', User::WORKING_STATUSES)
                 ->whereHas('roles', function ($q) {
                     $q->whereIn('name', ['Sales-Executive', 'Team-Leader', 'Branch-Manager']);
                 })->get();

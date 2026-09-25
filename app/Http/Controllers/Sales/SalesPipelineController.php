@@ -36,7 +36,7 @@ class SalesPipelineController extends Controller
         // Get list of sales executives for filtering/assignment (if Admin/PM/TL)
         $executives = [];
         if ($user->hasRole(['Admin', 'Branch-Manager', 'Team-Leader'])) {
-            $executives = User::role(['Sales-Executive', 'Team-Leader'])->where('status', 'Active')->get();
+            $executives = User::role(['Sales-Executive', 'Team-Leader'])->whereIn('status', User::WORKING_STATUSES)->get();
         }
 
         return view('sales.pipeline', compact('pipeline', 'executives'));

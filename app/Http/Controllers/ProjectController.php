@@ -254,7 +254,7 @@ class ProjectController extends Controller
         } else {
             // Managers and Admins see TLs belonging to the team that matches the category name
             $teamLeaders = \App\Models\User::role('Team-Leader')
-                ->where('status', 'Active')
+                ->whereIn('status', \App\Models\User::WORKING_STATUSES)
                 ->whereHas('teamMember.team', function ($q) use ($categoryName) {
                     $q->where('name', 'like', '%' . $categoryName . '%');
                 })

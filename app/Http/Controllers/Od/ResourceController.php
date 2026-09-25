@@ -62,7 +62,7 @@ class ResourceController extends Controller
             // Get active users belonging to the selected department
             $memberIds = User::whereHas('departments', function ($q) use ($selectedDeptId) {
                 $q->where('department', $selectedDeptId);
-            })->where('status', 'Active')->pluck('id')->toArray();
+            })->whereIn('status', User::WORKING_STATUSES)->pluck('id')->toArray();
         }
 
         // Get workload stats per member

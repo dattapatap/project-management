@@ -34,7 +34,7 @@ class SalesTargetController extends Controller
         if ($user->hasRole(['Admin', 'Branch-Manager'])) {
             // NSD: Sales Executives + NSD Team Leaders (dept=1)
             $nsdQuery = User::with(['departments.dept', 'roles'])
-                ->where('status', 'Active')
+                ->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->where(function ($q) {
                     $q->whereHas('roles', function ($r) {
@@ -51,7 +51,7 @@ class SalesTargetController extends Controller
 
             // CSD: CSD Executives + CSD Team Leaders (dept=3)
             $csdQuery = User::with(['departments.dept', 'roles'])
-                ->where('status', 'Active')
+                ->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->where(function ($q) {
                     $q->whereHas('roles', function ($r) {

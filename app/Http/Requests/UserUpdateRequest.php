@@ -32,13 +32,21 @@ class UserUpdateRequest extends FormRequest
             'name' => 'required|string|max:50|unique:users,name,'.$id.',id,deleted_at,NULL',
             'email' => 'required|email|unique:users,email,'.$id.',id,deleted_at,NULL',
             'mobile' => 'required|digits:10|regex:/^[6-9][0-9]{9}/',
-            'dob' => 'required|date',
+            'dob' => 'required|date|before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             'role' => 'required',
             'department' => $isBranchManager ? 'nullable' : 'required|numeric',
             'designation' => 'required|string',
             'code' => 'required|unique:employees,mem_code,'.$id.',user,deleted_at,NULL',
             'joining_date' => 'required|date',
-            'status' => 'required|string|in:Active,Inactive',
+            'status' => 'required|string|in:Active,Probation,Notice Period,Suspended,Resigned,Terminated,Inactive',
+            'end_dt' => 'nullable|date',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'dob.before_or_equal' => 'Date of birth must be at least 18 years ago (minimum 18 years of age required).',
         ];
     }
 }

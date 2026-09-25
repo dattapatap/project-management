@@ -18,15 +18,23 @@
         </div>
     </div>
     <div class="col-md-5">
-        <div class="float-md-right mt-3 mt-md-0 erp-dash-year-box">
-            <p class="erp-dash-year-box__label mb-1">Reporting Year</p>
-            <div class="d-flex align-items-center">
-                <i class="mdi mdi-calendar-range text-primary mr-2"></i>
-                <select class="form-control form-control-sm erp-dash-year-select" id="csd_dashboard_year_filter">
-                    @foreach($adminData['available_years'] ?? range(date('Y'), date('Y') - 5) as $yr)
-                    <option value="{{ $yr }}" {{ $year == $yr ? 'selected' : '' }}>{{ $yr }}</option>
-                    @endforeach
-                </select>
+        <div class="float-md-right mt-3 mt-md-0 d-flex align-items-center" style="gap: 8px;">
+            <button type="button" class="btn btn-sm btn-soft-primary px-3 shadow-sm font-weight-bold" data-toggle="modal" data-target="#staffDirectoryModal" style="border-radius: 8px;">
+                <i class="mdi mdi-account-group-outline mr-1"></i> Staffs
+            </button>
+            <a href="{{ route('hrms.holidays.index') }}" class="btn btn-sm btn-soft-secondary px-3 shadow-sm font-weight-bold" style="border-radius: 8px;">
+                <i class="mdi mdi-beach mr-1"></i> Holidays
+            </a>
+            <div class="erp-dash-year-box">
+                <p class="erp-dash-year-box__label mb-1">Reporting Year</p>
+                <div class="d-flex align-items-center">
+                    <i class="mdi mdi-calendar-range text-primary mr-2"></i>
+                    <select class="form-control form-control-sm erp-dash-year-select" id="csd_dashboard_year_filter">
+                        @foreach($adminData['available_years'] ?? range(date('Y'), date('Y') - 5) as $yr)
+                        <option value="{{ $yr }}" {{ $year == $yr ? 'selected' : '' }}>{{ $yr }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </div>
     </div>

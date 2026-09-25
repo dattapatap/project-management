@@ -82,6 +82,9 @@
         <i class="mdi mdi-account-group-outline"></i><span>HRMS</span>
     </a>
     <ul class="sub-menu" aria-expanded="{{ request()->is('hrms*') || request()->is('admin/attendances*') ? 'true' : 'false' }}">
+        <li class="{{ request()->is('hrms/celebrations*') ? 'mm-active' : '' }}"><a href="{{ route('hrms.celebrations.index') }}">Celebrations 🎂</a></li>
+        <li class="{{ request()->is('hrms/holidays*') ? 'mm-active' : '' }}"><a href="{{ route('hrms.holidays.index') }}">Holiday Calendar</a></li>
+        <li class="{{ request()->is('hrms/announcements*') ? 'mm-active' : '' }}"><a href="{{ route('hrms.announcements.index') }}">Announcements 📢</a></li>
         <li class="{{ request()->is('admin/attendances*') ? 'mm-active' : '' }}"><a href="{{ route('admin.attendances.index') }}">Attendances</a></li>
         <li class="{{ request()->is('hrms/leaves/approvals*') ? 'mm-active' : '' }}"><a href="{{ route('hrms.my-leaves.approvals') }}">Leave Approvals</a></li>
         <li class="{{ request()->is('hrms/attendance-export*') ? 'mm-active' : '' }}"><a href="{{ route('hrms.attendance-export.index') }}">Export Attendance</a></li>

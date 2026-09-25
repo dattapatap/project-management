@@ -176,7 +176,7 @@ class DailyClosingController extends Controller
 
         // Fetch all active subordinates in scope (except current user)
         $subordinates = User::whereIn('id', $subordinateIds)
-            ->where('status', 'Active')
+            ->whereIn('status', User::WORKING_STATUSES)
             ->where('id', '!=', $user->id)
             ->with(['roles', 'departments'])
             ->orderBy('name', 'asc')

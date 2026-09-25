@@ -52,7 +52,7 @@ class ReportScopeService
     public function visibleEmployeesQuery(User $actingUser, ?int $departmentId = null): Builder
     {
         $query = User::with(['emp', 'roles', 'departments.dept'])
-            ->where('status', 'Active')
+            ->whereIn('status', User::WORKING_STATUSES)
             ->where('id', '!=', 1);
 
         if ($actingUser->hasBranchWideAccess()) {

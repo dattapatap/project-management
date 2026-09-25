@@ -64,7 +64,7 @@ class TargetService
             ->whereHas('departments', function ($q) {
                 $q->where('department', 1);
             })
-            ->where('status', 'Active')
+            ->whereIn('status', User::WORKING_STATUSES)
             ->get();
 
         $leaderboard = [];

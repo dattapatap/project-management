@@ -163,7 +163,7 @@ class HandoffWizardController extends Controller
             );
 
             // 7. Notify Project Managers
-            $productManagers = User::role('Project-Manager')->where('status', 'Active')->get();
+            $productManagers = User::role('Project-Manager')->whereIn('status', User::WORKING_STATUSES)->get();
             foreach ($productManagers as $pm) {
                 $pm->notify((new ClientMatured($client, $dept, $request->project_name))->delay(now()->addSeconds(5)));
             }
@@ -174,7 +174,7 @@ class HandoffWizardController extends Controller
             if ($refUser) {
                 $branchId = app(\App\Services\BranchScopeService::class)->resolveBranchId($refUser);
             }
-            $branchManagersQuery = User::role('Branch-Manager')->where('status', 'Active');
+            $branchManagersQuery = User::role('Branch-Manager')->whereIn('status', User::WORKING_STATUSES);
             if ($branchId) {
                 $branchManagersQuery->whereIn('id', function ($query) use ($branchId) {
                     $query->select('user')

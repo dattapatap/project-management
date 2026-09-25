@@ -17,12 +17,14 @@
         </div>
     </div>
     <div class="col-sm-6">
-        <div class="float-sm-right d-flex align-items-center mt-3 mt-sm-0">
-            <div class="mr-4 erp-dash-year-box">
-                <p class="erp-dash-year-box__label">Operational Year</p>
+        <div class="float-sm-right d-flex align-items-center mt-3 mt-sm-0" style="gap: 8px;">
+            <button type="button" class="btn btn-sm btn-white border shadow-sm px-3 py-1.5 font-weight-bold" data-toggle="modal" data-target="#staffDirectoryModal" style="border-radius: 10px;">
+                <i class="mdi mdi-account-group text-primary mr-1"></i> Staffs
+            </button>
+            <div class="erp-dash-year-box ml-1">
                 <div class="d-flex align-items-center">
-                    <i class="mdi mdi-calendar-range text-primary mr-2"></i>
-                    <select class="form-control form-control-sm erp-dash-year-select" id="tl_dashboard_year_filter">
+                    <i class="mdi mdi-calendar-range text-primary mr-1.5"></i>
+                    <select class="form-control form-control-sm erp-dash-year-select" id="tl_dashboard_year_filter" style="border-radius: 8px;">
                         @foreach($adminData['available_years'] as $yr)
                         <option value="{{ $yr }}" {{ $adminData['selected_year'] == $yr ? 'selected' : '' }}>{{ $yr }}</option>
                         @endforeach
@@ -350,7 +352,7 @@
 @endif
 
 <!-- Urgent Deadlines Table -->
-<div class="row mb-5 pb-4">
+<div class="row pb-4">
     <div class="col-12">
         <div class="card pm-dashboard-custom-card shadow-sm border-0">
             <div class="card-body">

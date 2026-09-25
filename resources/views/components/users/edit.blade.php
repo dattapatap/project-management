@@ -442,10 +442,29 @@
                                         <i class="mdi mdi-checkbox-marked-circle-outline"></i>User Status <span class="text_required">*</span>
                                     </label>
                                     <select class="form-control select-premium" name="status" id="status" required>
-                                        <option value="Active" @if(old('status', $users->status) == 'Active') selected @endif>Active</option>
-                                        <option value="Inactive" @if(old('status', $users->status) == 'Inactive') selected @endif>Inactive</option>
+                                        <option value="Active" @if(old('status', $users->status) == 'Active') selected @endif>🟢 Active (Normal Working Staff)</option>
+                                        <option value="Probation" @if(old('status', $users->status) == 'Probation') selected @endif>🔵 Probation (New Hire)</option>
+                                        <option value="Notice Period" @if(old('status', $users->status) == 'Notice Period') selected @endif>🟡 Notice Period (Serving Notice)</option>
+                                        <option value="Suspended" @if(old('status', $users->status) == 'Suspended') selected @endif>🔴 Suspended (Login Blocked)</option>
+                                        <option value="Resigned" @if(old('status', $users->status) == 'Resigned') selected @endif>⚪ Resigned (Separated - Login Blocked)</option>
+                                        <option value="Terminated" @if(old('status', $users->status) == 'Terminated') selected @endif>⚫ Terminated (Separated - Login Blocked)</option>
                                     </select>
                                     @error('status')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                    @enderror
+                                </div>
+
+                                <!-- Field: Relieving / Last Working Date -->
+                                <div class="form-group form-group-premium" id="editEndDtGroup" @if(!in_array(old('status', $users->status), ['Notice Period', 'Resigned', 'Terminated'])) style="display: none;" @endif>
+                                    <label for="end_dt">
+                                        <i class="mdi mdi-calendar-clock"></i>Relieving / Last Working Date
+                                    </label>
+                                    <input type="date" class="form-control input-premium" name="end_dt" id="end_dt"
+                                           value="{{ old('end_dt', $users->emp?->end_dt ? \Carbon\Carbon::parse($users->emp->end_dt)->format('Y-m-d') : '') }}">
+                                    <small class="text-muted font-size-11">Expected or actual last day with the company.</small>
+                                    @error('end_dt')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
@@ -501,6 +520,15 @@
 
         $('#role').on('change', function() {
             toggleDepartmentRequired();
+        });
+
+        $('#status').on('change', function() {
+            var val = $(this).val();
+            if (val === 'Notice Period' || val === 'Resigned' || val === 'Terminated') {
+                $('#editEndDtGroup').slideDown(200);
+            } else {
+                $('#editEndDtGroup').slideUp(200);
+            }
         });
 
         // Trigger on load

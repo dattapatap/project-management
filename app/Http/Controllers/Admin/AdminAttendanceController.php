@@ -85,7 +85,7 @@ class AdminAttendanceController extends Controller
         ];
 
         // Query active employees (excluding Admin and Client roles)
-        $query = User::where('status', 'Active')
+        $query = User::whereIn('status', User::WORKING_STATUSES)
             ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']));
 
         if ($user->isBranchManager() && !$user->isGlobalAdmin()) {
@@ -208,7 +208,7 @@ class AdminAttendanceController extends Controller
         $searchQuery = $request->input('search_query');
 
         // Exclude Admin and Client roles so only employees are listed
-        $query = User::where('status', 'Active')
+        $query = User::whereIn('status', User::WORKING_STATUSES)
             ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
             ->with(['roles', 'departments.dept', 'emp']);
 

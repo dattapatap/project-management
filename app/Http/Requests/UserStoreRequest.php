@@ -33,7 +33,7 @@ class UserStoreRequest extends FormRequest
             'email' => 'required|email|unique:users,email,NULL,id,deleted_at,NULL',
             'mobile' => 'required|digits:10|regex:/^[6-9][0-9]{9}/|unique:users,mobile,NULL,id,deleted_at,NULL',
             'gender' => 'required',
-            'dob' => 'required|date',
+            'dob' => 'required|date|before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             'role' => 'required',
             'department' => $isBranchManager ? 'nullable' : 'required',
             'designation' => 'required|string',
@@ -41,6 +41,14 @@ class UserStoreRequest extends FormRequest
             'joining_date' => 'required|date',
             'password' => 'required|confirmed|min:5',
             'password_confirmation' => 'required|min:5',
+            'status' => 'nullable|string|in:Active,Probation,Notice Period,Suspended,Resigned,Terminated,Inactive',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'dob.before_or_equal' => 'Date of birth must be at least 18 years ago (minimum 18 years of age required).',
         ];
     }
 }

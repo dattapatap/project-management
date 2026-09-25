@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@section('styles')
+<link rel="stylesheet" type="text/css" href="{{ asset('css/kanban.css') }}?v={{ filemtime(public_path('css/kanban.css')) }}">
+@endsection
 @section('content')
 <style>
     .highlight-task {
@@ -290,7 +293,7 @@
                             </div>
                             <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
                                 @forelse($workingDevs->take(5) as $dev)
-                                    <div class="d-inline-flex align-items-center" title="{{ $dev->name }} ({{ $dev->roles->pluck('name')->first() ?? 'Developer' }})">
+                                    <div class="d-inline-flex align-items-center" title="{{ $dev->name }} ({{ $dev->relationLoaded('roles') ? ($dev->roles->pluck('name')->first() ?? 'Developer') : 'Developer' }})">
                                         @if($dev->profile)
                                             <img src="{{ asset('storage/' . $dev->profile) }}" alt="{{ $dev->name }}" class="rounded-circle border border-white shadow-sm" style="width: 28px; height: 28px; object-fit: cover;" data-toggle="tooltip" data-placement="top" title="{{ $dev->name }}">
                                         @else
@@ -375,9 +378,13 @@
 
 
                             <div class="kanban-item-text c-m">
-                                {!! Str::limit($items->description, 120) !!}
+                                @if(!empty(trim(strip_tags($items->description ?? ''))))
+                                <p class="kanban-item-desc mb-2 text-muted font-size-12">
+                                    {{ Str::limit(strip_tags($items->description), 120) }}
+                                </p>
+                                @endif
 
-                                <div class="task-schedule-time">
+                                <div class="task-schedule-time d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px; margin-top: 5px;">
                                     <span class="">
                                         <i class="mdi mdi-calendar-month-outline" title="Task Scheduled Time"></i>
                                         {{ \Carbon\Carbon::parse($items->startdate)->format('d M y') }} To {{ \Carbon\Carbon::parse($items->enddate)->format('d M y') }}
@@ -482,7 +489,11 @@
 
 
                             <div class="kanban-item-text c-m">
-                                {!! Str::limit($items->description, 120) !!}
+                                @if(!empty(trim(strip_tags($items->description ?? ''))))
+                                <p class="kanban-item-desc mb-2 text-muted font-size-12">
+                                    {{ Str::limit(strip_tags($items->description), 120) }}
+                                </p>
+                                @endif
 
                                 <div class="task-schedule-time d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px; margin-top: 5px;">
                                     <span class="">
@@ -596,7 +607,11 @@
                             </div>
 
                             <div class="kanban-item-text c-m">
-                                {!! Str::limit($items->description, 120) !!}
+                                @if(!empty(trim(strip_tags($items->description ?? ''))))
+                                <p class="kanban-item-desc mb-2 text-muted font-size-12">
+                                    {{ Str::limit(strip_tags($items->description), 120) }}
+                                </p>
+                                @endif
                                 <div class="task-schedule-time d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px; margin-top: 5px;">
                                     <span class="">
                                         <i class="mdi mdi-calendar-month-outline" title="Task Scheduled Time"></i>
@@ -620,27 +635,27 @@
                             </div>
 
                             <div class="task-card-footer">
-                                <div class="project-members">
-                                    <div class="project-matrix-group-divs">
-                                        <span class="project-metrics__metric-group-item__title project-matrix-group-items">
+                                <div class="project-members d-flex align-items-center justify-content-between" style="gap: 10px;">
+                                    <div class="project-matrix-group-divs flex-grow-1 mr-2" style="margin-bottom: 0;">
+                                        <span class="project-metrics__metric-group-item__title project-matrix-group-items mb-0">
                                             Progress
                                         </span>
-                                        <div class="project-matrix-group-items project-metrics__metric-group-item__chart progress progress-sm">
+                                        <div class="project-matrix-group-items project-metrics__metric-group-item__chart progress progress-sm mb-0" style="flex-grow: 1;">
                                             <div class="progress-bar bg-success" role="progressbar" style="width: {{ $items->progress }}%"
                                                 aria-valuenow="{{ $items->progress }}" aria-valuemin="0" aria-valuemax="100">
                                             </div>
                                         </div>
-                                        <span class="project-matrix-group-items project-metrics__metric-group-item__value">
+                                        <span class="project-matrix-group-items project-metrics__metric-group-item__value mb-0">
                                             {{ $items->progress }} %
                                         </span>
                                     </div>
 
-                                    <ul class="project-users">
+                                    <ul class="project-users mb-0" style="padding-left: 0; margin-left: 0 !important; min-width: 25px; display: flex; justify-content: flex-end; flex-shrink: 0;">
                                         <li class="cursor">
                                             @if ($items->user->profile)
-                                            <img title="{{ $items->user->name }}" src="{{ asset('storage/'. $items->user->profile )}}">
+                                            <img title="{{ $items->user->name }}" src="{{ asset('storage/'. $items->user->profile )}}" style="margin-left: 0 !important;">
                                             @else
-                                            <img title="{{ $items->user->name }}" src="{{ Avatar::create($items->user->name)->toBase64()  }}">
+                                            <img title="{{ $items->user->name }}" src="{{ Avatar::create($items->user->name)->toBase64()  }}" style="margin-left: 0 !important;">
                                             @endif
 
                                         </li>

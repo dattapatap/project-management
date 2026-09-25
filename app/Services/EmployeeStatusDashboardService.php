@@ -19,7 +19,7 @@ class EmployeeStatusDashboardService
     public function getEmployeeTodayStatus(User $currentUser): array
     {
         // 1. Resolve which employees are in scope of the current user
-        $employeesQuery = User::where('status', 'Active')
+        $employeesQuery = User::whereIn('status', User::WORKING_STATUSES)
             ->where('id', '!=', $currentUser->id);
 
         if ($currentUser->isGlobalAdmin()) {
@@ -132,11 +132,13 @@ class EmployeeStatusDashboardService
 
             if (!empty($details)) {
                 $statusData[] = [
-                    'id' => $emp->id,
-                    'name' => $emp->name,
-                    'dept' => strtoupper($deptType),
-                    'role' => $roleName,
-                    'details' => $details
+                    'id'           => $emp->id,
+                    'name'         => $emp->name,
+                    'dept'         => strtoupper($deptType),
+                    'role'         => $roleName,
+                    'status'       => $emp->status,
+                    'status_badge' => $emp->status_badge,
+                    'details'      => $details
                 ];
             }
         }

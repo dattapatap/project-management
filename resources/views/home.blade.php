@@ -91,18 +91,11 @@
     </div>
     @elseif($user->isBranchManager())
     {{-- Branch Manager — all-department oversight --}}
-    <div class="row">
-        <div class="col-12">
-            @include('dashboards.branch_manager_ui')
-        </div>
-    </div>
+    @include('dashboards.branch_manager_ui')
+
     @elseif($user->hasRole('Project-Manager'))
     {{-- Project Manager Portfolio View Only --}}
-    <div class="row">
-        <div class="col-12">
-            @include('dashboards.pm_ui')
-        </div>
-    </div>
+    @include('dashboards.pm_ui')
     @else
     {{-- Standard Dashboard Logic for others --}}
     @if($user->hasRole('Admin'))
@@ -122,6 +115,17 @@
     @endif
     @endif
 
+    {{-- 🎂 🎖️ 📢 Bottom Dashboard Cards Suite: Birthdays, Anniversaries & Announcements (Every User: Admin, BM, TLs, Employees) --}}
+    @include('dashboards.widgets.celebrations_cards')
+
+    {{-- Interactive Staff Directory Modal --}}
+    @include('components.hrms.directory.modal')
+
+    {{-- 🎂 Auto Birthday Celebration Popup (opens on birthday date) --}}
+    @include('components.hrms.celebrations.auto_popup')
+
+    {{-- 📢 Auto Announcements Popup & Right-Center Floating Trigger --}}
+    @include('components.hrms.announcements.auto_popup')
 
 </div>
 

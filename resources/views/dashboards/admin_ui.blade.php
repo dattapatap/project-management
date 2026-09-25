@@ -196,6 +196,11 @@
                 </div>
             </div>
 
+            {{-- Staff Directory Quick Popup Button --}}
+            <button type="button" class="btn btn-white border bg-white shadow-sm font-size-12 px-3 py-2 font-weight-bold" style="border-radius: 10px;" data-toggle="modal" data-target="#staffDirectoryModal">
+                <i class="mdi mdi-account-group text-primary mr-1"></i> Staffs
+            </button>
+
             {{-- 1-Click Live Refresh Button --}}
             <button type="button" class="btn btn-white border bg-white shadow-sm font-size-12 px-2.5 py-2 text-muted" style="border-radius: 10px;" title="Refresh Data" onclick="window.location.reload();">
                 <i class="mdi mdi-refresh font-size-14"></i>
@@ -632,7 +637,7 @@
 </div>
 
 {{-- ══ Row 4: Bottom Operational Triple-Panel ═══════════════════════════════════ --}}
-<div class="row">
+<div class="row mb-4">
     {{-- 1. Employee Live Work & Attendance Status Today --}}
     <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
         <div class="wms-dash-card h-100">

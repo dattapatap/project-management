@@ -24,7 +24,7 @@ class AttendanceExportController extends Controller
             '3' => 'Customer Success (CSD)',
         ];
 
-        $employees = User::where('status', 'Active')
+        $employees = User::whereIn('status', User::WORKING_STATUSES)
             ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
             ->with(['departments.dept'])
             ->orderBy('name', 'asc')

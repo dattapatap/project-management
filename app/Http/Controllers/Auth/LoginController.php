@@ -42,18 +42,28 @@ class LoginController extends Controller
             if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']  ] )) {
 
                 $user = Auth::user();
-                if($user->status === 'Active'){
-                   $user->last_login_at = now();
-                   $user->save();
-                   UserActivity::log('Login', 'User logged in successfully');
-                   return redirect()->intended();
-                }else{
-                    Session::flush();
-                    Auth::logout();
-                    return Redirect('login')->with("error","Opps! Your account is in-activated, please contact to admin!");
+                if ($user->isWorking()) {
+                    $user->last_login_at = now();
+                    $user->save();
+                    UserActivity::log('Login', "User {$user->name} logged in ({$user->status})");
+                    return redirect()->intended();
                 }
-            }else{
-                return redirect()->back()->withInput()->with("error","Opps! You have entered invalid credentials");
+
+                // Account is not in a working status
+                $status = $user->status;
+                Session::flush();
+                Auth::logout();
+
+                $errorMessage = match ($status) {
+                    \App\Models\User::STATUS_SUSPENDED => "Your account has been suspended. Please contact Administration or HR.",
+                    \App\Models\User::STATUS_RESIGNED => "Your account is closed (Resigned). Please contact Administration.",
+                    \App\Models\User::STATUS_TERMINATED => "Your account has been terminated. Please contact Administration.",
+                    default => "Your account is currently inactive. Please contact Administration.",
+                };
+
+                return redirect()->route('login')->with("error", $errorMessage);
+            } else {
+                return redirect()->back()->withInput()->with("error", "Oops! You have entered invalid credentials");
             }
         }
 

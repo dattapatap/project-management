@@ -63,7 +63,7 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
         }
 
         // Query active employees (excluding Admin and Client roles)
-        $query = User::where('status', 'Active')
+        $query = User::whereIn('status', User::WORKING_STATUSES)
             ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
             ->with(['roles', 'departments.dept', 'emp']);
 

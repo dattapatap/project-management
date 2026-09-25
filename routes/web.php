@@ -315,7 +315,7 @@ Route::group(['middleware' => ['auth']], function () {
 Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
 
     // Users
-    Route::get('/users/status/{user_id}', [UserController::class, 'changestatus'])->name('users.changeStatus');
+    Route::match(['get', 'post'], '/users/status/{user_id}', [UserController::class, 'changestatus'])->name('users.changeStatus');
     Route::resource('/users', UserController::class);
 
     Route::get('/departments/members/edit', [DepartmentMemberController::class, 'edit'])->name('department.editmember');
@@ -405,14 +405,32 @@ Route::group(['middleware' => ['auth']], function () {
 
     // HRMS Suite
     Route::group(['prefix' => 'hrms', 'as' => 'hrms.'], function () {
+        // Company Holidays & Calendar
+        Route::get('holidays', [\App\Http\Controllers\Hrms\HolidayViewController::class, 'index'])->name('holidays.index');
+        Route::get('holidays/events', [\App\Http\Controllers\Hrms\HolidayViewController::class, 'events'])->name('holidays.events');
+
+        // Announcements read acknowledgment (all authenticated users)
+        Route::post('announcements/{id}/read', [\App\Http\Controllers\Hrms\AnnouncementController::class, 'markAsRead'])->name('announcements.read');
+
         // Employee Leaves
         Route::get('my-leaves', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'index'])->name('my-leaves.index');
         Route::post('my-leaves', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'store'])->name('my-leaves.store');
 
         // Admin & Branch Manager HRMS Workflows
         Route::group(['middleware' => ['role:Admin|Branch-Manager']], function () {
+            // Celebrations Hub (Admin & Branch Manager)
+            Route::get('celebrations', [\App\Http\Controllers\Hrms\CelebrationController::class, 'index'])->name('celebrations.index');
+            Route::get('celebrations/api-upcoming', [\App\Http\Controllers\Hrms\CelebrationController::class, 'apiUpcoming'])->name('celebrations.api');
+
             Route::get('leaves/approvals', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'approvals'])->name('my-leaves.approvals');
             Route::post('leaves/{leave}/status', [\App\Http\Controllers\Hrms\EmployeeLeaveController::class, 'updateStatus'])->name('my-leaves.update-status');
+
+            // Announcements Management
+            Route::get('announcements', [\App\Http\Controllers\Hrms\AnnouncementController::class, 'index'])->name('announcements.index');
+            Route::post('announcements', [\App\Http\Controllers\Hrms\AnnouncementController::class, 'store'])->name('announcements.store');
+            Route::put('announcements/{id}', [\App\Http\Controllers\Hrms\AnnouncementController::class, 'update'])->name('announcements.update');
+            Route::delete('announcements/{id}', [\App\Http\Controllers\Hrms\AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+            Route::patch('announcements/{id}/status', [\App\Http\Controllers\Hrms\AnnouncementController::class, 'toggleStatus'])->name('announcements.status');
 
             // Date-Range Attendance Export
             Route::get('attendance-export', [\App\Http\Controllers\Hrms\AttendanceExportController::class, 'index'])->name('attendance-export.index');

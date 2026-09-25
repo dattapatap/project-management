@@ -60,13 +60,13 @@ class DailyTargetsExport implements FromArray, WithHeadings, ShouldAutoSize
 
         // Fetch Employees
         if ($this->user->isGlobalAdmin()) {
-            $employeesQuery = User::where('status', 'Active')
+            $employeesQuery = User::whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $this->user->id)
                 ->with(['roles', 'departments']);
         } else {
             $branchUserIds = $branchScope->getBranchUserIds($this->user);
             $employeesQuery = User::whereIn('id', $branchUserIds)
-                ->where('status', 'Active')
+                ->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $this->user->id)
                 ->with(['roles', 'departments']);
         }

@@ -28,13 +28,13 @@ class DailyTargetController extends Controller
         $performanceService = new UserPerformanceService();
 
         if ($user->isGlobalAdmin()) {
-            $rawQuery = User::where('status', 'Active')
+            $rawQuery = User::whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->with(['roles', 'departments']);
         } else {
             $branchUserIds = $this->branchScope->getBranchUserIds($user);
             $rawQuery = User::whereIn('id', $branchUserIds)
-                ->where('status', 'Active')
+                ->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->with(['roles', 'departments']);
         }
@@ -56,14 +56,14 @@ class DailyTargetController extends Controller
         $performanceService = new UserPerformanceService();
 
         if ($user->isGlobalAdmin()) {
-            $rawUsers = User::where('status', 'Active')
+            $rawUsers = User::whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->with(['roles', 'departments'])
                 ->get();
         } else {
             $branchUserIds = $this->branchScope->getBranchUserIds($user);
             $rawUsers = User::whereIn('id', $branchUserIds)
-                ->where('status', 'Active')
+                ->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->with(['roles', 'departments'])
                 ->get();
@@ -158,12 +158,12 @@ class DailyTargetController extends Controller
 
         // 2. Fetch Employees in Scope
         if ($user->isGlobalAdmin()) {
-            $employeesQuery = User::where('status', 'Active')
+            $employeesQuery = User::whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->with(['roles', 'departments']);
         } else {
             $employeesQuery = User::whereIn('id', $branchUserIds)
-                ->where('status', 'Active')
+                ->whereIn('status', User::WORKING_STATUSES)
                 ->where('id', '!=', $user->id)
                 ->with(['roles', 'departments']);
         }

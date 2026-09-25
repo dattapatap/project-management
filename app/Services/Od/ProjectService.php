@@ -185,7 +185,7 @@ class ProjectService
         UserActivity::log('Project Update', "Added progress remark for project '{$project->project_name}': {$remarks}");
 
         // Bulk notify Project Managers
-        $productManagers = User::role('Project-Manager')->where('status', 'Active')->get();
+        $productManagers = User::role('Project-Manager')->whereIn('status', User::WORKING_STATUSES)->get();
         if ($productManagers->count() > 0) {
             Notification::send($productManagers, (new ProjectUpdate($project, "Project Update"))->delay(now()->addSeconds(5)));
         }
@@ -258,7 +258,7 @@ class ProjectService
                 // When delegating: show other Team Leaders along with employees of other teams in the department
                 $userDeptId = $user->departments?->department ?? $user->teamMember?->department ?? 2;
 
-                $otherEmployees = User::where('status', 'Active')
+                $otherEmployees = User::whereIn('status', User::WORKING_STATUSES)
                     ->where('id', '!=', $user->id)
                     ->where(function ($q) use ($userDeptId) {
                         $q->whereHas('departments', function ($sq) use ($userDeptId) {
@@ -306,7 +306,7 @@ class ProjectService
             $teamMember = TeamMembers::where('user', $user->id)->where('status', true)->first();
             $tlTeamId = $teamMember?->team;
 
-            $query = User::where('status', 'Active');
+            $query = User::whereIn('status', User::WORKING_STATUSES);
             if ($tlTeamId) {
                 $query->whereHas('teamMember', function ($q) use ($tlTeamId) {
                     $q->where('team', $tlTeamId);
@@ -336,7 +336,7 @@ class ProjectService
         }
 
         // For non-Team Leader roles: Admin, Branch-Manager, Project-Manager
-        $query = User::where('status', 'Active')
+        $query = User::whereIn('status', User::WORKING_STATUSES)
             ->where(function ($q) {
                 $q->whereHas('teamMember', function ($sub) {
                     $sub->where('department', 2);

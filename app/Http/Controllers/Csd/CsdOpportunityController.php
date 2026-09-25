@@ -27,7 +27,7 @@ class CsdOpportunityController extends Controller
     {
         $user = Auth::user();
 
-        $nsdReps = \App\Models\User::where('status', 'Active')
+        $nsdReps = \App\Models\User::whereIn('status', \App\Models\User::WORKING_STATUSES)
             ->where(function ($q) {
                 $q->whereHas('roles', function ($r) {
                     $r->where('name', 'Sales-Executive');
@@ -193,9 +193,9 @@ class CsdOpportunityController extends Controller
         }
 
         $salesRepId = (int) $request->input('sales_rep_id');
-        $salesRep = \App\Models\User::where('id', $salesRepId)->where('status', 'Active')->first();
+        $salesRep = \App\Models\User::where('id', $salesRepId)->whereIn('status', \App\Models\User::WORKING_STATUSES)->first();
         if (!$salesRep) {
-            return response()->json(['success' => false, 'message' => 'Selected Sales Representative is inactive or invalid.'], 400);
+            return response()->json(['success' => false, 'message' => 'Selected Sales Representative is not in an active working status or is invalid.'], 400);
         }
 
         try {
