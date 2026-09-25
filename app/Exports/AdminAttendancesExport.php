@@ -11,7 +11,7 @@ class AdminAttendancesExport implements FromArray, WithHeadings, ShouldAutoSize
 {
     private DateRangeAttendanceExport $exporter;
 
-    public function __construct(string $dateStr, ?string $departmentId = null, ?string $statusFilter = null, ?\App\Models\User $actingUser = null)
+    public function __construct(string $dateStr, ?string $departmentId = null, ?string $statusFilter = null, ?\App\Models\User $actingUser = null, ?string $locationFilter = null, ?int $userId = null)
     {
         if (str_contains($dateStr, ' - ')) {
             $parts = explode(' - ', $dateStr);
@@ -26,9 +26,10 @@ class AdminAttendancesExport implements FromArray, WithHeadings, ShouldAutoSize
             $startDateStr,
             $endDateStr,
             $departmentId,
-            null,
+            $userId,
             $statusFilter,
-            $actingUser
+            $actingUser,
+            $locationFilter
         );
     }
 

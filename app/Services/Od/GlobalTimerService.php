@@ -14,7 +14,7 @@ class GlobalTimerService
     /**
      * Start the global attendance timer.
      */
-    public function startGlobalTimer(User $user): array
+    public function startGlobalTimer(User $user, ?string $workLocation = null, ?string $workLocationNotes = null): array
     {
         if (!$user->isWorking()) {
             return ['success' => false, 'message' => "Cannot start shift timer for {$user->status} account."];
@@ -28,22 +28,40 @@ class GlobalTimerService
             return ['success' => false, 'message' => 'Global timer is already running.'];
         }
 
-        return DB::transaction(function () use ($user) {
+        return DB::transaction(function () use ($user, $workLocation, $workLocationNotes) {
             $now = Carbon::now();
+            $todayDate = $now->format('Y-m-d');
+
+            // If work location is not provided (e.g. resuming from break), inherit from today's initial log or default to Office
+            $resolvedLocation = $workLocation;
+            $resolvedNotes = $workLocationNotes;
+            if (empty($resolvedLocation)) {
+                $todayFirstLog = GlobalAttendanceLog::where('userid', $user->id)
+                    ->where('log_date', $todayDate)
+                    ->whereNotNull('work_location')
+                    ->orderBy('id', 'asc')
+                    ->first();
+                $resolvedLocation = $todayFirstLog?->work_location ?? GlobalAttendanceLog::LOCATION_OFFICE;
+                if (empty($resolvedNotes)) {
+                    $resolvedNotes = $todayFirstLog?->work_location_notes;
+                }
+            }
 
             $log = new GlobalAttendanceLog();
             $log->userid = $user->id;
-            $log->log_date = $now->format('Y-m-d');
+            $log->log_date = $todayDate;
             $log->starttime = $now->format('H:i:s');
             $log->endtime = null;
             $log->time_spend = null;
             $log->status = 'active';
+            $log->work_location = $resolvedLocation;
+            $log->work_location_notes = $resolvedNotes;
             $log->save();
 
             // Auto-resume the last worked task if any exists in InProgress status
             $this->autoResumeLastTask($user);
 
-            return ['success' => true, 'message' => 'Global shift timer started.', 'log' => $log];
+            return ['success' => true, 'message' => "Global shift timer started ({$resolvedLocation}).", 'log' => $log];
         });
     }
 
@@ -70,9 +88,9 @@ class GlobalTimerService
     /**
      * Resume the global attendance timer.
      */
-    public function resumeGlobalTimer(User $user): array
+    public function resumeGlobalTimer(User $user, ?string $workLocation = null, ?string $workLocationNotes = null): array
     {
-        return $this->startGlobalTimer($user);
+        return $this->startGlobalTimer($user, $workLocation, $workLocationNotes);
     }
 
     /**
@@ -290,5 +308,145 @@ class GlobalTimerService
             $tLog->log_description = $tLog->log_description ?: 'Unclosed task timer - zeroed because shift was not closed';
             $tLog->save();
         }
+    }
+
+    /**
+     * Reverse geocode coordinates to a precise full address (house/building, road, landmark, area, city, pincode, state).
+     */
+    public function reverseGeocode(float $lat, float $lon): array
+    {
+        $cacheKey = 'rev_geo_full_' . round($lat, 4) . '_' . round($lon, 4);
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 86400, function () use ($lat, $lon) {
+            // 1. Primary: OpenStreetMap Nominatim with zoom=18 for exact building, street, and address details
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'User-Agent' => 'WMS-ERP-Digitalnock/1.0 (contact@digitalnock.net)',
+                    'Accept' => 'application/json',
+                ])->timeout(5)->get("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={$lat}&lon={$lon}&zoom=18&addressdetails=1");
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $address = $data['address'] ?? [];
+                    $displayName = $data['display_name'] ?? null;
+
+                    $parts = [];
+
+                    // 1. House / Building / Flat / Shop / Amenity (e.g. Near Bhanu Nursing Home)
+                    $premise = [];
+                    if (!empty($address['house_number'])) {
+                        $premise[] = '#' . ltrim($address['house_number'], '#');
+                    }
+                    if (!empty($address['building'])) {
+                        $premise[] = $address['building'];
+                    }
+                    if (!empty($address['amenity'])) {
+                        $premise[] = 'Near ' . $address['amenity'];
+                    }
+                    if (!empty($address['office'])) {
+                        $premise[] = $address['office'];
+                    }
+                    if (!empty($address['shop'])) {
+                        $premise[] = $address['shop'];
+                    }
+                    if (!empty($premise)) {
+                        $parts[] = implode(', ', array_unique($premise));
+                    }
+
+                    // 2. Road / Street / Lane
+                    if (!empty($address['road'])) {
+                        $parts[] = $address['road'];
+                    }
+
+                    // 3. Neighbourhood / Block / Sector / Cross
+                    if (!empty($address['neighbourhood'])) {
+                        $parts[] = $address['neighbourhood'];
+                    }
+
+                    // 4. Suburb / Area (e.g. Bommanahalli, Koramangala)
+                    if (!empty($address['suburb']) && !in_array($address['suburb'], $parts)) {
+                        $parts[] = $address['suburb'];
+                    }
+
+                    // 5. Residential / Layout / Colony
+                    if (!empty($address['residential']) && !in_array($address['residential'], $parts)) {
+                        $parts[] = $address['residential'];
+                    }
+
+                    // 6. City / Town + Pincode
+                    $city = $address['city'] ?? $address['town'] ?? $address['municipality'] ?? $address['village'] ?? null;
+                    $postcode = $address['postcode'] ?? null;
+                    $state = $address['state'] ?? null;
+
+                    if (!empty($city)) {
+                        if (!empty($postcode)) {
+                            $parts[] = $city . ' - ' . $postcode;
+                        } else {
+                            $parts[] = $city;
+                        }
+                    } elseif (!empty($postcode)) {
+                        $parts[] = $postcode;
+                    }
+
+                    // 7. State
+                    if (!empty($state)) {
+                        $parts[] = $state;
+                    }
+
+                    $fullAddress = count($parts) >= 2 ? implode(', ', $parts) : ($displayName ?? '');
+
+                    if (!empty($fullAddress)) {
+                        return [
+                            'success' => true,
+                            'location' => $fullAddress,
+                            'display_name' => $displayName,
+                            'source' => 'nominatim',
+                        ];
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Nominatim reverse geocode attempt failed: " . $e->getMessage());
+            }
+
+            // 2. Secondary Fallback: BigDataCloud
+            try {
+                $bdcResponse = \Illuminate\Support\Facades\Http::timeout(4)
+                    ->get("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={$lat}&longitude={$lon}&localityLanguage=en");
+
+                if ($bdcResponse->successful()) {
+                    $bdcData = $bdcResponse->json();
+                    $parts = [];
+                    if (!empty($bdcData['locality']) && $bdcData['locality'] !== ($bdcData['city'] ?? '')) {
+                        $parts[] = $bdcData['locality'];
+                    }
+                    if (!empty($bdcData['city'])) {
+                        $parts[] = $bdcData['city'];
+                    }
+                    if (!empty($bdcData['postcode'])) {
+                        $parts[] = $bdcData['postcode'];
+                    }
+                    if (!empty($bdcData['principalSubdivision'])) {
+                        $parts[] = $bdcData['principalSubdivision'];
+                    }
+
+                    if (!empty($parts)) {
+                        return [
+                            'success' => true,
+                            'location' => implode(', ', $parts),
+                            'source' => 'bigdatacloud',
+                        ];
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("BigDataCloud fallback reverse geocode failed: " . $e->getMessage());
+            }
+
+            // 3. Fallback coordinates
+            return [
+                'success' => true,
+                'location' => 'Lat: ' . round($lat, 4) . ', Lon: ' . round($lon, 4),
+                'source' => 'coordinates',
+            ];
+        });
     }
 }

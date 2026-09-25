@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('styles')
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 <style>
     .approvals-wrapper {
         font-family: 'Outfit', 'Inter', sans-serif;
@@ -68,6 +69,46 @@
         white-space: nowrap !important;
         text-align: right !important;
     }
+
+    /* Select2 Height & Aesthetic Override for Employee Filter */
+    .filter-employee-wrapper .select2-container--default .select2-selection--single {
+        border-radius: 6px !important;
+        border: 1px solid #ced4da !important;
+        height: 36px !important;
+        padding: 4px 8px !important;
+        background-color: #ffffff !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single:focus,
+    .filter-employee-wrapper .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #4f46e5 !important;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+        outline: none !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 26px !important;
+        color: #334155 !important;
+        padding-left: 0 !important;
+        padding-right: 20px !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 34px !important;
+        right: 6px !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single .select2-selection__clear {
+        margin-right: 18px !important;
+        line-height: 26px !important;
+        color: #94a3b8 !important;
+    }
+
+    .filter-employee-wrapper .select2-container {
+        width: 100% !important;
+    }
 </style>
 @endsection
 
@@ -110,42 +151,99 @@
     </div>
     @endif
 
-    <!-- Date Filter Bar -->
+    <!-- Filter Bar (Admin & Branch Manager: Date Range Picker (Max Today) + Employee Filter; TL: Single Date) -->
+    @if(!empty($isAdminOrBranchManager))
+    <div class="card border shadow-sm mb-4">
+        <div class="card-body py-3 px-4" style="background: #f8fafc; border-radius: 12px;">
+            <form method="GET" action="{{ route('day-closing.approvals') }}" id="filter-form">
+                <div class="row align-items-center">
+                    <div class="col-lg-3 col-md-12 mb-3 mb-lg-0">
+                        <div class="d-flex align-items-center">
+                            <div class="mr-2.5 d-flex align-items-center justify-content-center text-primary" style="background: #eef2ff; border-radius: 10px; width: 40px; height: 40px; font-size: 20px;">
+                                <i class="mdi mdi-filter-variant"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 font-weight-bold text-dark font-size-13">Workforce Closings</h6>
+                                <small class="text-muted font-size-11">Date Range & Employee Filter</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-9 col-md-12">
+                        <div class="form-row justify-content-lg-end align-items-center">
+                            {{-- Date Range Picker (Max Today) --}}
+                            <div class="form-group col-xl-5 col-md-5 col-sm-6 mb-2 mb-md-0">
+                                <label class="font-size-11 text-muted font-weight-semibold mb-1 d-block">Audit Date Range (Max Today)</label>
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0"><i class="mdi mdi-calendar text-primary"></i></span>
+                                    </div>
+                                    <input type="text" id="filter-date-range" name="date" class="form-control font-weight-medium border-left-0 font-size-12" style="height: 36px; cursor: pointer; background: #ffffff;" readonly value="{{ $selectedDateDisplay }}">
+                                </div>
+                            </div>
+
+                            {{-- Employee Filter Dropdown --}}
+                            <div class="form-group col-xl-4 col-md-4 col-sm-6 mb-2 mb-md-0 filter-employee-wrapper">
+                                <label class="font-size-11 text-muted font-weight-semibold mb-1 d-block">Employee Filter</label>
+                                <select id="filter-employee" name="employee_id" class="form-control form-control-sm font-weight-medium font-size-12 select2" style="width: 100%; height: 36px;">
+                                    <option value="">All Employees ({{ $allSubordinates->count() }})</option>
+                                    @foreach($allSubordinates as $emp)
+                                    <option value="{{ $emp->id }}" {{ (string)$selectedEmployeeId === (string)$emp->id ? 'selected' : '' }}>
+                                        {{ $emp->name }} ({{ $emp->departments->dept->name ?? ($emp->roles[0]->name ?? 'General') }})
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Action Buttons --}}
+                            <div class="form-group col-xl-3 col-md-3 col-sm-12 mb-0 d-flex" style="gap: 6px; padding-top: 18px;">
+                                <button type="submit" class="btn btn-primary btn-sm flex-fill font-weight-semibold shadow-sm" style="height: 36px;">
+                                    <i class="mdi mdi-filter mr-1"></i> Apply
+                                </button>
+                                <a href="{{ route('day-closing.approvals') }}" class="btn btn-light border btn-sm flex-fill font-weight-medium text-center d-flex align-items-center justify-content-center" style="height: 36px;" title="Reset filters to today & all employees">
+                                    <i class="mdi mdi-refresh mr-1"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    @else
+    {{-- Existing Team Leader Date Selection Bar --}}
     <div class="card border shadow-sm mb-4">
         <div class="card-body py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #f8fafc; border-radius: 12px;">
             <div class="d-flex align-items-center">
                 <i class="mdi mdi-calendar-search text-primary font-size-24 mr-2"></i>
                 <div>
                     <h6 class="mb-0 font-weight-bold text-dark">Audit Date Selection</h6>
-                    <small class="text-muted">Select a date to audit work-closing statuses of all employees.</small>
+                    <small class="text-muted">Select a date to audit work-closing statuses of your team members.</small>
                 </div>
             </div>
             <form method="GET" action="{{ route('day-closing.approvals') }}" class="form-inline">
                 <div>
                     <div class="input-group">
-                        <input type="date" name="date" class="form-control form-control-sm border" value="{{ $selectedDate }}" @if(!empty($minDate)) min="{{ $minDate }}" @endif max="{{ date('Y-m-d') }}" style="width: 160px; height: 36px; border-radius: 8px 0 0 8px;" onchange="this.form.submit()">
+                        <input type="date" name="date" class="form-control form-control-sm border" value="{{ $startDateStr }}" @if(!empty($minDate)) min="{{ $minDate }}" @endif max="{{ date('Y-m-d') }}" style="width: 160px; height: 36px; border-radius: 8px 0 0 8px;" onchange="this.form.submit()">
                         <div class="input-group-append">
                             <button type="submit" class="btn btn-primary btn-sm px-3" style="border-radius: 0 8px 8px 0;">
                                 <i class="mdi mdi-magnify mr-1"></i> Filter
                             </button>
                         </div>
                     </div>
-                    @if(!empty($isTeamLeaderOnly))
-                    <small class="text-muted d-block mt-1 font-size-11"><i class="mdi mdi-shield-account mr-0.5 text-primary"></i> TL limit: up to 2 days back</small>
-                    @endif
                 </div>
             </form>
         </div>
     </div>
+    @endif
 
     <!-- 1. Daily Closing Completion Checklist (Submitted Only) -->
     <div class="card border shadow-sm mb-4">
         <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title text-premium-dark mb-0 font-size-14">
-                <i class="mdi mdi-playlist-check text-success mr-1"></i> Daily Audit Checklist (Submitted Closings) - {{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }}
+                <i class="mdi mdi-playlist-check text-success mr-1"></i> Daily Audit Checklist (Submitted Closings) — {{ $selectedDateDisplay }}
             </h5>
             <span class="badge badge-soft-success px-3 py-1 font-size-11 font-weight-bold">
-                Submitted: {{ $submittedList->count() }} of {{ $subordinates->count() }}
+                Submitted: {{ $submittedList->count() }}
             </span>
         </div>
         <div class="card-body p-0">
@@ -153,7 +251,7 @@
             <div class="text-center py-5 text-muted">
                 <i class="mdi mdi-clipboard-text-outline display-4 text-muted d-block mb-2" style="opacity: 0.4;"></i>
                 <h6 class="font-weight-bold text-dark">No Submissions Recorded</h6>
-                <p class="font-size-12 mb-0">No subordinate employees have submitted day closing for {{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }} yet.</p>
+                <p class="font-size-12 mb-0">No subordinate employees have submitted day closing for {{ $selectedDateDisplay }} yet.</p>
             </div>
             @else
             <div class="table-responsive">
@@ -161,6 +259,7 @@
                     <thead class="thead-custom-teal">
                         <tr>
                             <th style="padding-left: 24px;">Subordinate</th>
+                            <th style="min-width: 110px;">Closing Date</th>
                             <th>Department / Role</th>
                             <th>Target Parameters</th>
                             <th>Submission Status</th>
@@ -182,6 +281,10 @@
                                         <small class="text-muted">{{ $audit->email }}</small>
                                     </div>
                                 </div>
+                            </td>
+                            <td>
+                                <strong class="text-dark font-size-12">{{ \Carbon\Carbon::parse($audit->submission->closing_date)->format('d-M-Y') }}</strong>
+                                <small class="text-muted d-block font-size-10 font-weight-medium">{{ \Carbon\Carbon::parse($audit->submission->closing_date)->format('l') }}</small>
                             </td>
                             <td>
                                 <span class="badge badge-dept text-uppercase badge-{{ strtolower($audit->dept_type ?? '') }}">
@@ -293,7 +396,7 @@
     <div class="card border shadow-sm mb-4">
         <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title text-premium-dark mb-0 font-size-14">
-                <i class="mdi mdi-clock-alert text-warning mr-1"></i> Pending Submissions (Not Submitted Yet)
+                <i class="mdi mdi-clock-alert text-warning mr-1"></i> Pending Submissions (Not Submitted Yet) — {{ $selectedDateDisplay }}
             </h5>
             <span class="badge badge-soft-danger px-3 py-1 font-size-11 font-weight-bold">
                 Not Submitted: {{ $notSubmittedList->count() }}
@@ -304,7 +407,7 @@
             <div class="text-center py-5 text-muted">
                 <i class="mdi mdi-check-circle-outline display-4 text-success d-block mb-2"></i>
                 <h6 class="font-weight-bold text-dark">All Caught Up!</h6>
-                <p class="font-size-12 mb-0">All active team members have submitted their day closing for {{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }}.</p>
+                <p class="font-size-12 mb-0">All active team members have submitted their day closing for {{ $selectedDateDisplay }}.</p>
             </div>
             @else
             <div class="table-responsive">
@@ -312,7 +415,7 @@
                     <thead class="thead-custom-teal">
                         <tr>
                             <th style="padding-left: 24px;">Executive</th>
-                            <th>Date</th>
+                            <th style="min-width: 110px;">Date</th>
                             <th>Department & Role</th>
                             <th>Current Activity Logged</th>
                             <th>Submission Status</th>
@@ -333,7 +436,10 @@
                                     </div>
                                 </div>
                             </td>
-                            <td><strong>{{ \Carbon\Carbon::parse($selectedDate)->format('d-M-Y') }}</strong></td>
+                            <td>
+                                <strong class="text-dark font-size-12">{{ \Carbon\Carbon::parse($emp->closing_date ?? $startDateStr)->format('d-M-Y') }}</strong>
+                                <small class="text-muted d-block font-size-10 font-weight-medium">{{ \Carbon\Carbon::parse($emp->closing_date ?? $startDateStr)->format('l') }}</small>
+                            </td>
                             <td>
                                 <span class="badge badge-dept text-uppercase badge-{{ strtolower($emp->dept_type ?? '') }}">
                                     {{ $emp->dept_type ?? '-' }}
@@ -372,7 +478,7 @@
                                 <span class="badge badge-soft-danger font-size-11 px-2.5 py-0.5 font-weight-bold">Not Submitted</span>
                             </td>
                             <td class="col-actions" style="padding-right: 24px;">
-                                <button class="btn btn-soft-danger btn-sm px-3 shadow-sm font-weight-semibold" onclick="openLeaveModalForUser({{ $emp->id }}, '{{ $selectedDate }}')">
+                                <button class="btn btn-soft-danger btn-sm px-3 shadow-sm font-weight-semibold" onclick="openLeaveModalForUser({{ $emp->id }}, '{{ $emp->closing_date ?? $startDateStr }}')">
                                     <i class="mdi mdi-airplane-takeoff mr-1"></i> Record Leave
                                 </button>
                             </td>
@@ -398,7 +504,8 @@
             </div>
             <form id="decisionForm" method="POST">
                 @csrf
-                <input type="hidden" name="date" value="{{ $selectedDate }}">
+                <input type="hidden" name="date" value="{{ $selectedDateQuery }}">
+                <input type="hidden" name="employee_id" value="{{ $selectedEmployeeId ?? '' }}">
                 <div class="modal-body text-dark">
                     <p class="font-size-14 mb-3" id="modalText"></p>
                     <div class="form-group mb-0">
@@ -427,11 +534,13 @@
             </div>
             <form action="{{ route('day-closing.submit-leave-on-behalf') }}" method="POST">
                 @csrf
+                <input type="hidden" name="filter_date" value="{{ $selectedDateQuery }}">
+                <input type="hidden" name="filter_employee_id" value="{{ $selectedEmployeeId ?? '' }}">
                 <div class="modal-body text-dark">
                     <div class="form-group mb-3">
                         <label class="font-weight-semibold mb-2">Select Employee(s): <span class="text-danger">*</span></label>
                         <select name="user_ids[]" class="form-control border select2" style="width: 100%;" multiple="multiple" data-placeholder="Choose Subordinate(s)..." required>
-                            @foreach($subordinates as $sub)
+                            @foreach($allSubordinates ?? $subordinates as $sub)
                             <option value="{{ $sub->id }}">{{ $sub->name }} ({{ $sub->getRoleNames()->first() ?? '-' }})</option>
                             @endforeach
                         </select>
@@ -457,7 +566,56 @@
 @endsection
 
 @section('scripts')
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <script>
+    $(document).ready(function() {
+        @if(!empty($isAdminOrBranchManager))
+        var start = moment('{{ $startDateStr }}');
+        var end = moment('{{ $endDateStr }}');
+
+        function updateDateInput(start, end) {
+            if (start.format('YYYY-MM-DD') === end.format('YYYY-MM-DD')) {
+                $('#filter-date-range').val(start.format('DD-MM-YYYY'));
+            } else {
+                $('#filter-date-range').val(start.format('DD-MM-YYYY') + ' to ' + end.format('DD-MM-YYYY'));
+            }
+        }
+
+        $('#filter-date-range').daterangepicker({
+            startDate: start,
+            endDate: end,
+            maxDate: moment(),
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')]
+            },
+            locale: {
+                format: 'DD-MM-YYYY'
+            },
+            opens: 'left',
+            autoUpdateInput: false
+        }, function(chosenStart, chosenEnd) {
+            start = chosenStart;
+            end = chosenEnd;
+            updateDateInput(start, end);
+        });
+
+        updateDateInput(start, end);
+
+        if ($.fn.select2) {
+            $('#filter-employee').select2({
+                placeholder: 'All Employees',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+        @endif
+    });
+
     function openApprovalModal(action, id, executiveName) {
         var actionUrl = '';
         var title = '';

@@ -252,6 +252,46 @@
         transform: translateY(-1px);
         text-decoration: none !important;
     }
+
+    /* Select2 Height & Aesthetic Override for Employee Filter */
+    .filter-employee-wrapper .select2-container--default .select2-selection--single {
+        border-radius: 4px !important;
+        border: 1px solid #ced4da !important;
+        height: 34px !important;
+        padding: 3px 8px !important;
+        background-color: #ffffff !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single:focus,
+    .filter-employee-wrapper .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #4f46e5 !important;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+        outline: none !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 26px !important;
+        color: #334155 !important;
+        padding-left: 0 !important;
+        padding-right: 20px !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 32px !important;
+        right: 6px !important;
+    }
+
+    .filter-employee-wrapper .select2-container--default .select2-selection--single .select2-selection__clear {
+        margin-right: 18px !important;
+        line-height: 26px !important;
+        color: #94a3b8 !important;
+    }
+
+    .filter-employee-wrapper .select2-container {
+        width: 100% !important;
+    }
 </style>
 @endsection
 
@@ -372,19 +412,19 @@
     <div class="card border shadow-sm mb-3" style="border-radius: 14px; overflow: hidden;">
         <div class="card-body py-2.5 px-4 bg-white">
             <div class="row align-items-center">
-                <div class="col-lg-3 mb-2 mb-lg-0">
+                <div class="col-lg-2 mb-2 mb-lg-0">
                     <div class="d-flex align-items-center">
                         <i class="mdi mdi-filter-variant text-primary font-size-20 mr-2"></i>
                         <div>
                             <h6 class="mb-0 font-weight-bold text-dark font-size-13">Filter Workforce</h6>
-                            <small class="text-muted font-size-11">Date, Department & Status</small>
+                            <small class="text-muted font-size-11">Date, Employee & Location</small>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-9">
+                <div class="col-lg-10">
                     <div class="form-row justify-content-lg-end align-items-center">
                         {{-- Date Range Picker --}}
-                        <div class="form-group col-md-3 col-sm-6 mb-2 mb-md-0">
+                        <div class="form-group col-xl-3 col-md-3 col-sm-6 mb-2 mb-md-0">
                             <div class="input-group input-group-sm">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text bg-white border-right-0"><i class="mdi mdi-calendar text-primary"></i></span>
@@ -393,35 +433,71 @@
                             </div>
                         </div>
 
-                        {{-- Department Filter --}}
-                        <div class="form-group col-md-3 col-sm-6 mb-2 mb-md-0">
-                            <select id="filter-dept" class="form-control form-control-sm font-weight-medium font-size-12" style="height: 34px;">
-                                @foreach($departments as $dId => $dName)
-                                <option value="{{ $dId }}">{{ $dName }}</option>
-                                @endforeach
+                        {{-- Employee Filter (Instead of Department) --}}
+                        <div class="form-group col-xl-3 col-md-3 col-sm-6 mb-2 mb-md-0 filter-employee-wrapper">
+                            <select id="filter-employee" class="form-control form-control-sm font-weight-medium font-size-12 select2" style="height: 34px; width: 100%;">
+                                <option value="">All Active Employees</option>
+                                @php
+                                    $activeGroup = $allEmployees->filter(function($u) {
+                                        return (method_exists($u, 'isWorkingStatus') && $u->isWorkingStatus()) 
+                                            || in_array(strtolower($u->status ?? ''), ['active', 'probation', 'notice period', 'notice_period']);
+                                    });
+                                    $inactiveGroup = $allEmployees->reject(function($u) {
+                                        return (method_exists($u, 'isWorkingStatus') && $u->isWorkingStatus()) 
+                                            || in_array(strtolower($u->status ?? ''), ['active', 'probation', 'notice period', 'notice_period']);
+                                    });
+                                @endphp
+                                @if($activeGroup->isNotEmpty())
+                                    <optgroup label="Active Employees ({{ $activeGroup->count() }})">
+                                        @foreach($activeGroup as $emp)
+                                            <option value="{{ $emp->id }}">
+                                                {{ $emp->name }} ({{ $emp->departments->dept->name ?? ($emp->roles[0]->name ?? 'General') }})
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                                @if($inactiveGroup->isNotEmpty())
+                                    <optgroup label="Inactive / Resigned / Suspended ({{ $inactiveGroup->count() }})">
+                                        @foreach($inactiveGroup as $emp)
+                                            <option value="{{ $emp->id }}">
+                                                {{ $emp->name }} — [{{ $emp->status }}] ({{ $emp->departments->dept->name ?? ($emp->roles[0]->name ?? 'General') }})
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
                             </select>
                         </div>
 
                         {{-- Work Status Filter --}}
-                        <div class="form-group col-md-3 col-sm-6 mb-2 mb-md-0">
+                        <div class="form-group col-xl-2 col-md-2 col-sm-6 mb-2 mb-md-0">
                             <select id="filter-work-status" class="form-control form-control-sm font-weight-medium font-size-12" style="height: 34px;">
-                                <option value="">All Work Statuses</option>
-                                <option value="working">🟢 Working Now (Live Timers)</option>
-                                <option value="idle">🟡 Shift Active (Idle)</option>
-                                <option value="completed">⚪ Shift Completed</option>
+                                <option value="">All Statuses</option>
+                                <option value="working">🟢 Working Now</option>
+                                <option value="idle">🟡 Shift Active</option>
+                                <option value="completed">⚪ Completed</option>
                                 <option value="present">Present (Any)</option>
                                 <option value="absent">🔴 Absent</option>
-                                <option value="missed_closing">⚠️ Missed Day Closing</option>
+                                <option value="missed_closing">⚠️ Missed Closing</option>
+                            </select>
+                        </div>
+
+                        {{-- Work Location Filter --}}
+                        <div class="form-group col-xl-2 col-md-2 col-sm-6 mb-2 mb-md-0">
+                            <select id="filter-work-location" class="form-control form-control-sm font-weight-medium font-size-12" style="height: 34px;">
+                                <option value="">All Locations</option>
+                                <option value="Office">🏢 Office</option>
+                                <option value="Work from Home">🏠 Work from Home</option>
+                                <option value="Client Place">💼 Client Place</option>
                             </select>
                         </div>
 
                         {{-- Action Buttons --}}
-                        <div class="form-group col-md-3 col-sm-6 mb-0 d-flex" style="gap: 6px;">
+                        <div class="form-group col-xl-2 col-md-2 col-sm-12 mb-0 d-flex" style="gap: 6px;">
                             <button type="button" id="btn-apply-filter" class="btn btn-primary btn-sm flex-fill font-weight-semibold shadow-sm" style="height: 34px;">
                                 <i class="mdi mdi-filter mr-1"></i> Apply
                             </button>
-                            <button type="button" id="btn-reset-filter" class="btn btn-light border btn-sm flex-fill font-weight-medium" style="height: 34px;">
-                                <i class="mdi mdi-refresh mr-1"></i> Today
+                            <button type="button" id="btn-reset-filter" class="btn btn-light border btn-sm flex-fill font-weight-medium" style="height: 34px;" title="Reset filters to today & all active employees">
+                                <i class="mdi mdi-refresh mr-1"></i> Reset
                             </button>
                         </div>
                     </div>
@@ -562,8 +638,9 @@
                 url: "{{ route('admin.attendances.data') }}",
                 data: function(d) {
                     d.date = start.format('YYYY-MM-DD') + ' - ' + end.format('YYYY-MM-DD');
-                    d.department = $('#filter-dept').val();
+                    d.employee_id = $('#filter-employee').val();
                     d.work_status = $('#filter-work-status').val();
+                    d.work_location = $('#filter-work-location').val();
                 },
                 dataSrc: function(json) {
                     employeeDataset = {};
@@ -620,6 +697,13 @@
                             statusBadge = `<span class="badge badge-soft-danger px-1.5 py-0.5 rounded font-size-10 font-weight-bold"><span class="live-absent-dot"></span> Absent</span>`;
                         }
 
+                        var lifecycleBadge = '';
+                        var workingStatuses = ['active', 'probation', 'notice period', 'notice_period'];
+                        var rowStatus = (row.emp_lifecycle_status || '').toLowerCase();
+                        if (rowStatus && !workingStatuses.includes(rowStatus)) {
+                            lifecycleBadge = `<span class="badge badge-soft-danger px-1.5 py-0.5 rounded font-size-10 font-weight-bold ml-1 text-capitalize" title="Status: ${row.emp_lifecycle_status}"><i class="mdi mdi-account-off-outline mr-0.5"></i>${row.emp_lifecycle_status}</span>`;
+                        }
+
                         return `
                             <div class="d-flex align-items-center">
                                 <div class="avatar-bubble">${row.avatar}</div>
@@ -627,6 +711,7 @@
                                     <div class="d-flex align-items-center flex-wrap">
                                         <span class="font-weight-bold text-dark font-size-13 text-truncate mr-1">${row.name}</span>
                                         <span class="badge badge-dept ${row.dept_class}">${row.department}</span>
+                                        ${lifecycleBadge}
                                     </div>
                                     <div class="d-flex align-items-center flex-wrap mt-0.5" style="gap: 4px;">
                                         ${statusBadge}
@@ -729,6 +814,17 @@
                             punctualityBadge = `<span class="badge badge-soft-info px-1.5 py-0.2 rounded font-size-10 font-weight-semibold">${row.punctuality_label}</span>`;
                         }
 
+                        var locationBadge = '';
+                        if (row.work_location) {
+                            if (row.work_location === 'Work from Home') {
+                                locationBadge = `<span class="badge badge-location-wfh px-1.5 py-0.2 rounded font-size-10 font-weight-semibold" title="${row.work_location_notes || 'Work from Home'}"><i class="mdi mdi-home-variant mr-0.5"></i>WFH</span>`;
+                            } else if (row.work_location === 'Client Place') {
+                                locationBadge = `<span class="badge badge-location-client px-1.5 py-0.2 rounded font-size-10 font-weight-semibold" title="${row.work_location_notes || 'Client Place'}"><i class="mdi mdi-briefcase mr-0.5"></i>Client</span>`;
+                            } else {
+                                locationBadge = `<span class="badge badge-location-office px-1.5 py-0.2 rounded font-size-10 font-weight-semibold" title="${row.work_location_notes || 'Office'}"><i class="mdi mdi-office-building mr-0.5"></i>Office</span>`;
+                            }
+                        }
+
                         return `
                             <div class="font-size-11">
                                 <div class="d-flex align-items-center flex-wrap">
@@ -736,7 +832,10 @@
                                     <span class="text-muted font-size-10 mx-1">&rarr;</span>
                                     <span class="${row.shift_end === 'In Progress' ? 'text-primary font-weight-bold' : 'text-dark font-weight-semibold'}">${row.shift_end}</span>
                                 </div>
-                                <div class="mt-0.5">${punctualityBadge}</div>
+                                <div class="mt-0.5 d-flex align-items-center flex-wrap" style="gap: 3px;">
+                                    ${punctualityBadge}
+                                    ${locationBadge}
+                                </div>
                             </div>
                         `;
                     }
@@ -847,13 +946,22 @@
             }
         }, 60000);
 
+        // Initialize Select2 on Employee Filter
+        if ($.fn.select2) {
+            $('#filter-employee').select2({
+                placeholder: 'All Active Employees',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+
         // Filter Actions
         $('#btn-apply-filter').on('click', function(e) {
             e.preventDefault();
             table.ajax.reload();
         });
 
-        $('#filter-dept, #filter-work-status').on('change', function() {
+        $('#filter-employee, #filter-work-status, #filter-work-location').on('change', function() {
             table.ajax.reload();
         });
 
@@ -864,8 +972,9 @@
             $('#filter-date-range').data('daterangepicker').setStartDate(start);
             $('#filter-date-range').data('daterangepicker').setEndDate(end);
             updateDateInput(start, end);
-            $('#filter-dept').val('');
+            $('#filter-employee').val('').trigger('change.select2');
             $('#filter-work-status').val('');
+            $('#filter-work-location').val('');
             table.ajax.reload();
         });
 
@@ -873,9 +982,10 @@
         $('#btn-export-excel').on('click', function(e) {
             e.preventDefault();
             var dateVal = start.format('YYYY-MM-DD') + ' - ' + end.format('YYYY-MM-DD');
-            var dept = $('#filter-dept').val() || '';
+            var empId = $('#filter-employee').val() || '';
             var status = $('#filter-work-status').val() || '';
-            var exportUrl = "{{ route('admin.attendances.export') }}?date=" + encodeURIComponent(dateVal) + "&department=" + encodeURIComponent(dept) + "&work_status=" + encodeURIComponent(status);
+            var location = $('#filter-work-location').val() || '';
+            var exportUrl = "{{ route('admin.attendances.export') }}?date=" + encodeURIComponent(dateVal) + "&employee_id=" + encodeURIComponent(empId) + "&work_status=" + encodeURIComponent(status) + "&work_location=" + encodeURIComponent(location);
             window.location.href = exportUrl;
         });
 

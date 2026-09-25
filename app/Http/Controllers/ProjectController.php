@@ -282,7 +282,6 @@ class ProjectController extends Controller
 
     public function getEmployeesByProject(Request $request)
     {
-        Log::info("getEmployeesByProject called with parameters:", $request->all());
         try {
             $interTeam = $request->query('inter_team') == '1';
             $employees = $this->projectService->getEmployeesForProject(
@@ -290,10 +289,8 @@ class ProjectController extends Controller
                 Auth::user(),
                 $interTeam
             );
-            Log::info("getEmployeesByProject success, count: " . count($employees));
             return response()->json(['status' => true, 'data' => $employees]);
         } catch (Exception $e) {
-            Log::error("getEmployeesByProject error: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
             return response()->json(['status' => false, 'message' => $e->getMessage()]);
         }
     }

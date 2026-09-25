@@ -407,6 +407,8 @@ class HomeController extends Controller
 
                     $shiftHours = $log ? round((float) $log->time_spend, 1) : 0;
 
+                    $workLocation = $log?->work_location;
+
                     return (object)[
                         'id' => $u->id,
                         'name' => $u->name,
@@ -419,6 +421,7 @@ class HomeController extends Controller
                         'check_in' => $checkIn,
                         'check_out' => $checkOut,
                         'punctuality' => $punctuality,
+                        'work_location' => $workLocation,
                         'task_hours' => $taskHours,
                         'shift_hours' => $shiftHours,
                     ];

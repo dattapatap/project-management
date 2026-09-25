@@ -12,6 +12,16 @@ class GlobalAttendanceLog extends Model
 
     protected $table = 'global_attendance_logs';
 
+    public const LOCATION_OFFICE = 'Office';
+    public const LOCATION_WFH = 'Work from Home';
+    public const LOCATION_CLIENT = 'Client Place';
+
+    public const LOCATIONS = [
+        self::LOCATION_OFFICE,
+        self::LOCATION_WFH,
+        self::LOCATION_CLIENT,
+    ];
+
     protected $fillable = [
         'userid',
         'log_date',
@@ -19,6 +29,8 @@ class GlobalAttendanceLog extends Model
         'endtime',
         'time_spend',
         'status',
+        'work_location',
+        'work_location_notes',
     ];
 
     public function user(): BelongsTo

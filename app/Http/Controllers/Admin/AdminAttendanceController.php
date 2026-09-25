@@ -84,7 +84,7 @@ class AdminAttendanceController extends Controller
             '3' => 'Customer Success (CSD)',
         ];
 
-        // Query active employees (excluding Admin and Client roles)
+        // Query active employees (excluding Admin and Client roles) for top summary counts
         $query = User::whereIn('status', User::WORKING_STATUSES)
             ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']));
 
@@ -99,6 +99,21 @@ class AdminAttendanceController extends Controller
         $activeEmployees = $query->get();
         $totalEmployeesCount = $activeEmployees->count();
         $empIds = $activeEmployees->pluck('id')->toArray();
+
+        // Query all employees (active, probation, notice period, and separated/inactive for filter dropdown)
+        $allEmployeesQuery = User::whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+            ->with(['roles', 'departments.dept'])
+            ->orderBy('name', 'asc');
+
+        if ($user->isBranchManager() && !$user->isGlobalAdmin()) {
+            $branchId = $this->branchScope->resolveBranchId($user);
+            if ($branchId) {
+                $branchUserIds = $this->branchScope->getBranchUserIds($user);
+                $allEmployeesQuery->whereIn('id', $branchUserIds);
+            }
+        }
+
+        $allEmployees = $allEmployeesQuery->get();
 
         if ($isSingleDay) {
             $attendanceLogs = GlobalAttendanceLog::whereIn('userid', $empIds)
@@ -181,6 +196,7 @@ class AdminAttendanceController extends Controller
             'isSingleDay',
             'isToday',
             'departments',
+            'allEmployees',
             'totalEmployeesCount',
             'presentCount',
             'absentCount',
@@ -205,12 +221,22 @@ class AdminAttendanceController extends Controller
 
         $departmentFilter = $request->input('department');
         $statusFilter = $request->input('work_status'); // all, working, idle, completed, present, absent, missed_closing
+        $locationFilter = $request->input('work_location'); // all, Office, Work from Home, Client Place
+        $employeeFilter = $request->input('employee_id') ?? $request->input('user_id');
         $searchQuery = $request->input('search_query');
 
-        // Exclude Admin and Client roles so only employees are listed
-        $query = User::whereIn('status', User::WORKING_STATUSES)
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+        // Exclude Admin and Client roles
+        $query = User::whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
             ->with(['roles', 'departments.dept', 'emp']);
+
+        // Employee-wise filter:
+        // If a specific employee is chosen: show that employee (even if inactive/resigned/suspended)
+        // If NO specific employee is chosen: show ONLY active attendance (status in User::WORKING_STATUSES)
+        if (!empty($employeeFilter)) {
+            $query->where('id', $employeeFilter);
+        } else {
+            $query->whereIn('status', User::WORKING_STATUSES);
+        }
 
         if ($user->isBranchManager() && !$user->isGlobalAdmin()) {
             $branchId = $this->branchScope->resolveBranchId($user);
@@ -319,6 +345,8 @@ class AdminAttendanceController extends Controller
                 $firstAttendance = $empAttendance->first();
                 $lastAttendance = $empAttendance->last();
                 $shiftStart = $firstAttendance && $firstAttendance->starttime ? Carbon::parse($firstAttendance->starttime)->format('h:i A') : null;
+                $workLocation = $firstAttendance?->work_location;
+                $workLocationNotes = $firstAttendance?->work_location_notes;
                 
                 // Check if shift is still open
                 $isShiftOpen = $empAttendance->contains(fn($l) => is_null($l->endtime));
@@ -556,6 +584,13 @@ class AdminAttendanceController extends Controller
                     if ($statusFilter === 'missed_closing' && !($isMissedClosing ?? false)) continue;
                 }
 
+                // Filter out by work_location if requested
+                if ($locationFilter) {
+                    if ($locationFilter === 'Office' && $workLocation !== 'Office') continue;
+                    if ($locationFilter === 'Work from Home' && $workLocation !== 'Work from Home') continue;
+                    if ($locationFilter === 'Client Place' && $workLocation !== 'Client Place') continue;
+                }
+
                 $deptName = $emp->departments->dept->name ?? ($emp->roles[0]->name ?? 'General');
                 $deptClass = 'badge-od';
                 $deptId = $emp->departments->department ?? 2;
@@ -617,6 +652,7 @@ class AdminAttendanceController extends Controller
                     'department' => $deptName,
                     'dept_class' => $deptClass,
                     'role' => $emp->roles[0]->name ?? 'Specialist',
+                    'emp_lifecycle_status' => $emp->status,
                     'live_status' => $liveStatusKey,
                     'attendance_status' => $attendanceStatus,
                     'attendance_status_class' => $attendanceStatusClass,
@@ -642,6 +678,8 @@ class AdminAttendanceController extends Controller
                     'is_missed_closing' => $isMissedClosing ?? false,
                     'closing_status' => $closingStatus,
                     'approver_name' => $approverName ?? null,
+                    'work_location' => $workLocation,
+                    'work_location_notes' => $workLocationNotes,
                     'tasks_count' => $empTaskLogs->unique('taskid')->count(),
                     'tasks' => $tasksList,
                 ];
@@ -675,11 +713,14 @@ class AdminAttendanceController extends Controller
         [$startDate, $endDate, $startDateStr, $endDateStr, $selectedDateStr, $isSingleDay] = $this->parseDateRange($request);
         $departmentId = $request->input('department');
         $statusFilter = $request->input('work_status');
+        $locationFilter = $request->input('work_location');
+        $userId = $request->input('employee_id') ?? $request->input('user_id');
+        $userId = $userId ? (int)$userId : null;
 
         $fileName = 'Attendances_' . str_replace(' ', '', $selectedDateStr) . '.xlsx';
 
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\AdminAttendancesExport($selectedDateStr, $departmentId, $statusFilter, $user),
+            new \App\Exports\AdminAttendancesExport($selectedDateStr, $departmentId, $statusFilter, $user, $locationFilter, $userId),
             $fileName
         );
     }

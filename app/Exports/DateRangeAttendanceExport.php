@@ -22,6 +22,7 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
     private ?int $userId;
     private ?string $statusFilter;
     private ?User $actingUser;
+    private ?string $locationFilter;
 
     public function __construct(
         string $startDateStr,
@@ -29,7 +30,8 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
         ?string $departmentId = null,
         ?int $userId = null,
         ?string $statusFilter = null,
-        ?User $actingUser = null
+        ?User $actingUser = null,
+        ?string $locationFilter = null
     ) {
         $this->startDateStr = $startDateStr;
         $this->endDateStr = $endDateStr;
@@ -37,6 +39,7 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
         $this->userId = $userId;
         $this->statusFilter = $statusFilter;
         $this->actingUser = $actingUser;
+        $this->locationFilter = $locationFilter;
     }
 
     public function array(): array
@@ -62,10 +65,15 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
             $dateList[] = $d->format('Y-m-d');
         }
 
-        // Query active employees (excluding Admin and Client roles)
-        $query = User::whereIn('status', User::WORKING_STATUSES)
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+        // Query employees (excluding Admin and Client roles)
+        $query = User::whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
             ->with(['roles', 'departments.dept', 'emp']);
+
+        if ($this->userId) {
+            $query->where('id', $this->userId);
+        } else {
+            $query->whereIn('status', User::WORKING_STATUSES);
+        }
 
         if ($this->actingUser && $this->actingUser->isBranchManager() && !$this->actingUser->isGlobalAdmin()) {
             $branchId = app(\App\Services\BranchScopeService::class)->resolveBranchId($this->actingUser);
@@ -77,10 +85,6 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
 
         if ($this->departmentId) {
             $query->whereHas('departments', fn($q) => $q->where('department', $this->departmentId));
-        }
-
-        if ($this->userId) {
-            $query->where('id', $this->userId);
         }
 
         $employees = $query->get();
@@ -273,11 +277,20 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
 
                 $tasksSummary = $empTaskLogs->map(fn($l) => $l->task?->title)->filter()->unique()->implode(', ') ?: '—';
 
-                // Optional work status filter
+                $firstAttendance = $empAttendance->first();
+                $workLocation = $firstAttendance?->work_location ?: '—';
+
+                // Optional work status and work location filter
                 if ($this->statusFilter) {
                     if ($this->statusFilter === 'present' && !$isPresent) continue;
                     if ($this->statusFilter === 'absent' && $isPresent) continue;
                     if ($this->statusFilter === 'missed_closing' && !$isMissedClosing) continue;
+                }
+
+                if ($this->locationFilter) {
+                    if ($this->locationFilter === 'Office' && $workLocation !== 'Office') continue;
+                    if ($this->locationFilter === 'Work from Home' && $workLocation !== 'Work from Home') continue;
+                    if ($this->locationFilter === 'Client Place' && $workLocation !== 'Client Place') continue;
                 }
 
                 $rows[] = [
@@ -293,6 +306,7 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
                     $efficiencyRatio . '%',
                     $closingStatus,
                     $attendanceStatus,
+                    $workLocation,
                     $projectsSummary,
                     $tasksSummary,
                 ];
@@ -317,6 +331,7 @@ class DateRangeAttendanceExport implements FromArray, WithHeadings, ShouldAutoSi
             'Efficiency Ratio (%)',
             'Day Closing Status',
             'Attendance Status',
+            'Work Location',
             'Projects Worked On',
             'Tasks Worked On',
         ];

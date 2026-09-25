@@ -146,6 +146,7 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                         <div id="global-timer-widget" class="global-timer-glass d-flex align-items-center px-3 py-1.5 shadow-sm" style="height: 36px; gap: 8px; color: #495057; font-weight: 600; font-size: 12.5px;">
                             <span class="timer-rec-dot" style="width: 8px; height: 8px; border-radius: 50%; background-color: #cbd5e1; display: inline-block;"></span>
                             <span id="global-timer-status" class="text-muted text-uppercase" style="font-size: 9px; font-weight: 800; letter-spacing: 0.5px; max-width: 150px; overflow: hidden; text-truncate: ellipsis; white-space: nowrap;">Shift Off</span>
+                            <span id="global-timer-location-badge" class="badge d-none" style="font-size: 9.5px; padding: 2px 6px; font-weight: 700; border-radius: 4px;"></span>
                             <span id="global-timer-display" class="font-weight-bold text-dark" style="font-family: monospace; font-size: 13.5px; letter-spacing: 0.5px;">00:00:00</span>
                             <button type="button" class="btn btn-sm btn-success rounded-circle p-0 d-flex align-items-center justify-content-center" id="btn-global-shift" title="Start Shift" style="width: 22px; height: 22px; min-width: 22px; border: none; @if($hasSubmittedClosingToday) display: none !important; @endif">
                                 <i class="mdi mdi-play font-size-12 text-white"></i>
@@ -349,6 +350,8 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                         </div>
                     </div>
                 </div>
+                {{-- Shift Work Location Modal --}}
+                @include('components.attendance.shift_start_modal')
                 @endif
                 {{-- End Global Timer Sticky Alert Banners --}}
 
@@ -633,6 +636,7 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                                 if (res.has_submitted_closing) {
                                     $('.timer-rec-dot').removeClass('active').css('background-color', '#cbd5e1');
                                     $('#global-timer-status').text('Day Completed').addClass('text-muted').removeClass('text-success text-primary');
+                                    $('#global-timer-location-badge').addClass('d-none').hide();
                                     $('#global-timer-display').text(formatSeconds(baseAccumulatedSeconds));
                                     $('#btn-global-shift').hide();
                                     $('#btn-global-break').hide();
@@ -641,6 +645,26 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                                     $('#banner-shift-not-started').addClass('d-none');
                                     $('#banner-shift-paused').addClass('d-none');
                                     return;
+                                }
+
+                                // Render work location badge in header timer widget
+                                if (res.work_location && (res.is_running || res.is_paused)) {
+                                    let locClass = 'badge-location-office';
+                                    let locIcon = 'mdi-office-building';
+                                    if (res.work_location === 'Work from Home') {
+                                        locClass = 'badge-location-wfh';
+                                        locIcon = 'mdi-home-variant';
+                                    } else if (res.work_location === 'Client Place') {
+                                        locClass = 'badge-location-client';
+                                        locIcon = 'mdi-briefcase-check';
+                                    }
+                                    $('#global-timer-location-badge')
+                                        .removeClass('d-none badge-location-office badge-location-wfh badge-location-client')
+                                        .addClass(locClass)
+                                        .html('<i class="mdi ' + locIcon + ' mr-0.5"></i>' + res.work_location)
+                                        .show();
+                                } else {
+                                    $('#global-timer-location-badge').addClass('d-none').hide();
                                 }
 
                                 if (res.is_running) {
@@ -727,30 +751,317 @@ $bodyModule = request()->is('csd*') ? 'csd-module' : (request()->is('client*') |
                     // Initial fetch
                     updateWidgetStatus();
 
+                    // Location Card Selection in Start Shift Modal
+                    $(document).on('click', '.wms-work-location-card', function() {
+                        $('.wms-work-location-card').removeClass('active');
+                        $(this).addClass('active');
+                        let loc = $(this).data('location');
+                        $('#shift-selected-location').val(loc);
+                    });
+
+                    // Submit Start Shift with Selected Location
+                    $(document).on('click', '#btn-submit-start-shift', function() {
+                        let submitBtn = $(this);
+                        let workLocation = $('#shift-selected-location').val() || 'Office';
+                        let workNotes = $('#shift-work-location-notes').val();
+
+                        submitBtn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin mr-1"></i> Starting Shift...');
+
+                        $.ajax({
+                            url: "{{ route('global-timer.start') }}",
+                            method: 'POST',
+                            data: {
+                                work_location: workLocation,
+                                work_location_notes: workNotes,
+                                _token: "{{ csrf_token() }}"
+                            },
+                            success: function(res) {
+                                if (res.success) {
+                                    alertify.success(res.message);
+                                    $('#modal-start-shift-location').modal('hide');
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 600);
+                                } else {
+                                    alertify.error(res.message);
+                                    submitBtn.prop('disabled', false).html('<i class="mdi mdi-play mr-1"></i> Start Shift Now');
+                                }
+                            },
+                            error: function(xhr) {
+                                let msg = 'Failed to start shift. Please try again.';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    msg = xhr.responseJSON.message;
+                                }
+                                alertify.error(msg);
+                                submitBtn.prop('disabled', false).html('<i class="mdi mdi-play mr-1"></i> Start Shift Now');
+                            }
+                        });
+                    });
+
+                    // Validate and enable/disable Start Shift button based on Location Details
+                    function validateShiftStartButton() {
+                        let val = ($('#shift-work-location-notes').val() || '').trim();
+                        let submitBtn = $('#btn-submit-start-shift');
+                        if (val.length >= 3) {
+                            submitBtn.prop('disabled', false).removeClass('disabled').attr('title', 'Start Shift Now');
+                        } else {
+                            submitBtn.prop('disabled', true).addClass('disabled').attr('title', 'Please wait for location detection or enter address manually');
+                        }
+                    }
+
+                    // Listen for manual address typing, editing, pasting, or clearing
+                    $(document).on('input keyup change paste', '#shift-work-location-notes', function() {
+                        validateShiftStartButton();
+                    });
+
+                    let lastGeocodeTimestamp = 0;
+                    let isGeocodeInProgress = false;
+
+                    // Auto-detect user geolocation and reverse geocode place name with precise area & locality
+                    function autoDetectWorkLocation(force) {
+                        let inputField = $('#shift-work-location-notes');
+                        let btnLabel = $('#auto-detect-btn-label');
+                        let feedback = $('#shift-location-feedback');
+                        let icon = $('#shift-location-icon');
+
+                        // 1. If already have an address in the field and this is not a manual force click, do NOT re-call API
+                        let existingVal = (inputField.val() || '').trim();
+                        if (!force && existingVal.length >= 3) {
+                            validateShiftStartButton();
+                            return;
+                        }
+
+                        // 2. Check client session cache to restrict unnecessary external API hits
+                        try {
+                            let cachedAddress = sessionStorage.getItem('wms_shift_detected_address');
+                            if (!force && cachedAddress && cachedAddress.length >= 3) {
+                                inputField.val(cachedAddress);
+                                icon.removeClass('mdi-loading mdi-spin text-warning').addClass('mdi-map-marker-check text-success');
+                                feedback.html('<span class="text-success"><i class="mdi mdi-check-circle-outline mr-0.5"></i> Location loaded from session: <strong>' + cachedAddress + '</strong></span>');
+                                validateShiftStartButton();
+                                return;
+                            }
+                        } catch (e) {}
+
+                        // 3. Prevent duplicate simultaneous in-flight API requests
+                        if (isGeocodeInProgress) {
+                            return;
+                        }
+
+                        // 4. Rate-limit / cooldown on manual clicks (must wait at least 15 seconds between API calls)
+                        let now = Date.now();
+                        if (force && (now - lastGeocodeTimestamp < 15000)) {
+                            let waitSec = Math.ceil((15000 - (now - lastGeocodeTimestamp)) / 1000);
+                            feedback.html('<span class="text-warning"><i class="mdi mdi-clock-alert-outline mr-0.5"></i> Location was recently detected. Please wait ' + waitSec + 's before refreshing.</span>');
+                            return;
+                        }
+
+                        if (!navigator.geolocation) {
+                            feedback.html('<span class="text-muted"><i class="mdi mdi-information-outline mr-0.5"></i> Geolocation is not supported by your browser. Please enter location manually.</span>');
+                            validateShiftStartButton();
+                            return;
+                        }
+
+                        isGeocodeInProgress = true;
+                        lastGeocodeTimestamp = now;
+
+                        btnLabel.html('<i class="mdi mdi-loading mdi-spin mr-1"></i> Detecting...');
+                        icon.removeClass('mdi-map-marker-radius text-primary text-success').addClass('mdi-loading mdi-spin text-warning');
+                        feedback.html('<span class="text-primary"><i class="mdi mdi-crosshairs-gps mr-0.5"></i> Detecting your current area & location...</span>');
+
+                        function applyDetectedLocation(locationPlace) {
+                            isGeocodeInProgress = false;
+                            inputField.val(locationPlace);
+
+                            // Cache in session storage to restrict future API calls during session
+                            try {
+                                sessionStorage.setItem('wms_shift_detected_address', locationPlace);
+                            } catch (e) {}
+
+                            btnLabel.html('<i class="mdi mdi-check mr-1"></i> Detected');
+                            icon.removeClass('mdi-loading mdi-spin text-warning').addClass('mdi-map-marker-check text-success');
+                            feedback.html('<span class="text-success"><i class="mdi mdi-check-circle-outline mr-0.5"></i> Auto-detected: <strong>' + locationPlace + '</strong></span>');
+
+                            // Enable the Start Shift button once address is populated
+                            validateShiftStartButton();
+
+                            setTimeout(function() {
+                                btnLabel.text('Auto Detect');
+                            }, 2500);
+                        }
+
+                        function fallbackClientGeocode(lat, lon) {
+                            // Try client-side OpenStreetMap Nominatim with full address details
+                            let nomUrl = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lon + '&zoom=18&addressdetails=1';
+                            
+                            $.ajax({
+                                url: nomUrl,
+                                method: 'GET',
+                                dataType: 'json',
+                                timeout: 5000
+                            }).done(function(data) {
+                                let address = data.address || {};
+                                let parts = [];
+
+                                // 1. Premise / House / Building / Landmark / Amenity
+                                let premise = [];
+                                if (address.house_number) premise.push('#' + address.house_number.replace(/^#/, ''));
+                                if (address.building) premise.push(address.building);
+                                if (address.amenity) premise.push('Near ' + address.amenity);
+                                if (address.office) premise.push(address.office);
+                                if (address.shop) premise.push(address.shop);
+                                if (premise.length) parts.push(premise.join(', '));
+
+                                // 2. Road
+                                if (address.road) parts.push(address.road);
+
+                                // 3. Neighbourhood
+                                if (address.neighbourhood) parts.push(address.neighbourhood);
+
+                                // 4. Suburb / Area
+                                if (address.suburb && !parts.includes(address.suburb)) parts.push(address.suburb);
+                                if (address.residential && !parts.includes(address.residential)) parts.push(address.residential);
+
+                                // 5. City & Pincode
+                                let city = address.city || address.town || address.municipality || address.village || '';
+                                let postcode = address.postcode || '';
+                                let state = address.state || '';
+
+                                if (city) {
+                                    if (postcode) {
+                                        parts.push(city + ' - ' + postcode);
+                                    } else {
+                                        parts.push(city);
+                                    }
+                                } else if (postcode) {
+                                    parts.push(postcode);
+                                }
+
+                                if (state) parts.push(state);
+
+                                let fullPlace = parts.length >= 2 ? parts.join(', ') : (data.display_name || '');
+                                if (fullPlace) {
+                                    applyDetectedLocation(fullPlace);
+                                    return;
+                                }
+                                fallbackBdc(lat, lon);
+                            }).fail(function() {
+                                fallbackBdc(lat, lon);
+                            });
+                        }
+
+                        function fallbackBdc(lat, lon) {
+                            // Fallback to BigDataCloud
+                            let url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en';
+                            $.ajax({
+                                url: url,
+                                method: 'GET',
+                                dataType: 'json',
+                                timeout: 5000
+                            }).done(function(data) {
+                                let parts = [];
+                                if (data.locality && data.locality !== data.city) {
+                                    parts.push(data.locality);
+                                }
+                                if (data.city) {
+                                    parts.push(data.city);
+                                }
+                                if (data.principalSubdivision) {
+                                    parts.push(data.principalSubdivision);
+                                }
+                                let locationPlace = parts.length > 0 ? parts.join(', ') : ('Lat: ' + lat.toFixed(4) + ', Lon: ' + lon.toFixed(4));
+                                applyDetectedLocation(locationPlace);
+                            }).fail(function() {
+                                isGeocodeInProgress = false;
+                                let coordLocation = 'Lat: ' + lat.toFixed(4) + ', Lon: ' + lon.toFixed(4);
+                                inputField.val(coordLocation);
+                                btnLabel.text('Auto Detect');
+                                icon.removeClass('mdi-loading mdi-spin text-warning').addClass('mdi-map-marker text-info');
+                                feedback.html('<span class="text-info"><i class="mdi mdi-map-marker mr-0.5"></i> Coordinates detected: ' + coordLocation + '</span>');
+                                validateShiftStartButton();
+                            });
+                        }
+
+                        navigator.geolocation.getCurrentPosition(
+                            function(position) {
+                                let lat = position.coords.latitude;
+                                let lon = position.coords.longitude;
+
+                                // 1. Primary: Server-side reverse geocoding proxy (high accuracy, full OSM area breakdown, no CORS)
+                                $.ajax({
+                                    url: "{{ route('global-timer.reverse-geocode') }}",
+                                    method: 'POST',
+                                    data: {
+                                        lat: lat,
+                                        lon: lon,
+                                        _token: "{{ csrf_token() }}"
+                                    },
+                                    dataType: 'json',
+                                    timeout: 6000
+                                }).done(function(res) {
+                                    if (res && res.success && res.location) {
+                                        applyDetectedLocation(res.location);
+                                    } else {
+                                        fallbackClientGeocode(lat, lon);
+                                    }
+                                }).fail(function() {
+                                    fallbackClientGeocode(lat, lon);
+                                });
+                            },
+                            function(err) {
+                                isGeocodeInProgress = false;
+                                btnLabel.text('Auto Detect');
+                                icon.removeClass('mdi-loading mdi-spin text-warning text-success').addClass('mdi-map-marker-radius text-primary');
+                                let errMsg = 'Location access permission was not granted. You can enter details manually.';
+                                if (err.code === 1) {
+                                    errMsg = 'Location permission denied. Please enter your location details manually.';
+                                } else if (err.code === 2) {
+                                    errMsg = 'Location position unavailable. Please enter your location details manually.';
+                                } else if (err.code === 3) {
+                                    errMsg = 'Location request timed out. Please enter your location details manually.';
+                                }
+                                feedback.html('<span class="text-muted"><i class="mdi mdi-information-outline mr-0.5"></i> ' + errMsg + '</span>');
+                                validateShiftStartButton();
+                            },
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 60000
+                            }
+                        );
+                    }
+
+                    // Button click for Auto Detect
+                    $(document).on('click', '#btn-auto-detect-location', function(e) {
+                        e.preventDefault();
+                        autoDetectWorkLocation(true);
+                    });
+
+                    // Live clock ticker & auto location detection in start shift modal
+                    $('#modal-start-shift-location').on('show.bs.modal', function() {
+                        let now = new Date();
+                        let hours = now.getHours();
+                        let minutes = now.getMinutes();
+                        let ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+                        let minutesStr = minutes < 10 ? '0' + minutes : minutes;
+                        let timeStr = hours + ':' + minutesStr + ' ' + ampm;
+                        $('#modal-shift-live-time').html('<i class="mdi mdi-clock-outline text-info mr-1"></i> ' + timeStr);
+
+                        // Initial check for button disabled state
+                        validateShiftStartButton();
+
+                        // Trigger auto location detection or load from cache (API restriction active)
+                        autoDetectWorkLocation(false);
+                    });
+
                     // Shift Control click (Start / End Shift)
                     $('#btn-global-shift').click(function() {
                         let btn = $(this);
                         if (!shiftHasTodayEntry) {
-                            // Start Shift
-                            btn.prop('disabled', true);
-                            $.ajax({
-                                url: "{{ route('global-timer.start') }}",
-                                method: 'POST',
-                                success: function(res) {
-                                    if (res.success) {
-                                        alertify.success(res.message);
-                                        setTimeout(() => {
-                                            location.reload();
-                                        }, 600);
-                                    } else {
-                                        alertify.error(res.message);
-                                        btn.prop('disabled', false);
-                                    }
-                                },
-                                error: function() {
-                                    btn.prop('disabled', false);
-                                }
-                            });
+                            // Start Shift -> Open Work Location popup modal
+                            $('#modal-start-shift-location').modal('show');
                         } else {
                             // End Shift Confirmation Popup
                             swal({

@@ -54,8 +54,13 @@ Route::get('/cache-clear', function () {
 
 
 // Route::get('/migrate', function () {
-//     Artisan::call('migrate', ['--force' => true]);
-//     return "Migration completed!";
+//     try {
+//         Artisan::call('migrate', ['--force' => true]);
+//         $output = Artisan::output();
+//         return "<pre style='font-family:monospace; background:#1e1e1e; color:#00ff00; padding:20px; border-radius:8px;'><strong>Migration Output:</strong>\n\n" . htmlspecialchars($output ?: "Nothing to migrate (Database is up to date).") . "\n\nMigration completed successfully!</pre>";
+//     } catch (\Throwable $e) {
+//         return "<pre style='font-family:monospace; background:#1e1e1e; color:#ff4444; padding:20px; border-radius:8px;'><strong>Migration Error:</strong>\n\n" . htmlspecialchars($e->getMessage()) . "</pre>";
+//     }
 // });
 
 // Route::get('/down-service', function () {

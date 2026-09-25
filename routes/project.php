@@ -31,6 +31,7 @@ Route::prefix('projects')->middleware(['auth', 'restrict.wms'])->group(function(
     Route::post('/global-timer/start', [\App\Http\Controllers\GlobalTimerController::class, 'start'])->name('global-timer.start');
     Route::post('/global-timer/pause', [\App\Http\Controllers\GlobalTimerController::class, 'pause'])->name('global-timer.pause');
     Route::post('/global-timer/stop', [\App\Http\Controllers\GlobalTimerController::class, 'stop'])->name('global-timer.stop');
+    Route::post('/global-timer/reverse-geocode', [\App\Http\Controllers\GlobalTimerController::class, 'reverseGeocode'])->name('global-timer.reverse-geocode');
 
     Route::get('/task/{taskid}/history', [TaskController::class, 'show']);
     Route::post('/task/progress', [TaskController::class, 'updateProgress']);

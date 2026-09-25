@@ -56,6 +56,17 @@ class GlobalTimerController extends Controller
             ->where('closing_date', $todayDate)
             ->exists();
 
+        $workLocation = $activeLog?->work_location;
+        $workLocationNotes = $activeLog?->work_location_notes;
+        if (!$workLocation && $hasTodayEntry) {
+            $firstTodayLog = \App\Models\GlobalAttendanceLog::where('userid', $user->id)
+                ->where('log_date', $todayDate)
+                ->whereNotNull('work_location')
+                ->first();
+            $workLocation = $firstTodayLog?->work_location;
+            $workLocationNotes = $firstTodayLog?->work_location_notes;
+        }
+
         return response()->json([
             'success' => true,
             'is_running' => !is_null($activeLog),
@@ -66,16 +77,26 @@ class GlobalTimerController extends Controller
             'has_today_entry' => $hasTodayEntry,
             'is_paused' => $isPaused,
             'has_submitted_closing' => $hasSubmittedClosing,
+            'work_location' => $workLocation,
+            'work_location_notes' => $workLocationNotes,
         ]);
     }
 
     /**
      * Start the global shift timer.
      */
-    public function start(): JsonResponse
+    public function start(Request $request): JsonResponse
     {
+        $request->validate([
+            'work_location' => 'nullable|string|max:50',
+            'work_location_notes' => 'nullable|string|max:500',
+        ]);
+
         $user = Auth::user();
-        $result = $this->globalTimerService->startGlobalTimer($user);
+        $workLocation = $request->input('work_location');
+        $workLocationNotes = $request->input('work_location_notes');
+
+        $result = $this->globalTimerService->startGlobalTimer($user, $workLocation, $workLocationNotes);
         return response()->json($result);
     }
 
@@ -96,6 +117,23 @@ class GlobalTimerController extends Controller
     {
         $user = Auth::user();
         $result = $this->globalTimerService->stopGlobalTimer($user);
+        return response()->json($result);
+    }
+
+    /**
+     * Reverse geocode coordinates to a precise locality/suburb/city place name.
+     */
+    public function reverseGeocode(Request $request): JsonResponse
+    {
+        $request->validate([
+            'lat' => 'required|numeric',
+            'lon' => 'required|numeric',
+        ]);
+
+        $lat = (float) $request->input('lat');
+        $lon = (float) $request->input('lon');
+
+        $result = $this->globalTimerService->reverseGeocode($lat, $lon);
         return response()->json($result);
     }
 }

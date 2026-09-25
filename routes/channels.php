@@ -8,5 +8,5 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('post_like.{id}', function ($user, $id) {
-    return true;
-},['guards' => ['web', 'auth']]);
+    return (int) $user->id === (int) $id;
+}, ['guards' => ['web']]);

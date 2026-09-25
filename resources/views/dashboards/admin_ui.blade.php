@@ -699,11 +699,32 @@
                             </td>
                             <td>
                                 <span class="font-size-11 font-weight-semibold text-dark">{{ $emp->check_in }}</span>
-                                @if($emp->punctuality)
-                                <span class="badge badge-soft-{{ $emp->punctuality == 'On Time' ? 'success' : 'warning' }} font-size-9 px-1 py-0.5 d-block mt-0.5" style="width: fit-content;">
-                                    {{ $emp->punctuality }}
-                                </span>
-                                @endif
+                                <div class="d-flex align-items-center flex-wrap mt-0.5" style="gap: 3px;">
+                                    @if($emp->punctuality)
+                                    <span class="badge badge-soft-{{ $emp->punctuality == 'On Time' ? 'success' : 'warning' }} font-size-9 px-1 py-0.5" style="width: fit-content;">
+                                        {{ $emp->punctuality }}
+                                    </span>
+                                    @endif
+                                    @if($emp->work_location)
+                                        @php
+                                            $locClass = 'badge-location-office';
+                                            $locIcon = 'mdi-office-building';
+                                            $locShort = 'Office';
+                                            if ($emp->work_location === 'Work from Home') {
+                                                $locClass = 'badge-location-wfh';
+                                                $locIcon = 'mdi-home-variant';
+                                                $locShort = 'WFH';
+                                            } elseif ($emp->work_location === 'Client Place') {
+                                                $locClass = 'badge-location-client';
+                                                $locIcon = 'mdi-briefcase';
+                                                $locShort = 'Client';
+                                            }
+                                        @endphp
+                                        <span class="badge {{ $locClass }} font-size-9 px-1 py-0.5" title="{{ $emp->work_location }}">
+                                            <i class="mdi {{ $locIcon }} mr-0.5"></i>{{ $locShort }}
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <div class="font-size-11 font-weight-bold text-dark">{{ $emp->task_hours }}h <small class="text-muted font-weight-normal">task</small></div>

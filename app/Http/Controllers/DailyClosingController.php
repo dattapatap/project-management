@@ -114,38 +114,104 @@ class DailyClosingController extends Controller
     }
 
     /**
+     * Parse date or date-range input.
+     * Admin/BM can use date ranges capped at today.
+     * Team Leaders can only view a single date (capped at today, min 2 days back).
+     */
+    private function parseDateRange(Request $request, bool $isAdminOrBranchManager, ?string $minDate): array
+    {
+        $today = Carbon::today();
+
+        if ($isAdminOrBranchManager) {
+            $dateInput = $request->input('date') ?? $request->input('date_range');
+
+            if (!empty($dateInput)) {
+                if (str_contains($dateInput, ' to ')) {
+                    $parts = explode(' to ', $dateInput);
+                    $startDate = Carbon::parse(trim($parts[0]))->startOfDay();
+                    $endDate = Carbon::parse(trim($parts[1]))->endOfDay();
+                } elseif (str_contains($dateInput, ' - ')) {
+                    $parts = explode(' - ', $dateInput);
+                    $startDate = Carbon::parse(trim($parts[0]))->startOfDay();
+                    $endDate = Carbon::parse(trim($parts[1]))->endOfDay();
+                } else {
+                    $single = Carbon::parse($dateInput);
+                    $startDate = $single->copy()->startOfDay();
+                    $endDate = $single->copy()->endOfDay();
+                }
+            } else {
+                $startDate = $today->copy()->startOfDay();
+                $endDate = $today->copy()->endOfDay();
+            }
+
+            // Cap at today (no future dates)
+            if ($endDate->gt($today->copy()->endOfDay())) {
+                $endDate = $today->copy()->endOfDay();
+            }
+            if ($startDate->gt($endDate)) {
+                $startDate = $endDate->copy()->startOfDay();
+            }
+
+            // Limit range to max 60 days for peak performance
+            if ($startDate->diffInDays($endDate) > 60) {
+                $startDate = $endDate->copy()->subDays(60)->startOfDay();
+            }
+        } else {
+            // Team Leader: Single date only, up to 2 days back, max today
+            $dateInput = $request->input('date', $today->format('Y-m-d'));
+            $single = Carbon::parse($dateInput);
+            if ($single->gt($today)) {
+                $single = $today->copy();
+            }
+            if ($minDate && $single->format('Y-m-d') < $minDate) {
+                $single = Carbon::parse($minDate);
+            }
+            $startDate = $single->copy()->startOfDay();
+            $endDate = $single->copy()->endOfDay();
+        }
+
+        $isSingleDay = $startDate->isSameDay($endDate);
+        $startDateStr = $startDate->format('Y-m-d');
+        $endDateStr = $endDate->format('Y-m-d');
+        $selectedDateQuery = $isSingleDay ? $startDateStr : "{$startDateStr} - {$endDateStr}";
+        $selectedDateDisplay = $isSingleDay ? $startDate->format('d-M-Y') : $startDate->format('d-M-Y') . ' to ' . $endDate->format('d-M-Y');
+
+        return [$startDate, $endDate, $startDateStr, $endDateStr, $selectedDateQuery, $selectedDateDisplay, $isSingleDay];
+    }
+
+    /**
      * Show approvals board for TLs, Managers, and Admins.
      */
     public function approvals(Request $request)
     {
         $user = Auth::user();
+        $isAdminOrBranchManager = $user->isGlobalAdmin() || $user->isBranchManager();
+        $isTeamLeaderOnly = $user->hasRole('Team-Leader') && !$isAdminOrBranchManager;
 
-        $isTeamLeaderOnly = $user->hasRole('Team-Leader') && !$user->hasRole(['Admin', 'Branch-Manager']);
         $minDate = null;
         if ($isTeamLeaderOnly) {
             // Team Leaders can only go up to 2 days back (Today, Yesterday, and Day Before Yesterday)
             $minDate = Carbon::today()->subDays(2)->format('Y-m-d');
         }
 
-        // Retrieve filtered date, default to today, and avoid future dates
-        $selectedDate = $request->input('date', Carbon::today()->format('Y-m-d'));
-        if (Carbon::parse($selectedDate)->gt(Carbon::today())) {
-            $selectedDate = Carbon::today()->format('Y-m-d');
-        }
-
-        if ($isTeamLeaderOnly && $minDate && $selectedDate < $minDate) {
-            $selectedDate = $minDate;
-        }
+        [$startDate, $endDate, $startDateStr, $endDateStr, $selectedDateQuery, $selectedDateDisplay, $isSingleDay] = 
+            $this->parseDateRange($request, $isAdminOrBranchManager, $minDate);
 
         // Resolve which users this acting user can approve
-        $subordinateIds = [];
+        $allSubordinateIds = [];
 
         if ($user->isGlobalAdmin()) {
-            // Global Admin can see all users
-            $subordinateIds = User::pluck('id')->toArray();
+            // Global Admin can see all users (excluding Admin & Client)
+            $allSubordinateIds = User::whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+                ->pluck('id')
+                ->toArray();
         } elseif ($user->isBranchManager()) {
             // Branch manager can see all users in their branch
-            $subordinateIds = $this->branchScope->getBranchUserIds($user);
+            $branchUserIds = $this->branchScope->getBranchUserIds($user);
+            $allSubordinateIds = User::whereIn('id', $branchUserIds)
+                ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['Admin', 'Client']))
+                ->pluck('id')
+                ->toArray();
         } elseif ($user->hasRole('Team-Leader')) {
             // Team leader can see their team members
             $teams = DB::table('team_members')
@@ -154,7 +220,7 @@ class DailyClosingController extends Controller
                 ->pluck('team')
                 ->toArray();
 
-            $subordinateIds = DB::table('team_members')
+            $allSubordinateIds = DB::table('team_members')
                 ->whereIn('team', $teams)
                 ->where('status', true)
                 ->where('user', '!=', $user->id)
@@ -162,7 +228,7 @@ class DailyClosingController extends Controller
                 ->toArray();
 
             // Exclude other Team Leaders from subordinate list for Team Leader role
-            $subordinateIds = User::whereIn('id', $subordinateIds)
+            $allSubordinateIds = User::whereIn('id', $allSubordinateIds)
                 ->whereDoesntHave('roles', function ($q) {
                     $q->where('name', 'Team-Leader');
                 })
@@ -175,48 +241,125 @@ class DailyClosingController extends Controller
         $performanceService = new UserPerformanceService();
 
         // Fetch all active subordinates in scope (except current user)
-        $subordinates = User::whereIn('id', $subordinateIds)
+        $allSubordinates = User::whereIn('id', $allSubordinateIds)
             ->whereIn('status', User::WORKING_STATUSES)
             ->where('id', '!=', $user->id)
-            ->with(['roles', 'departments'])
+            ->with(['roles', 'departments.dept'])
             ->orderBy('name', 'asc')
             ->get();
+
+        // Employee filter: ONLY for Admin and Branch Manager
+        $selectedEmployeeId = $request->input('employee_id');
+        if (!$isAdminOrBranchManager) {
+            $selectedEmployeeId = null;
+        }
+
+        if (!empty($selectedEmployeeId) && in_array((int)$selectedEmployeeId, $allSubordinateIds)) {
+            $subordinateIds = [(int)$selectedEmployeeId];
+            $subordinates = $allSubordinates->where('id', (int)$selectedEmployeeId);
+        } else {
+            $selectedEmployeeId = '';
+            $subordinateIds = $allSubordinateIds;
+            $subordinates = $allSubordinates;
+        }
 
         foreach ($subordinates as $sub) {
             $sub->dept_type = $performanceService->departmentType($sub);
             $sub->userTargets = $this->closingService->getDailyTargets($sub);
         }
 
-        // Fetch day closing submissions for the selected date
-        $submissionsOnDate = DayClosing::whereIn('user_id', $subordinateIds)
-            ->where('closing_date', $selectedDate)
-            ->with(['user', 'approver'])
-            ->get()
-            ->keyBy('user_id');
+        // Fetch day closing submissions for the selected date or date range
+        $submissions = DayClosing::whereIn('user_id', $subordinateIds)
+            ->whereBetween('closing_date', [$startDateStr, $endDateStr])
+            ->with(['user.departments.dept', 'user.roles', 'approver'])
+            ->orderBy('closing_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        // 1. Submitted List: ONLY employees who have submitted day closing on this date
-        $submittedList = $subordinates->filter(function ($sub) use ($submissionsOnDate) {
-            return $submissionsOnDate->has($sub->id);
-        })->map(function ($sub) use ($submissionsOnDate) {
-            $sub->submission = $submissionsOnDate->get($sub->id);
-            return $sub;
-        })->values();
+        // 1. Submitted List: ONLY employees who have submitted day closing in this range
+        $submittedList = $submissions->map(function ($submission) use ($performanceService) {
+            $subUser = $submission->user;
+            if (!$subUser) {
+                return null;
+            }
+            $item = clone $subUser;
+            $item->dept_type = $performanceService->departmentType($subUser);
+            $item->submission = $submission;
+            return $item;
+        })->filter()->values();
 
-        // 2. Pending Submissions List: Active employees who have NOT submitted day closing on this date
-        $notSubmittedList = $subordinates->filter(function ($sub) use ($submissionsOnDate) {
-            return !$submissionsOnDate->has($sub->id);
-        })->map(function ($sub) use ($selectedDate) {
-            $sub->currentMetrics = $this->closingService->getTodayMetrics($sub, $selectedDate);
-            return $sub;
-        })->values();
+        // 2. Pending Submissions List: Active employees who have NOT submitted day closing
+        if ($isSingleDay) {
+            $submittedUserIdsOnDate = $submissions->where('closing_date', $startDateStr)->pluck('user_id')->toArray();
+            $notSubmittedList = $subordinates->filter(function ($sub) use ($submittedUserIdsOnDate) {
+                return !in_array($sub->id, $submittedUserIdsOnDate);
+            })->map(function ($sub) use ($startDateStr) {
+                $subCopy = clone $sub;
+                $subCopy->closing_date = $startDateStr;
+                $subCopy->currentMetrics = $this->closingService->getTodayMetrics($sub, $startDateStr);
+                return $subCopy;
+            })->values();
+        } else {
+            // Group submissions by user_id and date for fast O(1) lookup
+            $submissionsByKey = $submissions->groupBy(fn($s) => $s->user_id . '_' . Carbon::parse($s->closing_date)->format('Y-m-d'));
+
+            // Query approved leaves in date range to avoid false pending alerts
+            $approvedLeaves = \App\Models\EmployeeLeave::whereIn('user_id', $subordinateIds)
+                ->where('status', 'approved')
+                ->whereDate('start_date', '<=', $endDateStr)
+                ->whereDate('end_date', '>=', $startDateStr)
+                ->get();
+
+            $dateList = [];
+            for ($d = $endDate->copy(); $d->gte($startDate); $d->subDay()) {
+                if ($d->isSunday()) continue;
+                $dateList[] = $d->format('Y-m-d');
+            }
+
+            $notSubmittedList = collect();
+            foreach ($dateList as $dStr) {
+                foreach ($subordinates as $sub) {
+                    $k = $sub->id . '_' . $dStr;
+                    if ($submissionsByKey->has($k)) {
+                        continue;
+                    }
+
+                    // Check if employee was on approved leave on this date
+                    $isOnLeave = $approvedLeaves->contains(function ($leave) use ($sub, $dStr) {
+                        $lStart = Carbon::parse($leave->start_date)->format('Y-m-d');
+                        $lEnd = Carbon::parse($leave->end_date)->format('Y-m-d');
+                        return (int)$leave->user_id === (int)$sub->id && $lStart <= $dStr && $lEnd >= $dStr;
+                    });
+
+                    if ($isOnLeave) {
+                        continue;
+                    }
+
+                    $subCopy = clone $sub;
+                    $subCopy->closing_date = $dStr;
+                    $subCopy->currentMetrics = $this->closingService->getTodayMetrics($sub, $dStr);
+                    $notSubmittedList->push($subCopy);
+                }
+            }
+        }
+
+        $selectedDate = $startDateStr;
 
         return view('components.day-closing.approvals', compact(
             'submittedList',
             'notSubmittedList',
             'subordinates',
+            'allSubordinates',
+            'selectedDateQuery',
+            'selectedDateDisplay',
             'selectedDate',
+            'startDateStr',
+            'endDateStr',
+            'isSingleDay',
             'minDate',
-            'isTeamLeaderOnly'
+            'isTeamLeaderOnly',
+            'isAdminOrBranchManager',
+            'selectedEmployeeId'
         ));
     }
 
@@ -257,8 +400,15 @@ class DailyClosingController extends Controller
             'tl_remarks' => $request->input('remarks'),
         ]);
 
-        $date = $request->input('date');
-        return redirect()->route('day-closing.approvals', ['date' => $date])->with('success', 'Day closing approved successfully!');
+        $redirectParams = [];
+        if ($request->filled('date')) {
+            $redirectParams['date'] = $request->input('date');
+        }
+        if ($request->filled('employee_id')) {
+            $redirectParams['employee_id'] = $request->input('employee_id');
+        }
+
+        return redirect()->route('day-closing.approvals', $redirectParams)->with('success', 'Day closing approved successfully!');
     }
 
     /**
@@ -298,8 +448,15 @@ class DailyClosingController extends Controller
             'tl_remarks' => $request->input('remarks'),
         ]);
 
-        $date = $request->input('date');
-        return redirect()->route('day-closing.approvals', ['date' => $date])->with('success', 'Day closing rejected successfully.');
+        $redirectParams = [];
+        if ($request->filled('date')) {
+            $redirectParams['date'] = $request->input('date');
+        }
+        if ($request->filled('employee_id')) {
+            $redirectParams['employee_id'] = $request->input('employee_id');
+        }
+
+        return redirect()->route('day-closing.approvals', $redirectParams)->with('success', 'Day closing rejected successfully.');
     }
 
     /**
@@ -388,12 +545,26 @@ class DailyClosingController extends Controller
         if (!empty($successNames)) {
             $message .= 'Leave successfully recorded for: ' . implode(', ', $successNames) . '. ';
         }
+        $redirectParams = [];
+        if ($request->filled('filter_date')) {
+            $redirectParams['date'] = $request->input('filter_date');
+        } elseif ($request->filled('date')) {
+            $redirectParams['date'] = $request->input('date');
+        } else {
+            $redirectParams['date'] = $leaveDate;
+        }
+        if ($request->filled('filter_employee_id')) {
+            $redirectParams['employee_id'] = $request->input('filter_employee_id');
+        } elseif ($request->filled('employee_id')) {
+            $redirectParams['employee_id'] = $request->input('employee_id');
+        }
+
         if (!empty($errorNames)) {
-            return redirect()->route('day-closing.approvals', ['date' => $leaveDate])
+            return redirect()->route('day-closing.approvals', $redirectParams)
                 ->with('success', $message)
                 ->with('error', 'Failed for: ' . implode(', ', $errorNames));
         }
 
-        return redirect()->route('day-closing.approvals', ['date' => $leaveDate])->with('success', $message);
+        return redirect()->route('day-closing.approvals', $redirectParams)->with('success', $message);
     }
 }
